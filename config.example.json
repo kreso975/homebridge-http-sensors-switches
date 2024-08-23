@@ -1,0 +1,52 @@
+{
+    "bridge": {
+        "name": "Homebridge 3B54",
+        "username": "0E:89:47:47:3B:54",
+        "port": 51576,
+        "pin": "426-55-063",
+        "advertiser": "bonjour-hap"
+    },
+    "platforms": [
+        {
+            "name": "Config",
+            "port": 8585,
+            "auth": "form",
+            "theme": "auto",
+            "tempUnits": "c",
+            "lang": "auto",
+            "noFork": true,
+            "standalone": true,
+            "platform": "config"
+        }
+    ],
+    "accessories": [
+        {
+            "accessory": "HttpSensorsAndSwitches",
+            "device_Type": "TemperatureHumiditySensor",
+            "name": "Balcony",
+            "url": "http://192.168.1.72/mesures.json",
+            "temperature_name": "t",
+            "humidity_name": "h",
+            "updateInterval": 300000
+        },
+        {
+            "accessory": "HttpSensorsAndSwitches",
+            "device_Type": "TemperatureHumiditySensor",
+            "name": "Test",
+            "url": "http://192.168.1.73/mesures.json",
+            "temperature_name": "t",
+            "humidity_name": "h",
+            "updateInterval": 60000
+        },
+        {
+            "accessory": "HttpSensorsAndSwitches",
+            "device_Type": "Switch",
+            "name": "Playroom Light",
+            "http_method": "GET",
+            "on_url": "http://192.168.1.76/POWER?state=ON",
+            "off_url": "http://192.168.1.76/POWER?state=OFF",
+            "status_url": "http://192.168.1.76/POWER",
+            "service": "switch"
+        }
+    ]
+}

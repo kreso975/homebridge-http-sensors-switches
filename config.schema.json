@@ -1,16 +1,39 @@
 {
   "pluginAlias": "HttpSensorsAndSwitches",
-  "pluginType": "platform",
+  "pluginType": "accessory",
   "singular": true,
   "schema": {
     "type": "object",
     "properties": {
+      "deviceType": {
+        "title": "Device Type",
+        "type": "string",
+        "required": true
+      },
       "name": {
         "title": "Name",
         "type": "string",
-        "required": true,
-        "default": "Example Dynamic Platform"
+        "required": true
+      },
+      "url": {
+        "title": "URL",
+        "type": "string",
+        "required": true
+      },
+      "updateInterval": {
+        "title": "Update Interval",
+        "type": "integer",
+        "default": 60000
       }
     }
-  }
+  },
+  "form": [
+    "name",
+    "url",
+    {
+      "key": "updateInterval",
+      "title": "Update Interval (ms)",
+      "type": "number"
+    }
+  ]
 }
