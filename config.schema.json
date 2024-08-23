@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "HttpSensorsAndSwitches",
   "pluginType": "platform",
   "singular": true,
   "schema": {
