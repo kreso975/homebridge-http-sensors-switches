@@ -1,6 +1,6 @@
 {
   "pluginAlias": "HttpSensorsAndSwitches",
-  "pluginType": "accessory",
+  "pluginType": "platform",
   "singular": true,
   "schema": {
     "type": "object",
