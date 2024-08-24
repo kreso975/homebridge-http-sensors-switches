@@ -2,44 +2,31 @@
   "pluginAlias": "HttpSensorsAndSwitches",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "<p><strong>To get started you will need to generate an API key from <a href='https://webhooks.loqed.com' target='_blank'>https://webhooks.loqed.com</a> by logging in with your Loqed account and choosing 'Add API Key'. You need to repeat this for each lock you have and add the config below</strong></p>",
   "schema": {
     "type": "object",
     "properties": {
+      "deviceType": {
+        "title": "Device Type",
+        "type": "string",
+        "required": true
+      },
       "name": {
         "title": "Name",
         "type": "string",
-        "required": true,
-        "default": "Your Lock Name"
-      },
-      "localKeyID": {
-        "title": "Local Key ID",
-        "type": "number",
         "required": true
       },
-      "key": {
-        "title": "Key",
-        "type": "string",
-        "required": true,
-        "x-schema-form": {
-          "type": "password"
-        }
-      },
-      "token": {
-        "title": "Token",
-        "type": "string",
-        "required": true,
-        "x-schema-form": {
-          "type": "password"
-        }
-      },
-      "lockID": {
-        "title": "Lock ID (20 character ID)",
+      "urlON": {
+        "title": "urlON",
         "type": "string",
         "required": true
       },
-      "bridgeIP": {
-        "title": "The IP address of your bridge. This is used to verify hooks that come to your homebridge for security. We recommend you fix you bridges IP on your local network or some functionality may stop working",
+      "urlOFF": {
+        "title": "urlOFF",
+        "type": "string",
+        "required": true
+      },
+      "urlStatus": {
+        "title": "urlStatus",
         "type": "string",
         "required": true
       }

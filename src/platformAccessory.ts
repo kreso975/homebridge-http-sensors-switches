@@ -1,5 +1,6 @@
 import type { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
+import axios from 'axios';
 
 
 /**
@@ -9,6 +10,8 @@ import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
  */
 export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
   private service: Service;
+  private url = '';
+  private body = '';
 
   /**
    * These are just used to create a working example
@@ -25,7 +28,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
     // set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Stergo')
-      .setCharacteristic(this.platform.Characteristic.Model, accessory.context.device.model)
+      .setCharacteristic(this.platform.Characteristic.Model, 'Model')
       .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.UUID);
 
     // get the Switch service if it exists, otherwise create a new Switch service
@@ -34,7 +37,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
 
     // set the service name, this is what is displayed as the default name on the Home app
     // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
-    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.name);
+    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.exampleDisplayName);
 
     // each service must implement at-minimum the "required characteristics" for the given service type
     // see https://developers.homebridge.io/#/service/Lightbulb
@@ -76,7 +79,20 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
     // implement your own code to turn your device on/off
     this.exampleStates.On = value as boolean;
 
-    this.platform.log.debug('Set Characteristic On ->', value);
+    if (this.exampleStates.On) {
+		  this.url = this.platform.config.urlON;
+    } else {
+      this.url = this.platform.config.urlOFF;
+    }
+    axios(this.url) 
+      .catch((error) => {
+      // handle error
+        this.platform.log.error(error);
+      });
+      
+    //this.platform.log.debug('Set Characteristic On ->', value);
+    this.platform.log('Set Characteristic On ->', value);
+
   }
 
   /**
@@ -94,13 +110,24 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
    */
   async getOn(): Promise<CharacteristicValue> {
     // implement your own code to check if the device is on
-    const isOn = this.exampleStates.On;
+    let isOn = '';
 
-    this.platform.log.debug('Get Characteristic On ->', isOn);
-
+    try {
+      const response = await axios.get(this.platform.config.urlStatus);
+      const data = response.data;
+      isOn = data.POWER;
+    } catch (error) {
+      //this.log('Error fetching data: ', error);
+	  //this.log('Error fetching data, errno: ' + error.errno + ', code: ' + error.code + ', syscall: ' + error.syscall);
+    }
+ 
+      
+    
+    //this.platform.log.debug('Get Characteristic On ->', isOn);
+    this.platform.log('Get Characteristic On ->' + isOn);
     // if you need to return an error to show the device as "Not Responding" in the Home app:
     // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
-
+    
     return isOn;
   }
 }
