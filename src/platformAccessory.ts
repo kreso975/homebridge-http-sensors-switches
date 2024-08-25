@@ -142,12 +142,9 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
           this.platform.log('Error', error.message);
         }
         this.platform.log(error.config);
-      })
-      .finally(() => {
-        // always executed
-        this.platform.log('Set Characteristic On ->', value);
       });
       
+    this.platform.log('Set Characteristic On ->', value);  
     //this.platform.log.debug('Set Characteristic On ->', value);
     
     //callback(null);
