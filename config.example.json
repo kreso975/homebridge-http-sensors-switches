@@ -17,36 +17,30 @@
             "noFork": true,
             "standalone": true,
             "platform": "config"
-        }
-    ],
-    "accessories": [
-        {
-            "accessory": "HttpSensorsAndSwitches",
-            "device_Type": "TemperatureHumiditySensor",
-            "name": "Balcony",
-            "url": "http://192.168.1.72/mesures.json",
-            "temperature_name": "t",
-            "humidity_name": "h",
-            "updateInterval": 300000
         },
         {
-            "accessory": "HttpSensorsAndSwitches",
-            "device_Type": "TemperatureHumiditySensor",
-            "name": "Test",
-            "url": "http://192.168.1.73/mesures.json",
-            "temperature_name": "t",
-            "humidity_name": "h",
-            "updateInterval": 60000
-        },
-        {
-            "accessory": "HttpSensorsAndSwitches",
-            "device_Type": "Switch",
-            "name": "Playroom Light",
-            "http_method": "GET",
-            "on_url": "http://192.168.1.76/POWER?state=ON",
-            "off_url": "http://192.168.1.76/POWER?state=OFF",
-            "status_url": "http://192.168.1.76/POWER",
-            "service": "switch"
+            "platform": "HttpSensorsAndSwitches",
+            "name": "Stergo ",
+            "description": "Http all in one place",
+            "devices": [
+                {
+                    "deviceType": "Switch",
+                    "deviceID": "12345",
+                    "deviceName": "Playroom Light",
+                    "urlON": "http://192.168.1.77/POWER?state=ON",
+                    "urlOFF": "http://192.168.1.77/POWER?state=OFF",
+                    "urlStatus": "http://192.168.1.77/POWER"
+                },
+                {
+                    "deviceType": "Sensor",
+                    "deviceID": "65432",
+                    "deviceName": "Balcony",
+                    "sensorUrl": "http://192.168.1.72/mesures.json",
+                    "temperatureName": "t",
+                    "humidityName": "h",
+                    "updateInterval": 300000
+                }
+            ]
         }
     ]
 }
