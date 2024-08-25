@@ -1,4 +1,4 @@
-import type { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
+import type { CharacteristicValue, PlatformAccessory, Service, CharacteristicSetCallback  } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 import axios from 'axios';
 
@@ -20,10 +20,6 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
   private humidity = 50;
   private updateInterval = 60000;
 
-  /**
-   * These are just used to create a working example
-   * You should implement your own code to track the state of your accessory
-   */
   private exampleStates = {
     On: false ,
   };
@@ -51,19 +47,19 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
       // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
       this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
       
-      // each service must implement at-minimum the "required characteristics" for the given service type
-      // see https://developers.homebridge.io/#/service/Lightbulb
-
       // register handlers for the CurrentTemperature Characteristic
       this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
         .on('get', this.getTemperature.bind(this));
 
+
+
       // get the HumiditySensor service if it exists, otherwise create a new HumiditySensor service
       // you can create multiple services for each accessory
-      this.service = this.accessory.getService(this.platform.Service.HumiditySensor) 
-        || this.accessory.addService(this.platform.Service.HumiditySensor);
-      //this.serviceHumidity.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
-      
+      this.service = this.accessory.getService(this.platform.Service.HumiditySensor)
+      || this.accessory.addService(this.platform.Service.HumiditySensor);
+
+      this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
+
       // register handlers for the CurrentRelativeHumidity Characteristic
       this.service.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
         .on('get', this.getHumidity.bind(this));
@@ -118,7 +114,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
    * Handle "SET" requests from HomeKit
    * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
    */
-  async setOn(value: CharacteristicValue) {
+  async setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     // implement your own code to turn your device on/off
     this.exampleStates.On = value as boolean;
     //this.platform.log(this.accessory.context.device.urlON);
@@ -128,15 +124,33 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
     } else {
       this.url = this.accessory.context.device.urlOFF;
     }
-    axios(this.url) 
+    axios(this.url)
       .catch((error) => {
-      // handle error
-        this.platform.log.error(error);
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          this.platform.log(error.response.data);
+          this.platform.log(error.response.status);
+          this.platform.log(error.response.headers);
+        } else if (error.request) {
+          // The request was made but no response was received
+          // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+          // http.ClientRequest in node.js
+          this.platform.log(error.request);
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          this.platform.log('Error', error.message);
+        }
+        this.platform.log(error.config);
+      })
+      .finally(() => {
+        // always executed
+        this.platform.log('Set Characteristic On ->', value);
       });
       
     //this.platform.log.debug('Set Characteristic On ->', value);
-    this.platform.log('Set Characteristic On ->', value);
-
+    
+    //callback(null);
   }
 
   /**
@@ -164,6 +178,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
       //this.platform.log(this.accessory.context.device.urlStatus);
       const response = await axios.get(this.accessory.context.device.urlStatus);
       const data = response.data;
+      
       // eslint-disable-next-line eqeqeq
       if( data.POWER == 'ON' ) {
         this.isOn = true;
@@ -173,6 +188,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
         this.service.updateCharacteristic(this.platform.Characteristic.On, false);
       }
     } catch (error) {
+      
       this.platform.log('Error fetching data: ', error);
       //this.platform.log('Error fetching data, errno: ' + error.errno + ', code: ' + error.code + ', syscall: ' + error.syscall);
     }
