@@ -11,7 +11,6 @@ import axios from 'axios';
 export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
   private service: Service;
 
-  
   public deviceId: string = '';
   public deviceType: string = '';
   public isOn: boolean = false;
@@ -45,8 +44,11 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
     if ( this.accessory.context.device.deviceType === 'Sensor') {
       // get the TemperatureSensor service if it exists, otherwise create a new TemperatureSensor service
       // you can create multiple services for each accessory
-      this.service = this.accessory.getService(this.platform.Service.TemperatureSensor) || this.accessory.addService(this.platform.Service.TemperatureSensor);
+      this.service = this.accessory.getService(this.platform.Service.TemperatureSensor)
+        || this.accessory.addService(this.platform.Service.TemperatureSensor);
       
+      this.service = this.accessory.getService(this.platform.Service.HumiditySensor) 
+        || this.accessory.addService(this.platform.Service.HumiditySensor);
       // set the service name, this is what is displayed as the default name on the Home app
       // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
       this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
@@ -60,16 +62,13 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
 
       // get the HumiditySensor service if it exists, otherwise create a new HumiditySensor service
       // you can create multiple services for each accessory
-      this.service = this.accessory.getService(this.platform.Service.HumiditySensor) || this.accessory.addService(this.platform.Service.HumiditySensor);
-    
-      this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
+      
+      //this.serviceHumidity.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
       
       // register handlers for the CurrentRelativeHumidity Characteristic
       this.service.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
         .on('get', this.getHumidity.bind(this));
 
-
-        
       this.getSensorData();
       setInterval(this.getSensorData.bind(this), this.updateInterval);
 
@@ -161,7 +160,6 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
       this.platform.log.warn('Ignoring request; No status url defined.');
       return this.isOn;
     }  
-    
     
     try {
       //this.platform.log(this.accessory.context.device.urlStatus);
