@@ -1,4 +1,4 @@
-import type { CharacteristicValue, PlatformAccessory, Service, CharacteristicSetCallback  } from 'homebridge';
+import type { CharacteristicValue, PlatformAccessory, Service  } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 import axios from 'axios';
 
