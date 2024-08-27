@@ -2,7 +2,7 @@
   "name": "homebridge-http-sensors-switches",
   "displayName": "Http Sensors and Switches",
   "type": "module",
-  "version": "0.0.2-beta.0",
+  "version": "0.0.3-beta.0",
   "private": false,
   "description": "Http JSON for Sensors and Url for Switches",
   "author": "Kresimir Kokanovic",
