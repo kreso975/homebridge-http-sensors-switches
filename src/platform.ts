@@ -12,6 +12,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
   public readonly Service: typeof Service;
   public readonly Characteristic: typeof Characteristic;
 
+
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
 
@@ -57,19 +58,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
     // A real plugin you would discover accessories from the local network, cloud services
     // or a user-defined array in the platform config.
     const exampleDevices = this.config.devices;
-    //this.platform.log(JSON.stringify(exampleDevices));
-    /*
-    const exampleDevices = [
-      {
-        exampleUniqueId: 'ABCD',
-        exampleDisplayName: 'Bedroom',
-      },
-      {
-        exampleUniqueId: 'EFGH',
-        exampleDisplayName: 'Kitchen',
-      },
-    ];
-    */
+    
     // loop over the discovered devices and register each one if it has not already been registered
     for (const device of exampleDevices) {
       // generate a unique id for the accessory this should be generated from

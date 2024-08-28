@@ -1,7 +1,8 @@
-import type { CharacteristicValue, PlatformAccessory, Service  } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory, Service  } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
-import axios from 'axios';
 
+//import { platformSemsors } from './platformSensorServices.js';
+import axios from 'axios';
 
 /**
  * Platform Accessory
@@ -9,24 +10,26 @@ import axios from 'axios';
  * Each accessory may expose multiple services of different service types.
  */
 export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
-  private service: Service;
+  public service!: Service;
+  public temperatureService!: Service;
+  public humidityService!: Service;
 
   public deviceId: string = '';
   public deviceType: string = '';
   public isOn: boolean = false;
-  private url = '';
-  private body = '';
-  private temperature = 20;
-  private humidity = 50;
-  private updateInterval = 60000;
+  public url = '';
+  public body = '';
+  public temperature = 20;
+  public humidity = 50;
+  public updateInterval = 60000;
 
-  private exampleStates = {
+  public exampleStates = {
     On: false ,
   };
-
+  
   constructor(
-    private readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
-    private readonly accessory: PlatformAccessory,
+    public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
+    public readonly accessory: PlatformAccessory,
   ) {
     // set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
@@ -35,38 +38,42 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
       .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.UUID);
 
     this.updateInterval = accessory.context.device.updateInterval || 60000; // Default update interval is 60 seconds
-
-
+    
     if ( this.accessory.context.device.deviceType === 'Sensor') {
+      
+      //new platformSensors(this.platform, accessory);
+
       // get the TemperatureSensor service if it exists, otherwise create a new TemperatureSensor service
       // you can create multiple services for each accessory
-      this.service = this.accessory.getService(this.platform.Service.TemperatureSensor)
+      //this.temperatureService = new this.platform.Service.TemperatureSensor(accessory.context.device.deviceName);
+
+      this.temperatureService = this.accessory.getService(this.platform.Service.TemperatureSensor)
         || this.accessory.addService(this.platform.Service.TemperatureSensor);
-      
       // set the service name, this is what is displayed as the default name on the Home app
       // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
-      this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
-      
+
+      this.temperatureService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
+      //this.service = this.service.addCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity);
       // register handlers for the CurrentTemperature Characteristic
-      this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
+
+      this.temperatureService.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
         .on('get', this.getTemperature.bind(this));
-
-
 
       // get the HumiditySensor service if it exists, otherwise create a new HumiditySensor service
       // you can create multiple services for each accessory
-      this.service = this.accessory.getService(this.platform.Service.HumiditySensor)
+      //this.humidityService = new this.platform.Service.TemperatureSensor(accessory.context.device.deviceName);
+      this.humidityService = this.accessory.getService(this.platform.Service.HumiditySensor)
       || this.accessory.addService(this.platform.Service.HumiditySensor);
-
-      this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
-
+      this.humidityService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
+      
       // register handlers for the CurrentRelativeHumidity Characteristic
-      this.service.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
+      this.humidityService.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
         .on('get', this.getHumidity.bind(this));
+      
 
       this.getSensorData();
       setInterval(this.getSensorData.bind(this), this.updateInterval);
-
+      
     } else {
       // get the Switch service if it exists, otherwise create a new Switch service
       // you can create multiple services for each accessory
@@ -85,6 +92,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
         .onGet(this.getOn.bind(this)); // GET - bind to the `getOn` method below
     }
    
+
 
     /**
      * Creating multiple services of the same type.
@@ -120,10 +128,21 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
     //this.platform.log(this.accessory.context.device.urlON);
     if (this.exampleStates.On) {
       this.url = this.accessory.context.device.urlON;
-		  
+		  this.service.updateCharacteristic(this.platform.Characteristic.On, true);
     } else {
       this.url = this.accessory.context.device.urlOFF;
+      this.service.updateCharacteristic(this.platform.Characteristic.On, false);
     }
+
+    try {
+      axios.get(this.url);
+      
+    } catch (error) {
+      this.platform.log('Error fetching data: ', error);
+      //this.platform.log('Error fetching data, errno: ' + error.errno + ', code: ' + error.code + ', syscall: ' + error.syscall);
+    }
+    
+    /*
     axios(this.url)
       .catch((error) => {
         if (error.response) {
@@ -143,11 +162,9 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
         }
         this.platform.log(error.config);
       });
-      
+    */
     this.platform.log('Set Characteristic On ->', value);  
     //this.platform.log.debug('Set Characteristic On ->', value);
-    
-    //callback(null);
   }
 
   /**
@@ -185,7 +202,6 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
         this.service.updateCharacteristic(this.platform.Characteristic.On, false);
       }
     } catch (error) {
-      
       this.platform.log('Error fetching data: ', error);
       //this.platform.log('Error fetching data, errno: ' + error.errno + ', code: ' + error.code + ', syscall: ' + error.syscall);
     }
@@ -202,17 +218,19 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
     try {
       const response = await axios.get(this.accessory.context.device.sensorUrl);
       const data = response.data;
+      
       this.temperature = Number(data[this.accessory.context.device.temperatureName]);
       this.humidity = Number(data[this.accessory.context.device.humidityName]);
 
-      this.service.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.temperature);
-      this.service.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.humidity);
+      this.temperatureService.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.temperature);
+      this.humidityService.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.humidity);
 
-      this.platform.log(JSON.stringify(data));
+      //this.platform.log(JSON.stringify(data));
+      this.platform.log.debug(JSON.stringify(data));
 
     } catch (error) {
       //this.log('Error fetching data: ', error);
-      //this.platform.log('Error fetching data, errno: ' + error.errno + ', code: ' + error.code + ', syscall: ' + error.syscall);
+      this.platform.log.debug('Error fetching data: ', error);
     }
   }
   
