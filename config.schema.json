@@ -44,19 +44,37 @@
             "title": "URL ON",
             "description": "",
             "type": "string",
-            "required": true
+            "required": false
           },
           "urlOFF": {
             "title": "URL OFF",
             "description": "",
             "type": "string",
-            "required": true
+            "required": false
           },
           "urlStatus": {
             "title": "URL Status",
             "description": "",
             "type": "string",
-            "required": true
+            "required": false
+          },
+          "temperatureName": {
+            "title": "URL Status",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "humidityName": {
+            "title": "URL Status",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "updateInterval": {
+            "title": "URL Status",
+            "description": "",
+            "type": "integer",
+            "required": false
           }
         }
       }
