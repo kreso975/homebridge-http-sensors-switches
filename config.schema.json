@@ -22,67 +22,41 @@
         "title": "Device",
         "type": "object",
         "properties": {
-          "deviceId": {
-            "title": "Device ID",
-            "type": "string"
-          },
-          "supportedSwitch": {
-            "title": "Supported Swing Mode (Only for AC)",
-            "description": "None, Vertical, Horizontal, Both You have to select which type your device supports",
+          "deviceType": {
+            "title": "Device Type",
+            "description": "",
             "type": "string",
-            "default": "both",
-            "required": true,
-            "oneOf": [
-              {
-                "title": "None",
-                "enum": ["None"]
-              },
-              {
-                "title": "Vertical",
-                "enum": ["Vertical"]
-              },
-              {
-                "title": "Horizontal",
-                "enum": ["Horizontal"]
-              },
-              {
-                "title": "Both",
-                "enum": ["Both"]
-              }
-            ]
+            "required": true
           },
-          "supportedTHSensor": {
-            "title": "Change Temperature Steps on HomeKit (Only for AC)",
-            "description": "The options are 1˚ or 0.5˚, default is: 1˚",
-            "type": "number",
-            "default": 1,
-            "required": false,
-            "oneOf": [
-              {
-                "title": "0.5",
-                "enum": [0.5]
-              },
-              {
-                "title": "1",
-                "enum": [1]
-              }
-            ]
+          "deviceID": {
+            "title": "Device ID",
+            "description": "",
+            "type": "string",
+            "required": true
           },
-          "minTemp": {
-            "title": "Change minimum Threshold Temperature (Only for AC)",
-            "description": "Default is: 17˚",
-            "type": "integer",
-            "default": 17,
-            "minimum": 10,
-            "maximum": 35
+          "deviceName": {
+            "title": "Device name",
+            "description": "",
+            "type": "string",
+            "required": true
           },
-          "maxTemp": {
-            "title": "Change maximum Threshold Temperature (Only for AC)",
-            "description": "Default is: 30˚",
-            "type": "integer",
-            "default": 30,
-            "minimum": 10,
-            "maximum": 35
+          "urlON": {
+            "title": "URL ON",
+            "description": "",
+            "type": "string",
+            "required": true
+          },
+          "urlOFF": {
+            "title": "URL OFF",
+            "description": "",
+            "type": "string",
+            "required": true
+          },
+          "urlStatus": {
+            "title": "URL Status",
+            "description": "",
+            "type": "string",
+            "required": true
           }
         }
       }
