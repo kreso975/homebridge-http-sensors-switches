@@ -24,16 +24,25 @@
             "description": "Http all in one place",
             "devices": [
                 {
+                    "deviceType": "Sensor",
+                    "deviceID": "896543287",
+                    "deviceName": "Attic",
+                    "sensorUrl": "http://192.168.1.74/mesures.json",
+                    "temperatureName": "t",
+                    "humidityName": "h",
+                    "updateInterval": 60000
+                },
+                {
                     "deviceType": "Switch",
-                    "deviceID": "12345",
-                    "deviceName": "Playroom Light",
+                    "deviceID": "1234578",
+                    "deviceName": "Night Light",
                     "urlON": "http://192.168.1.77/POWER?state=ON",
                     "urlOFF": "http://192.168.1.77/POWER?state=OFF",
                     "urlStatus": "http://192.168.1.77/POWER"
                 },
                 {
                     "deviceType": "Sensor",
-                    "deviceID": "65432",
+                    "deviceID": "65432258",
                     "deviceName": "Balcony",
                     "sensorUrl": "http://192.168.1.72/mesures.json",
                     "temperatureName": "t",

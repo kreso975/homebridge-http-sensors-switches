@@ -70,6 +70,12 @@
             "type": "string",
             "required": false
           },
+          "sensorUrl": {
+            "title": "sensor JSON url",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
           "updateInterval": {
             "title": "URL Status",
             "description": "",

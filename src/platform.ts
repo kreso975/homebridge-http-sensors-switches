@@ -1,6 +1,8 @@
 import type { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 
-import { HttpSensorsAndSwitchesHomebridgePlatformAccessory } from './platformAccessory.js';
+//import { HttpSensorsAndSwitchesHomebridgePlatformAccessory } from './platformAccessory.js';
+import { platformSensors } from './platformSensorServices.js';
+import { platformSwitch } from './platformSwitchServices.js';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 
 /**
@@ -81,7 +83,15 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
 
         // create the accessory handler for the restored accessory
         // this is imported from `platformAccessory.ts`
-        new HttpSensorsAndSwitchesHomebridgePlatformAccessory(this, existingAccessory);
+        
+        switch ( device.deviceType ) {
+        case 'Switch':
+          new platformSwitch(this, existingAccessory);
+          break;
+        case 'Sensor':
+          new platformSensors(this, existingAccessory);
+        }
+        //new HttpSensorsAndSwitchesHomebridgePlatformAccessory(this, existingAccessory);
 
         // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, e.g.:
         // remove platform accessories when no longer present
@@ -101,7 +111,14 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
 
         // create the accessory handler for the newly create accessory
         // this is imported from `platformAccessory.ts`
-        new HttpSensorsAndSwitchesHomebridgePlatformAccessory(this, accessory);
+        switch ( accessory.context.device.deviceType ) {
+        case 'Switch':
+          new platformSwitch(this, accessory);
+          break;
+        case 'Sensor':
+          new platformSensors(this, accessory);
+        }
+        //new HttpSensorsAndSwitchesHomebridgePlatformAccessory(this, accessory);
 
         // link the accessory to your platform
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
