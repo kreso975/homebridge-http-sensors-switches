@@ -14,11 +14,9 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
   public readonly Service: typeof Service;
   public readonly Characteristic: typeof Characteristic;
 
-
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
   
-
   constructor(
     public readonly log: Logging,
     public readonly config: PlatformConfig,
