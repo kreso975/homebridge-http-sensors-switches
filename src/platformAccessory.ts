@@ -1,4 +1,4 @@
-import { CharacteristicValue, PlatformAccessory, Service  } from 'homebridge';
+import { CharacteristicGetCallback, CharacteristicValue, PlatformAccessory, Service  } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 //import { platformSemsors } from './platformSensorServices.js';
@@ -40,9 +40,8 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
     this.updateInterval = accessory.context.device.updateInterval || 60000; // Default update interval is 60 seconds
     
     if ( this.accessory.context.device.deviceType === 'Sensor') {
-      
       //new platformSensors(this.platform, accessory);
-
+      
       // get the TemperatureSensor service if it exists, otherwise create a new TemperatureSensor service
       // you can create multiple services for each accessory
       //this.temperatureService = new this.platform.Service.TemperatureSensor(accessory.context.device.deviceName);
@@ -89,7 +88,12 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
       // register handlers for the On/Off Characteristic
       this.service.getCharacteristic(this.platform.Characteristic.On)
         .onSet(this.setOn.bind(this)) // SET - bind to the `setOn` method below
-        .onGet(this.getOn.bind(this)); // GET - bind to the `getOn` method below
+        .on('get', this.getOn2.bind(this));
+      //  .onGet(this.getOn2.bind(this)); // GET - bind to the `getOn` method below
+      //  .on('get', this.getOn.bind(this))
+      //  .on('set', this.setOn.bind(this));
+      //.onSet(this.setOn.bind(this)) // SET - bind to the `setOn` method below
+      //.onGet(this.getOn.bind(this)); // GET - bind to the `getOn` method below
     }
    
 
@@ -136,7 +140,6 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
 
     try {
       axios.get(this.url);
-      
     } catch (error) {
       this.platform.log('Error fetching data: ', error);
       //this.platform.log('Error fetching data, errno: ' + error.errno + ', code: ' + error.code + ', syscall: ' + error.syscall);
@@ -240,5 +243,39 @@ export class HttpSensorsAndSwitchesHomebridgePlatformAccessory {
 
   async getHumidity(callback: (arg0: null, arg1: number) => void) {
     callback(null, this.humidity);
+  }
+
+  async getOn2(callback: CharacteristicGetCallback) {
+    // Check if we have Status URL setup
+    // this.platform.log(this.accessory.context.device.urlStatus);
+    if (!this.accessory.context.device.urlStatus) {
+      this.platform.log.warn('Ignoring request; No status url defined.');
+      return this.isOn;
+    }  
+    
+    try {
+      //this.platform.log(this.accessory.context.device.urlStatus);
+      const response = await axios.get(this.accessory.context.device.urlStatus);
+      const data = response.data;
+      
+      // eslint-disable-next-line eqeqeq
+      if( data.POWER == 'ON' ) {
+        this.isOn = true;
+        this.service.updateCharacteristic(this.platform.Characteristic.On, true);
+      } else {
+        this.isOn = false;
+        this.service.updateCharacteristic(this.platform.Characteristic.On, false);
+      }
+    } catch (error) {
+      this.platform.log('Error fetching data: ', error);
+      //this.platform.log('Error fetching data, errno: ' + error.errno + ', code: ' + error.code + ', syscall: ' + error.syscall);
+    }
+    
+    //this.platform.log.debug('Get Characteristic On ->', isOn);
+    //this.platform.log('Get Characteristic On ->' + this.isOn);
+    // if you need to return an error to show the device as "Not Responding" in the Home app:
+    // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+    callback(undefined, this.isOn);
+    //return this.isOn;
   }
 }

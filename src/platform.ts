@@ -15,6 +15,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
+  
 
   constructor(
     public readonly log: Logging,
