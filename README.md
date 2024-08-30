@@ -33,8 +33,6 @@
 >
 > This plugin should be supporting Node v22 from October 2024.
 
-This is a template Homebridge dynamic platform plugin.
-
 ### Config example
 
 ```
