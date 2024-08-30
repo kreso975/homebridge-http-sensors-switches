@@ -1,4 +1,4 @@
-import { CharacteristicValue, PlatformAccessory, Service  } from 'homebridge';
+import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service  } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios from 'axios';
@@ -15,6 +15,7 @@ export class platformSwitch {
 
   public deviceId: string = '';
   public deviceType: string = '';
+  public deviceName: string = '';
   public isOn: boolean = false;
   public url = '';
   public body = '';
@@ -36,9 +37,10 @@ export class platformSwitch {
 
     
     this.deviceType = this.accessory.context.device.deviceType;
+    this.deviceName = this.accessory.context.device.deviceName || 'NoName';
     
     if ( this.deviceType === 'Switch') {
-      // this.deviceType === 'LightBulb'
+      // this.deviceType === 'Lightbulb'
       // get the Switch service if it exists, otherwise create a new Switch service
       // you can create multiple services for each accessory
       if ( !this.deviceType ) {
@@ -72,7 +74,7 @@ export class platformSwitch {
    * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
    */
   
-  async setOn(value: CharacteristicValue, callback: (arg0: Error) => void) {
+  async setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     // 
     this.switchStates.On = value as boolean;
     
@@ -93,19 +95,22 @@ export class platformSwitch {
     }
   
     axios.get(this.url)
-      .then((response) => {
-        // handle success
-        callback(response.data);
-        this.platform.log.debug('Success: ', error);
-      })
+    //  .then((response) => {
+    // handle success
+    //    callback(response.data);
+    //    this.platform.log.debug('Success: ', error);
+    //  })
       .catch((error) => {
       // handle error
       // Let's reverse On value since we couldnt reach URL
-        this.service.updateCharacteristic(this.platform.Characteristic.On, !value);
+        this.service.updateCharacteristic(this.platform.Characteristic.On, !this.switchStates.On);
         this.switchStates.On = !value;
-        this.platform.log.debug('Setting power state to :', !value  );
+        this.platform.log.debug('Setting power state to :', this.switchStates.On  );
         this.platform.log.debug('Error: ', error);
         callback(error);
       });
+
+    callback(null);
+    this.platform.log.debug('Success: Switch ',this.deviceName,' is: ', value);
   }
 }

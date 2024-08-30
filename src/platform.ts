@@ -7,7 +7,7 @@ import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 
 /**
  * HomebridgePlatform
- * This class is the main constructor for your plugin, this is where you should
+ * This class is the main constructor for plugin, this is where you should
  * parse the user config and discover/register accessories with Homebridge.
  */
 export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatformPlugin {
@@ -50,18 +50,16 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
   }
 
   /**
-   * This is an example method showing how to register discovered accessories.
+   * This is an method to register discovered accessories.
    * Accessories must only be registered once, previously created accessories
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   discoverDevices() {
-    // EXAMPLE ONLY
-    // A real plugin you would discover accessories from the local network, cloud services
-    // or a user-defined array in the platform config.
-    const exampleDevices = this.config.devices;
+    // Plugin a user-defined array in the platform config.
+    const platformConfigDevices = this.config.devices;
     
     // loop over the discovered devices and register each one if it has not already been registered
-    for (const device of exampleDevices) {
+    for (const device of platformConfigDevices) {
       // generate a unique id for the accessory this should be generated from
       // something globally unique, but constant, for example, the device serial
       // number or MAC address
@@ -89,6 +87,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
         case 'Sensor':
           new platformSensors(this, existingAccessory);
         }
+
         //new HttpSensorsAndSwitchesHomebridgePlatformAccessory(this, existingAccessory);
 
         // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, e.g.:
@@ -97,7 +96,6 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
         // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
       } else {
         // the accessory does not yet exist, so we need to create it
-        
         this.log.info('Adding new accessory:', device.deviceName);
 
         // create a new accessory
@@ -116,6 +114,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
         case 'Sensor':
           new platformSensors(this, accessory);
         }
+        
         //new HttpSensorsAndSwitchesHomebridgePlatformAccessory(this, accessory);
 
         // link the accessory to your platform

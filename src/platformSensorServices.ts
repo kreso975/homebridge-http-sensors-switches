@@ -3,7 +3,6 @@ import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios from 'axios';
 
-
 /**
  * Platform Accessory
  * An instance of this class is created for each accessory your platform registers
