@@ -2,7 +2,6 @@ import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Serv
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios from 'axios';
-import { error } from 'console';
 
 
 /**
