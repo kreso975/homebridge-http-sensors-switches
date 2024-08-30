@@ -11,6 +11,10 @@
 
 </span>
 
+**_Requirements:_**<br>
+<img src="https://img.shields.io/badge/node-^18.20.4%20%7C%7C%20^20.16.0%20%7C%7C%20^22.5.1-brightgreen"> &nbsp;
+<img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen">
+
 > [!IMPORTANT]
 > **Homebridge v2.0 Information**
 >
@@ -31,7 +35,7 @@
 
 This is a template Homebridge dynamic platform plugin.
 
-### Example config
+### Config example
 
 ```
 {
