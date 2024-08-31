@@ -15,16 +15,9 @@ export class platformSensors {
 
   public deviceId: string = '';
   public deviceType: string = '';
-  public isOn: boolean = false;
-  public url = '';
-  public body = '';
   public temperature = 20;
   public humidity = 50;
-  public updateInterval = 60000;
-
-  public switchStates = {
-    On: false ,
-  };
+  public updateInterval = 300000;
   
   constructor(
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
@@ -33,17 +26,14 @@ export class platformSensors {
     // set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Stergo')
-      .setCharacteristic(this.platform.Characteristic.Model, 'Model')
+      .setCharacteristic(this.platform.Characteristic.Model, 'Sensor')
       .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.UUID);
 
-    this.updateInterval = accessory.context.device.updateInterval || 60000; // Default update interval is 60 seconds
+    this.updateInterval = accessory.context.device.updateInterval || 300000; // Default update interval is 300 seconds
     
     this.deviceType = this.accessory.context.device.deviceType;
 
     if ( this.deviceType === 'Sensor' ) {
-      if ( !this.deviceType ) {
-        return;
-      }
       //new platformSensors(this.platform, accessory);
       
       // get the TemperatureSensor service if it exists, otherwise create a new TemperatureSensor service
