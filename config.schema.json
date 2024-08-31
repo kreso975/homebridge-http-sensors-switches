@@ -58,6 +58,24 @@
             "type": "string",
             "required": false
           },
+          "stateName": {
+            "title": "State JASON param Name",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "onStatusValue": {
+            "title": "JSON return Value for status On",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "offStatusValue": {
+            "title": "JSON return Value for status Off",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
           "temperatureName": {
             "title": "URL Status",
             "description": "",
