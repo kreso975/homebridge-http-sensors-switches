@@ -76,7 +76,10 @@
                     "deviceName": "Night Light",
                     "urlON": "http://192.168.1.77/POWER?state=ON",
                     "urlOFF": "http://192.168.1.77/POWER?state=OFF",
-                    "urlStatus": "http://192.168.1.77/POWER"
+                    "urlStatus": "http://192.168.1.77/POWER",
+                    "stateName": "POWER",
+                    "onStatusValue": "ON",
+                    "offStatusValue": "OFF"
                 },
                 {
                     "deviceType": "Sensor",
