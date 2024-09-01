@@ -40,11 +40,8 @@ export class platformSwitch {
     this.deviceName = this.accessory.context.device.deviceName || 'NoName';
     
     if ( this.deviceType === 'Switch') {
-      // this.deviceType === 'Lightbulb'
       // get the Switch service if it exists, otherwise create a new Switch service
-      // you can create multiple services for each accessory
       
-
       this.service = this.accessory.getService(this.platform.Service.Switch) || this.accessory.addService(this.platform.Service.Switch);
 
       // set the service name, this is what is displayed as the default name on the Home app

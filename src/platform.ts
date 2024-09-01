@@ -1,6 +1,5 @@
 import type { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 
-//import { HttpSensorsAndSwitchesHomebridgePlatformAccessory } from './platformAccessory.js';
 import { platformSensors } from './platformSensorServices.js';
 import { platformSwitch } from './platformSwitchServices.js';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
