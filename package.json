@@ -16,7 +16,17 @@
     "url": "https://github.com/kreso975/homebridge-http-sensors-switches/issues"
   },
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "homebridge",
+    "homekit",
+    "http",
+    "json",
+    "thermometer",
+    "humidity",
+    "switch",
+    "smart home",
+    "temperature sensor",
+    "plugin"
   ],
   "main": "dist/index.js",
   "engines": {
