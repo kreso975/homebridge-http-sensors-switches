@@ -15,6 +15,8 @@
 <img src="https://img.shields.io/badge/node-^18.20.4%20%7C%7C%20^20.16.0%20%7C%7C%20^22.5.1-brightgreen"> &nbsp;
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen">
 
+
+
 > [!IMPORTANT]
 > **Homebridge v2.0 Information**
 >
@@ -33,7 +35,7 @@
 >
 > This plugin should be supporting Node v22 from October 2024.
 
-### Config example
+### ⚙️ Config example
 
 ```
 {
@@ -103,3 +105,13 @@
     ]
 }
 ```
+### ⚙️ Config params
+
+| Param     | Description      |  Param needed  |
+| ---------- | ------------ |
+| deviceType     | Sensor or Switch   | true |
+| deviceName | Name for Your Accessory | true |
+| deviceID      | Uniqe ID for this Accessory | true |
+| deviceManufacturer      | Name for Manufacturer of this Accessory | false |
+| deviceModel      | Name of model for this Accessory     | false |
+| deviceManufacturer      | Name for Manufacturer of this Accessory | false |

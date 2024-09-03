@@ -14,16 +14,20 @@ export class platformSwitch {
   public deviceId: string = '';
   public deviceType: string = '';
   public deviceName: string = '';
-  public statusStateParam: string = '';
-  public statusOnCheck: string = '';
-  public statusOffCheck: string = '';
   public deviceManufacturer: string = '';
   public deviceModel: string = '';
   public deviceSerialNumber: string = '';
   public deviceFirmwareVersion: string = '';
+
+  public urlON: string = '';
+  public urlOFF: string = '';
   public url = '';
 
-
+  public urlStatus: string = '';
+  public statusStateParam: string = '';
+  public statusOnCheck: string = '';
+  public statusOffCheck: string = '';
+ 
   public switchStates = {
     On: false,
   };
@@ -39,6 +43,15 @@ export class platformSwitch {
     this.deviceModel = this.accessory.context.device.deviceModel || 'Switch';
     this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
     this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
+
+    this.urlStatus = this.accessory.context.device.urlStatus;
+    this.statusStateParam = this.accessory.context.device.stateName;
+    this.statusOnCheck = this.accessory.context.device.onStatusValue;
+    this.statusOffCheck = this.accessory.context.device.offStatusValue;
+
+    // From Config
+    this.urlON = this.accessory.context.device.urlON;
+    this.urlOFF = this.accessory.context.device.urlOFF;
 
     if ( !this.deviceType) {
       this.platform.log.warn('Ignoring accessory; No deviceType defined.');
@@ -86,18 +99,18 @@ export class platformSwitch {
     // 
     this.switchStates.On = value as boolean;
     
-    if (!this.accessory.context.device.urlON || !this.accessory.context.device.urlOFF) {
-      this.platform.log.warn('Ignoring request; No power url defined.');
-      callback(new Error('No power url defined.'));
+    if (!this.urlON || !this.urlOFF) {
+      this.platform.log.warn('Ignoring request; No Switch trigger url defined.');
+      callback(new Error('No Switch trigger url defined.'));
       return;
     }
 
     if (this.switchStates.On) {
-      this.url = this.accessory.context.device.urlON;
+      this.url = this.urlON;
       this.platform.log.debug('Setting power state to ON');
       this.service.updateCharacteristic(this.platform.Characteristic.On, true);
     } else {
-      this.url = this.accessory.context.device.urlOFF;
+      this.url = this.urlOFF;
       this.platform.log.debug('Setting power state to OFF');
       this.service.updateCharacteristic(this.platform.Characteristic.On, false);
     }
@@ -122,24 +135,20 @@ export class platformSwitch {
 
     callback(null);
     //this.platform.log.debug('Success: Switch ',this.deviceName,' is: ', value);
-    this.platform.log('Success: Switch ',this.deviceName,' is: ', this.switchStates.On);
+    this.platform.log.info('Success: Switch ',this.deviceName,' is: ', this.switchStates.On);
   }
 
   async getOnLoad() {
     // Check if we have Status URL setup
     // this.platform.log.debug(this.accessory.context.device.urlStatus);
-    if (!this.accessory.context.device.urlStatus) {
+    if (!this.urlStatus) {
       this.platform.log.warn('Ignoring request; No status url defined.');
       return;
     }
-    
-    this.statusStateParam = this.accessory.context.device.stateName;
-    this.statusOnCheck = this.accessory.context.device.onStatusValue;
-    this.statusOffCheck = this.accessory.context.device.offStatusValue;
 
     try {
       //this.platform.log.debug(this.accessory.context.device.urlStatus);
-      const response = await axios.get(this.accessory.context.device.urlStatus);
+      const response = await axios.get(this.urlStatus);
       const data = response.data;
 
       if( data[this.statusStateParam] === this.statusOnCheck ) {

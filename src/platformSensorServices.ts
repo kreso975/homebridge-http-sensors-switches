@@ -1,7 +1,7 @@
 import { PlatformAccessory, Service  } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 /**
  * Platform Accessory
@@ -15,17 +15,16 @@ export class platformSensors {
   public deviceId: string = '';
   public deviceType: string = '';
   public deviceName: string = '';
-  public statusStateParam: string = '';
-  public statusOnCheck: string = '';
-  public statusOffCheck: string = '';
   public deviceManufacturer: string = '';
   public deviceModel: string = '';
   public deviceSerialNumber: string = '';
   public deviceFirmwareVersion: string = '';
-  public url = '';
+  public temperatureName: string = '';
+  public sensorUrl: string = '';
+  public humidityName: string = '';
   
-  public temperature = 20;
-  public humidity = 50;
+  public currentTemperature: number = 20;
+  public currentHumidity: number = 50;
   public updateInterval = 300000;
   
   constructor(
@@ -39,8 +38,12 @@ export class platformSensors {
     this.deviceModel = this.accessory.context.device.deviceModel || 'Switch';
     this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
     this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
+    
+    // From Config
+    this.temperatureName = this.accessory.context.device.temperatureName;
+    this.humidityName = this.accessory.context.device.humidityName;
+    this.sensorUrl = this.accessory.context.device.sensorUrl;
     this.updateInterval = accessory.context.device.updateInterval || 300000; // Default update interval is 300 seconds
-
 
     if ( !this.deviceType ) {
       return;
@@ -87,29 +90,31 @@ export class platformSensors {
   
   async getSensorData() {
     try {
-      const response = await axios.get(this.accessory.context.device.sensorUrl);
+      const response = await axios.get(this.sensorUrl);
       const data = response.data;
       
-      this.temperature = Number(data[this.accessory.context.device.temperatureName]);
-      this.humidity = Number(data[this.accessory.context.device.humidityName]);
+      this.currentTemperature = Number(data[this.temperatureName]);
+      this.currentHumidity = Number(data[this.humidityName]);
 
-      this.temperatureService.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.temperature);
-      this.humidityService.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.humidity);
+      this.temperatureService.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.currentTemperature);
+      this.humidityService.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.currentHumidity);
 
-      this.platform.log(this.deviceName,': ',JSON.stringify(data));
+      this.platform.log.info(this.deviceName,': ',JSON.stringify(data));
       //this.platform.log.debug(JSON.stringify(data));
 
-    } catch (error) {
-      //this.log('Error fetching data: ', error);
-      this.platform.log.debug('Error fetching data: ', error);
+    } catch (e) {
+      const error = e as AxiosError;
+      if (axios.isAxiosError(error)) {
+        this.platform.log.warn(this.deviceName,': Error: ', error.message );
+      }
     }
   }
   
   async getTemperature(callback: (arg0: null, arg1: number) => void) {
-    callback(null, this.temperature);
+    callback(null, this.currentTemperature);
   }
 
   async getHumidity(callback: (arg0: null, arg1: number) => void) {
-    callback(null, this.humidity);
+    callback(null, this.currentHumidity);
   }
 }
