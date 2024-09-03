@@ -107,11 +107,10 @@
 ```
 ### ⚙️ Config params
 
-| Param     | Description      |  Param needed  |
-| ---------- | ------------ |
-| deviceType     | Sensor or Switch   | true |
-| deviceName | Name for Your Accessory | true |
-| deviceID      | Uniqe ID for this Accessory | true |
-| deviceManufacturer      | Name for Manufacturer of this Accessory | false |
-| deviceModel      | Name of model for this Accessory     | false |
-| deviceManufacturer      | Name for Manufacturer of this Accessory | false |
+|      **Param**     	|             **Description**             	| **Param needed** 	|
+|:------------------:	|:---------------------------------------:	|:----------------:	|
+| deviceType         	| Sensor or Switch                        	|       true       	|
+| deviceName         	| Name for Your Accessory                 	|       true       	|
+| deviceID           	| Uniqe ID for this Accessory             	|       true       	|
+| deviceManufacturer 	| Name for Manufacturer of this Accessory 	|       false      	|
+| deviceModel        	| Name of model for this Accessory        	|       false      	|
