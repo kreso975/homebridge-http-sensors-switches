@@ -30,7 +30,7 @@
           },
           "deviceID": {
             "title": "Device ID",
-            "description": "",
+            "description": "Please input Unique ID for this device",
             "type": "string",
             "required": true
           },
@@ -39,6 +39,30 @@
             "description": "",
             "type": "string",
             "required": true
+          },
+          "deviceManufacturer": {
+            "title": "Device Manufacturer",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "deviceModel": {
+            "title": "Device Model",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "deviceSerialNumber": {
+            "title": "Device Serial number or leave it blank and will be generated automaticaly",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "deviceFirmwareVersion": {
+            "title": "Device Firmware version",
+            "description": "",
+            "type": "string",
+            "required": false
           },
           "urlON": {
             "title": "URL ON",

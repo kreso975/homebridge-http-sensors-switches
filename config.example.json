@@ -20,13 +20,17 @@
         },
         {
             "platform": "HttpSensorsAndSwitches",
-            "name": "Stergo ",
+            "name": "Stergo",
             "description": "Http all in one place",
             "devices": [
                 {
                     "deviceType": "Sensor",
                     "deviceID": "896543287",
                     "deviceName": "Attic",
+                    "deviceManufacturer": "DHT",
+                    "deviceModel": "Private Model",
+                    "deviceSerialNumber": "",
+                    "deviceFirmwareVersion": "v1.4.0",
                     "sensorUrl": "http://192.168.1.74/mesures.json",
                     "temperatureName": "t",
                     "humidityName": "h",
@@ -34,8 +38,12 @@
                 },
                 {
                     "deviceType": "Switch",
-                    "deviceID": "1234578",
                     "deviceName": "Night Light",
+                    "deviceID": "1234578",
+                    "deviceManufacturer": "Stergo",
+                    "deviceModel": "Switch",
+                    "deviceSerialNumber": "203ab773-d5cd-42a2-b531-a98bba0e4444",
+                    "deviceFirmwareVersion": "0.4.0",
                     "urlON": "http://192.168.1.77/POWER?state=ON",
                     "urlOFF": "http://192.168.1.77/POWER?state=OFF",
                     "urlStatus": "http://192.168.1.77/POWER",

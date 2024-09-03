@@ -9,12 +9,21 @@ import axios from 'axios';
  * Each accessory may expose multiple services of different service types.
  */
 export class platformSensors {
-  public service!: Service;
   public temperatureService!: Service;
   public humidityService!: Service;
 
   public deviceId: string = '';
   public deviceType: string = '';
+  public deviceName: string = '';
+  public statusStateParam: string = '';
+  public statusOnCheck: string = '';
+  public statusOffCheck: string = '';
+  public deviceManufacturer: string = '';
+  public deviceModel: string = '';
+  public deviceSerialNumber: string = '';
+  public deviceFirmwareVersion: string = '';
+  public url = '';
+  
   public temperature = 20;
   public humidity = 50;
   public updateInterval = 300000;
@@ -23,40 +32,45 @@ export class platformSensors {
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
   ) {
-    // set accessory information
-    this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Stergo')
-      .setCharacteristic(this.platform.Characteristic.Model, 'Sensor')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.UUID);
 
-    this.updateInterval = accessory.context.device.updateInterval || 300000; // Default update interval is 300 seconds
-    
     this.deviceType = this.accessory.context.device.deviceType;
+    this.deviceName = this.accessory.context.device.deviceName || 'NoName';
+    this.deviceManufacturer = this.accessory.context.device.deviceManufacturer || 'Stergo';
+    this.deviceModel = this.accessory.context.device.deviceModel || 'Switch';
+    this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
+    this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
+    this.updateInterval = accessory.context.device.updateInterval || 300000; // Default update interval is 300 seconds
+
+
+    if ( !this.deviceType ) {
+      return;
+    }
 
     if ( this.deviceType === 'Sensor' ) {
-      //new platformSensors(this.platform, accessory);
+      // set accessory information
+      this.accessory.getService(this.platform.Service.AccessoryInformation)!
+        .setCharacteristic(this.platform.Characteristic.Manufacturer, this.deviceManufacturer)
+        .setCharacteristic(this.platform.Characteristic.Model, this.deviceModel)
+        .setCharacteristic(this.platform.Characteristic.FirmwareRevision, this.deviceFirmwareVersion)
+        .setCharacteristic(this.platform.Characteristic.SerialNumber, this.deviceSerialNumber);
       
       // get the TemperatureSensor service if it exists, otherwise create a new TemperatureSensor service
-      // you can create multiple services for each accessory
-      //this.temperatureService = new this.platform.Service.TemperatureSensor(accessory.context.device.deviceName);
-
       this.temperatureService = this.accessory.getService(this.platform.Service.TemperatureSensor)
         || this.accessory.addService(this.platform.Service.TemperatureSensor);
+      
       // set the service name, this is what is displayed as the default name on the Home app
       // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
-
       this.temperatureService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
+      
       //this.service = this.service.addCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity);
       // register handlers for the CurrentTemperature Characteristic
-
       this.temperatureService.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
         .on('get', this.getTemperature.bind(this));
 
       // get the HumiditySensor service if it exists, otherwise create a new HumiditySensor service
-      // you can create multiple services for each accessory
-      //this.humidityService = new this.platform.Service.TemperatureSensor(accessory.context.device.deviceName);
       this.humidityService = this.accessory.getService(this.platform.Service.HumiditySensor)
       || this.accessory.addService(this.platform.Service.HumiditySensor);
+      
       this.humidityService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
       
       // register handlers for the CurrentRelativeHumidity Characteristic
@@ -68,11 +82,6 @@ export class platformSensors {
       setInterval(this.getSensorData.bind(this), this.updateInterval);
       
     } 
-    
-    
-    if ( !this.deviceType ) {
-      return;
-    }
   }
 
   
@@ -87,8 +96,8 @@ export class platformSensors {
       this.temperatureService.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.temperature);
       this.humidityService.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.humidity);
 
-      //this.platform.log(JSON.stringify(data));
-      this.platform.log.debug(JSON.stringify(data));
+      this.platform.log(this.deviceName,': ',JSON.stringify(data));
+      //this.platform.log.debug(JSON.stringify(data));
 
     } catch (error) {
       //this.log('Error fetching data: ', error);

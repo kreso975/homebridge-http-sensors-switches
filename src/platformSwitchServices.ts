@@ -1,8 +1,7 @@
 import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service  } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
-import axios from 'axios';
-
+import axios, { AxiosError } from 'axios';
 
 /**
  * Platform Accessory
@@ -18,6 +17,10 @@ export class platformSwitch {
   public statusStateParam: string = '';
   public statusOnCheck: string = '';
   public statusOffCheck: string = '';
+  public deviceManufacturer: string = '';
+  public deviceModel: string = '';
+  public deviceSerialNumber: string = '';
+  public deviceFirmwareVersion: string = '';
   public url = '';
 
 
@@ -29,19 +32,29 @@ export class platformSwitch {
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
   ) {
-    // set accessory information
-    this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Stergo')
-      .setCharacteristic(this.platform.Characteristic.Model, 'Switch')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.UUID);
 
-    
     this.deviceType = this.accessory.context.device.deviceType;
     this.deviceName = this.accessory.context.device.deviceName || 'NoName';
-    
+    this.deviceManufacturer = this.accessory.context.device.deviceManufacturer || 'Stergo';
+    this.deviceModel = this.accessory.context.device.deviceModel || 'Switch';
+    this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
+    this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
+
+    if ( !this.deviceType) {
+      this.platform.log.warn('Ignoring accessory; No deviceType defined.');
+      return;
+    }
+
     if ( this.deviceType === 'Switch') {
-      // get the Switch service if it exists, otherwise create a new Switch service
+
+      // set accessory information
+      this.accessory.getService(this.platform.Service.AccessoryInformation)!
+        .setCharacteristic(this.platform.Characteristic.Manufacturer, this.deviceManufacturer)
+        .setCharacteristic(this.platform.Characteristic.Model, this.deviceModel)
+        .setCharacteristic(this.platform.Characteristic.FirmwareRevision, this.deviceFirmwareVersion)
+        .setCharacteristic(this.platform.Characteristic.SerialNumber, this.deviceSerialNumber);
       
+      // get the Switch service if it exists, otherwise create a new Switch service
       this.service = this.accessory.getService(this.platform.Service.Switch) || this.accessory.addService(this.platform.Service.Switch);
 
       // set the service name, this is what is displayed as the default name on the Home app
@@ -51,6 +64,7 @@ export class platformSwitch {
       // each service must implement at-minimum the "required characteristics" for the given service type
       // see https://developers.homebridge.io/#/service/Lightbulb
 
+      // Try to fetch init power Status of device
       this.getOnLoad();
 
       // register handlers for the On/Off Characteristic
@@ -60,12 +74,7 @@ export class platformSwitch {
           callback(null, this.switchStates.On);
         });
 
-    }
-    // Try to fetch init power Status of device
-    
-    if ( !this.deviceType ) {
-      return;
-    }
+    } 
   }
 
   /**
@@ -104,13 +113,16 @@ export class platformSwitch {
       // Let's reverse On value since we couldn't reach URL
         this.service.updateCharacteristic(this.platform.Characteristic.On, !this.switchStates.On);
         this.switchStates.On = !value;
-        this.platform.log.debug('Setting power state to :', this.switchStates.On  );
-        this.platform.log.debug('Error: ', error);
-        callback(error);
+        //this.platform.log.debug('Setting power state to :', this.switchStates.On  );
+        this.platform.log.warn('Setting power state to :', this.switchStates.On  );
+        //this.platform.log.debug('Error: ', error);
+        this.platform.log.warn(this.deviceName,': Error: ', error.message);
+        //callback(error);
       });
 
     callback(null);
-    this.platform.log.debug('Success: Switch ',this.deviceName,' is: ', value);
+    //this.platform.log.debug('Success: Switch ',this.deviceName,' is: ', value);
+    this.platform.log('Success: Switch ',this.deviceName,' is: ', this.switchStates.On);
   }
 
   async getOnLoad() {
@@ -141,8 +153,12 @@ export class platformSwitch {
       } else {
         return;
       }
-    } catch (error) {
-      this.platform.log.debug('Error fetching data: ', error);    
+    } catch (e) {
+      const error = e as AxiosError;
+      if (axios.isAxiosError(error)) {
+        this.platform.log.warn(this.deviceName,': Error: ', error.message );
+      }
+      
     }
   }
 }
