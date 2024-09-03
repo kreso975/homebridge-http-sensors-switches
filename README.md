@@ -126,3 +126,11 @@
 | temperatureName 	| JSON param name for Temperature reading 	| true 	|
 | humidityName 	| JSON param name for Humidity reading 	| true 	|
 | updateInterval 	| update interval for reading Sensors, default is 60000 	| false 	|
+
+
+Compromise: Switch accessory in order to work properly getStatus is bind in 5 sec interval. This is for passive devices not pushing status
+I have several built by my self like ESP8266 with relay and just switching state. I do have JSON showing status like this:
+```
+{
+    "POWER": "ON"
+}

@@ -77,8 +77,10 @@ export class platformSwitch {
       // each service must implement at-minimum the "required characteristics" for the given service type
       // see https://developers.homebridge.io/#/service/Lightbulb
 
-      // Try to fetch init power Status of device
-      this.getOnLoad();
+      // Try to fetch init power Status of device and check the status every 5 sec
+      // We are checking status because if it's manualy changed/switched Homekit is not notified
+      this.getOn();
+      setInterval(this.getOn.bind(this), 5000);
 
       // register handlers for the On/Off Characteristic
       this.service.getCharacteristic(this.platform.Characteristic.On)
@@ -86,7 +88,6 @@ export class platformSwitch {
         .on('get', (callback) => {
           callback(null, this.switchStates.On);
         });
-
     } 
   }
 
@@ -138,7 +139,7 @@ export class platformSwitch {
     this.platform.log.info('Success: Switch ',this.deviceName,' is: ', this.switchStates.On);
   }
 
-  async getOnLoad() {
+  async getOn() {
     // Check if we have Status URL setup
     // this.platform.log.debug(this.accessory.context.device.urlStatus);
     if (!this.urlStatus) {
@@ -148,24 +149,37 @@ export class platformSwitch {
 
     try {
       //this.platform.log.debug(this.accessory.context.device.urlStatus);
-      const response = await axios.get(this.urlStatus);
+      const response = await axios({
+        url: this.urlStatus,
+        method: 'get',
+        timeout: 8000,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       const data = response.data;
 
       if( data[this.statusStateParam] === this.statusOnCheck ) {
-        this.switchStates.On = true;
-        this.platform.log.debug('Switch is ON');
-        this.service.updateCharacteristic(this.platform.Characteristic.On, true);
+        
+        if( this.switchStates.On !== true ) {
+          this.switchStates.On = true;
+          this.platform.log.info('Switch is ON');
+          this.service.updateCharacteristic(this.platform.Characteristic.On, true);
+        }
       } else if ( data[this.statusStateParam] === this.statusOffCheck ) {
-        this.switchStates.On = false;
-        this.platform.log.debug('Switch is OFF');
-        this.service.updateCharacteristic(this.platform.Characteristic.On, false);
+
+        if( this.switchStates.On !== false ) {
+          this.switchStates.On = false;
+          this.platform.log.info('Switch is OFF');
+          this.service.updateCharacteristic(this.platform.Characteristic.On, false);
+        }
       } else {
         return;
       }
     } catch (e) {
       const error = e as AxiosError;
       if (axios.isAxiosError(error)) {
-        this.platform.log.warn(this.deviceName,': Error: ', error.message );
+        this.platform.log.debug(this.deviceName,': Error: ', error.message );
       }
       
     }
