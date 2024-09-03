@@ -108,7 +108,7 @@
 ### ⚙️ Config params
 
 | **Param** 	| **Description** 	| **Param needed** 	|
-|:---:	|:---:	|:---:	|
+|---	|---	|:---:	|
 | deviceType 	| Sensor or Switch 	| true 	|
 | deviceName 	| Name for Your Accessory 	| true 	|
 | deviceID 	| Uniqe ID for this Accessory 	| true 	|
@@ -118,3 +118,11 @@
 | deviceFirmwareVersion 	| Firmware running on device 	| false 	|
 | urlON 	| URL for Switch turn ON 	| true 	|
 | urlOFF 	| URL for Switch turn OFF 	| true 	|
+| urlStatus 	| URL for reading status of Switch (on/off) 	| true 	|
+| stateName 	| JSON status param 	| true 	|
+| onStatusValue 	| JSON return Value for status ON 	| true 	|
+| offStatusValue 	| JSON return Value for status OFF 	| true 	|
+| sensorUrl 	| JSON file containing sensor readings (temperature, humidity) 	| true 	|
+| temperatureName 	| JSON param name for Temperature reading 	| true 	|
+| humidityName 	| JSON param name for Humidity reading 	| true 	|
+| updateInterval 	| update interval for reading Sensors, default is 60000 	| false 	|
