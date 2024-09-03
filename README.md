@@ -128,7 +128,7 @@
 | updateInterval 	| update interval for reading Sensors, default is 60000 	| false 	|
 
 
-Sensor reads JSON file
+Sensor JSON file example
 ```
 {
     "t": "29.37",
@@ -137,9 +137,9 @@ Sensor reads JSON file
 }
 ```
 
-Compromise: Switch accessory in order to work properly getStatus is bind in 5 sec interval. This is for passive devices not pushing their 
+Compromise: Switch accessory, in order to work properly getStatus is bind in 5 sec interval. This is for passive devices not pushing their 
 status.
-I have several devices built by my self like ESP8266 with relay and I'm just switching state. I do have JSON showing status:
+I have several devices built by my self like ESP8266 with relay and I'm just switching state. I have JSON file showing status:
 ```
 {
     "POWER": "ON"
