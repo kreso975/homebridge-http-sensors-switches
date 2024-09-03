@@ -135,7 +135,7 @@ Sensor reads JSON file
     "h": "48.26",
     "p": "1001.33"
 }
-
+```
 
 Compromise: Switch accessory in order to work properly getStatus is bind in 5 sec interval. This is for passive devices not pushing their 
 status.
@@ -144,3 +144,4 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 {
     "POWER": "ON"
 }
+```
