@@ -6,8 +6,7 @@
 
 <span align="center">
 
-# Homebridge Platform Plugin
-HTTP Sensors and Switches
+## Homebridge Platform Plugin # HTTP Sensors and Switches
 
 </span>
 
