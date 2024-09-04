@@ -16,6 +16,40 @@
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen">
 
 
+This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor.
+
+### Switch
+> [!NOTE]
+> Read Status (On/Of), Turn ON (url), Turn OFF (url)
+
+> [!TIP]
+> If you don't have Manual switch and you don't mind when Homebridge is rebooted your device is going to be set as OFF
+> then you don't have to use Parameter urlStatus. 
+
+> [!IMPORTANT]
+> Parameters required in Config:
+> deviceType = 'Switch',
+> deviceName = 'Name your Accessory',
+> deviceID = 'Put something unique / chars and numbers',
+> urlON = 'URL that triggers your device to change state to ON',
+> urlOFF = 'URL that triggers your device to change state to OFF'
+
+> [!CAUTION]
+> Parameters:
+> urlStatus = 'url points to JSON with device status' when is set it will bind Accessory to 5 sec check status interval
+
+
+### Temperature and Humidity sensor
+Sensor - Read JSON for Temperature, Humidity
+
+Sensor JSON file example
+```
+{
+    "t": "29.37",
+    "h": "48.26",
+    "p": "1001.33"
+}
+```
 
 > [!IMPORTANT]
 > **Homebridge v2.0 Information**
@@ -127,14 +161,7 @@
 | updateInterval 	| update interval for reading Sensors, default is 60000 = 60 seconds = 1 minute 	| false 	|
 
 
-Sensor JSON file example
-```
-{
-    "t": "29.37",
-    "h": "48.26",
-    "p": "1001.33"
-}
-```
+
 
 Compromise: Switch accessory, in order to work properly getStatus is bind in 5 sec interval. This is for passive devices not pushing their 
 status.
