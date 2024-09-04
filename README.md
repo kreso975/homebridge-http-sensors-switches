@@ -97,7 +97,6 @@
                     "deviceName": "Balcony",
                     "sensorUrl": "http://192.168.1.72/mesures.json",
                     "temperatureName": "t",
-                    "humidityName": "h",
                     "updateInterval": 300000
                 }
             ]
