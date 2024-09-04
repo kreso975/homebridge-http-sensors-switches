@@ -79,9 +79,12 @@ export class platformSwitch {
 
       // Try to fetch init power Status of device and check the status every 5 sec
       // We are checking status because if it's manualy changed/switched Homekit is not notified
-      this.getOn();
-      setInterval(this.getOn.bind(this), 5000);
-
+      // If we do not have urlStatus defined in config we will skip reading Switch status
+      if ( this.urlStatus ) {
+        this.getOn();
+        setInterval(this.getOn.bind(this), 5000);
+      }
+      
       // register handlers for the On/Off Characteristic
       this.service.getCharacteristic(this.platform.Characteristic.On)
         .on('set', this.setOn.bind(this))
