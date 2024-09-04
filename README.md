@@ -6,7 +6,7 @@
 
 <span align="center">
 
-## Homebridge Platform Plugin
+### Homebridge Platform Plugin
 # HTTP Sensors and Switches
 
 </span>
@@ -18,7 +18,7 @@
 
 This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor.
 
-<br><br>
+<br>
 ### 💡 Switch
 > [!NOTE]
 > Read Status (On/Of), Turn ON (url), Turn OFF (url)
@@ -43,8 +43,9 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
 {
     "POWER": "ON"
 }
-```<br><br>
-  
+```
+
+<br>  
 ## 🌡️ Temperature and Humidity sensor
 > [!NOTE]
 > Sensor - Read JSON for Temperature, Humidity
