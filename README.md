@@ -2,13 +2,13 @@
 
 <img src="https://github.com/homebridge/branding/raw/latest/logos/homebridge-wordmark-logo-vertical.png" width="150">
 
-## Homebridge Platform Plugin
-
 </p>
 
-
 <span align="center">
+
+## Homebridge Platform Plugin< br / >
 # HTTP Sensors and Switches
+
 </span>
 
 **_Requirements:_**<br>
@@ -44,8 +44,9 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
     "POWER": "ON"
 }
 ```
-< br / >
-< br / >
+
+##
+##
 
 ### Temperature and Humidity sensor
 > [!NOTE]
