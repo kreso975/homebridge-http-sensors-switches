@@ -18,6 +18,7 @@
 
 This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor.
 
+
 ### Switch
 > [!NOTE]
 > Read Status (On/Of), Turn ON (url), Turn OFF (url)
@@ -28,6 +29,7 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
 
 > [!IMPORTANT]
 > Parameters required in Config:
+> 
 > deviceType = 'Switch',
 > deviceName = 'Name your Accessory',
 > deviceID = 'Put something unique / chars and numbers',
@@ -37,6 +39,12 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
 > [!CAUTION]
 > Parameters:
 > urlStatus = 'url points to JSON with device status' when is set it will bind Accessory to 5 sec check status interval
+```
+{
+    "POWER": "ON"
+}
+```
+
 
 
 ### Temperature and Humidity sensor
