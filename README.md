@@ -60,30 +60,11 @@ Sensor JSON file example
     "p": "1001.33"
 }
 ```
-
 <p>
 <br><br>
 </p>
 
-> [!IMPORTANT]
-> **Homebridge v2.0 Information**
->
-> This template currently has a
-> - `package.json -> engines.homebridge` value of `"^1.8.0 || ^2.0.0-beta.0"`
-> - `package.json -> devDependencies.homebridge` value of `"^2.0.0-beta.0"`
->
-> This is to ensure that this plugin will build and run on both Homebridge v1 and v2.
->
-
-> [!IMPORTANT]
-> **Node v22 Information**
->
-> This template currently has a
-> - `package.json -> engines.node` value of `"^18.20.4 || ^20.16.0 || ^22.5.1"`
->
-> This plugin should be supporting Node v22 from October 2024.
-
-### ⚙️ Config example
+## ⚙️ Config example
 
 ```
 {
@@ -152,7 +133,11 @@ Sensor JSON file example
     ]
 }
 ```
-### ⚙️ Config params
+<p>
+<br><br>
+</p>
+
+## ⚙️ Config params
 
 | **Param** 	| **Description** 	| **Param needed** 	|
 |---	|---	|:---:	|
@@ -174,8 +159,9 @@ Sensor JSON file example
 | humidityName 	| JSON param name for Humidity reading 	| true 	|
 | updateInterval 	| update interval for reading Sensors, default is 60000 = 60 seconds = 1 minute 	| false 	|
 
-
-
+<p>
+<br>
+</p>
 
 Compromise: Switch accessory, in order to work properly getStatus is bind in 5 sec interval. This is for passive devices not pushing their 
 status.
@@ -185,3 +171,24 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
     "POWER": "ON"
 }
 ```
+<p>
+<br><br>
+</p>
+
+> [!IMPORTANT]
+> **Homebridge v2.0 Information**
+>
+> This template currently has a
+> - `package.json -> engines.homebridge` value of `"^1.8.0 || ^2.0.0-beta.0"`
+> - `package.json -> devDependencies.homebridge` value of `"^2.0.0-beta.0"`
+>
+> This is to ensure that this plugin will build and run on both Homebridge v1 and v2.
+>
+
+> [!IMPORTANT]
+> **Node v22 Information**
+>
+> This template currently has a
+> - `package.json -> engines.node` value of `"^18.20.4 || ^20.16.0 || ^22.5.1"`
+>
+> This plugin should be supporting Node v22 from October 2024.
