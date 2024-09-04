@@ -124,7 +124,7 @@
 | sensorUrl 	| JSON file containing sensor readings (temperature, humidity) 	| true 	|
 | temperatureName 	| JSON param name for Temperature reading 	| true 	|
 | humidityName 	| JSON param name for Humidity reading 	| true 	|
-| updateInterval 	| update interval for reading Sensors, default is 60000 	| false 	|
+| updateInterval 	| update interval for reading Sensors, default is 60000 = 60 seconds = 1 minute 	| false 	|
 
 
 Sensor JSON file example
