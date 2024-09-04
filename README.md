@@ -61,6 +61,10 @@ Sensor JSON file example
 }
 ```
 
+<p>
+<br><br>
+</p>
+
 > [!IMPORTANT]
 > **Homebridge v2.0 Information**
 >
