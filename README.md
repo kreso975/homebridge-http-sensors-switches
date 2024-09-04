@@ -23,7 +23,7 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
 > Read Status (On/Of), Turn ON (url), Turn OFF (url)
 
 > [!TIP]
-> If you don't have Manual switch and you don't mind when Homebridge is rebooted your device is going to be set as OFF
+> If you don't have Manual switch and you don't mind when Homebridge is rebooted, your device is going to be set as OFF
 > then you don't have to use Parameter urlStatus. 
 
 > [!IMPORTANT]
