@@ -18,7 +18,7 @@
 
 This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor.
 
-
+<br><br>
 ### 💡 Switch
 > [!NOTE]
 > Read Status (On/Of), Turn ON (url), Turn OFF (url)
@@ -43,13 +43,9 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
 {
     "POWER": "ON"
 }
-```
+```<br><br>
   
-<p>
-
 ## 🌡️ Temperature and Humidity sensor
-
-</p>
 > [!NOTE]
 > Sensor - Read JSON for Temperature, Humidity
 
