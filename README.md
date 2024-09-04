@@ -6,7 +6,7 @@
 
 <span align="center">
 
-## Homebridge Platform Plugin\ # HTTP Sensors and Switches
+## Homebridge Platform Plugin\\ # HTTP Sensors and Switches
 
 </span>
 
@@ -44,8 +44,8 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
 }
 ```
 
-\
-\
+\\
+\\
 
 ### Temperature and Humidity sensor
 > [!NOTE]
