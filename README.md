@@ -6,7 +6,8 @@
 
 <span align="center">
 
-## Homebridge Platform Plugin\\ # HTTP Sensors and Switches
+## Homebridge Platform Plugin
+# HTTP Sensors and Switches
 
 </span>
 
@@ -18,7 +19,7 @@
 This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor.
 
 
-### Switch
+### 💡 Switch
 > [!NOTE]
 > Read Status (On/Of), Turn ON (url), Turn OFF (url)
 
@@ -29,10 +30,10 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
 > [!IMPORTANT]
 > Parameters required in Config:
 > 
-> deviceType = 'Switch',
-> deviceName = 'Name your Accessory',
-> deviceID = 'Put something unique / chars and numbers',
-> urlON = 'URL that triggers your device to change state to ON',
+> deviceType = 'Switch',  
+> deviceName = 'Name your Accessory',  
+> deviceID = 'Put something unique / chars and numbers',  
+> urlON = 'URL that triggers your device to change state to ON',  
 > urlOFF = 'URL that triggers your device to change state to OFF'
 
 > [!CAUTION]
@@ -43,11 +44,9 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
     "POWER": "ON"
 }
 ```
+\
 
-\\
-\\
-
-### Temperature and Humidity sensor
+### 🌡️ Temperature and Humidity sensor
 > [!NOTE]
 > Sensor - Read JSON for Temperature, Humidity
 
