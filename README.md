@@ -44,9 +44,9 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
     "POWER": "ON"
 }
 ```
+__<br><br>
   
-   
-<br><br>## 🌡️ Temperature and Humidity sensor
+>## 🌡️ Temperature and Humidity sensor
 > [!NOTE]
 > Sensor - Read JSON for Temperature, Humidity
 
