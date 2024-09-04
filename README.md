@@ -16,10 +16,10 @@
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen">
 
 
-This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor.<br>
+This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor.<br><br>
   
   
-### 💡 Switch
+## 💡 Switch
 > [!NOTE]
 > Read Status (On/Of), Turn ON (url), Turn OFF (url)
 
@@ -46,7 +46,7 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
 ```
   
    
-## 🌡️ Temperature and Humidity sensor
+<br><br>## 🌡️ Temperature and Humidity sensor
 > [!NOTE]
 > Sensor - Read JSON for Temperature, Humidity
 
