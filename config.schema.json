@@ -123,6 +123,42 @@
             "description": "",
             "type": "integer",
             "required": false
+          },
+          "mqttBroker": {
+            "title": "URL Broker",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "mqttPort": {
+            "title": "MQTT port",
+            "description": "1883",
+            "type": "number",
+            "required": false
+          },
+          "mqttTemperature": {
+            "title": "mqtt Topic Temperature",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "mqttHumidity": {
+            "title": "mqtt Topic Humidity",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "mqttUsername": {
+            "title": "MQTT Username",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "mqttPassword": {
+            "title": "MQTT Password",
+            "description": "",
+            "type": "string",
+            "required": false
           }
         }
       }

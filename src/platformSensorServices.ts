@@ -2,6 +2,9 @@ import { PlatformAccessory, Service  } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
+import mqtt from 'mqtt';
+
+
 
 /**
  * Platform Accessory
@@ -24,11 +27,24 @@ export class platformSensors {
   public temperatureName: string = '';
   public humidityName: string = '';
   public airPressureName: string = '';
+
+  public mqttBroker: string = '';
+  public mqttPort: string = '';
+  public mqttTemperature: string = '';
+  public mqttHumidity: string = '';
+  public mqttUsername: string = '';
+  public mqttPassword: string = '';
+  public mqttSubscribeTopics = Array;
+
+  public mqttOptions = {};
   
   public currentTemperature: number = 20;
   public currentHumidity: number = 50;
   public updateInterval = 300000;
   
+
+  
+
   constructor(
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
@@ -48,11 +64,27 @@ export class platformSensors {
     this.airPressureName = this.accessory.context.device.airPressureName;
     this.updateInterval = accessory.context.device.updateInterval || 300000; // Default update interval is 300 seconds
 
+    this.mqttBroker = accessory.context.device.mqttBroker;
+    this.mqttPort = accessory.context.device.mqttPort;
+    this.mqttTemperature = accessory.context.device.mqttTemperature;
+    this.mqttHumidity = accessory.context.device.mqttHumidity;
+    this.mqttUsername = accessory.context.device.mqttUsername;
+    this.mqttPassword = accessory.context.device.mqttPassword;
+
+    this.mqttOptions = {
+      keepalive: 10,
+      clientId: this.deviceName,
+      clean: true,
+      username: 'testuser',
+      password: 'testuser',
+      rejectUnauthorized: false,
+    };
+
     if ( !this.deviceType ) {
       return;
     }
 
-    if ( this.deviceType === 'Sensor' && this.sensorUrl ) {
+    if ( this.deviceType === 'Sensor' && ( this.sensorUrl || this.mqttBroker ) ) {
 
       // set accessory information
       this.accessory.getService(this.platform.Service.AccessoryInformation)!
@@ -62,7 +94,7 @@ export class platformSensors {
         .setCharacteristic(this.platform.Characteristic.SerialNumber, this.deviceSerialNumber);
 
       // If we have Config setup for Temperature
-      if ( this.temperatureName ) {
+      if ( this.temperatureName || this.mqttTemperature ) {
         // get the TemperatureSensor service if it exists, otherwise create a new TemperatureSensor service
         this.temperatureService = this.accessory.getService(this.platform.Service.TemperatureSensor)
           || this.accessory.addService(this.platform.Service.TemperatureSensor);
@@ -78,7 +110,7 @@ export class platformSensors {
       }
 
       // If we have Config setup for Humidity
-      if ( this.humidityName ) {
+      if ( this.humidityName || this.mqttHumidity ) {
         // get the HumiditySensor service if it exists, otherwise create a new HumiditySensor service
         this.humidityService = this.accessory.getService(this.platform.Service.HumiditySensor)
           || this.accessory.addService(this.platform.Service.HumiditySensor);
@@ -95,9 +127,17 @@ export class platformSensors {
       if ( this.airPressureName ) {
         this.platform.log.info(this.deviceName,': ',this.airPressureName);
       }
-      //
-      this.getSensorData();
-      setInterval(this.getSensorData.bind(this), this.updateInterval);
+      
+      // We can now use MQTT
+      if ( this.mqttBroker ){
+        this.getSensorDataMQTT();
+      }
+      
+      // IF we are going with JSON over HTTP
+      if ( this.sensorUrl ){
+        this.getSensorData();
+        setInterval(this.getSensorData.bind(this), this.updateInterval);
+      }
       
     } 
   }
@@ -142,5 +182,46 @@ export class platformSensors {
 
   async getHumidity(callback: (arg0: null, arg1: number) => void) {
     callback(null, this.currentHumidity);
+  }
+  
+  //
+  // Connect to MQTT and update Temperature and Humidity
+  getSensorDataMQTT() {
+    const mqttSubscribedTopics: string | string[] | mqtt.ISubscriptionMap = [];
+    if (this.mqttTemperature) {
+      //this.mqttSubscribeTopics(this.mqttTemperature);
+      mqttSubscribedTopics.push(this.mqttTemperature);
+    }
+    if (this.mqttHumidity) {
+      //this.mqttSubscribeTopics(this.mqttHumidity);
+      mqttSubscribedTopics.push(this.mqttHumidity);
+    }
+
+    const client = mqtt.connect( this.mqttBroker, this.mqttOptions);
+    client.on('connect', () => {
+      this.platform.log(this.deviceName,': MQTT Connected');
+      client.subscribe(mqttSubscribedTopics, (err) => {
+        if (!err) {
+          this.platform.log(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
+        }
+        // Need to insert error handler
+      });
+    });
+  
+    client.on('message', (topic, message) => {
+      //this.platform.log(`Received message: ${message.toString()}`);
+      
+      if ( topic === this.mqttTemperature ) {
+        this.platform.log(this.deviceName,': Temperature = ',message.toString());
+        this.currentTemperature = Number(message.toString());
+        this.temperatureService.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.currentTemperature);
+      }
+
+      if ( topic === this.mqttHumidity ) {
+        this.platform.log(this.deviceName,': Humidity = ',message.toString());
+        this.currentHumidity = Number(message.toString());
+        this.humidityService.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.currentHumidity);
+      }
+    });
   }
 }
