@@ -175,6 +175,12 @@ Sensor JSON file example
 | temperatureName 	| JSON param name for Temperature reading 	| true 	|
 | humidityName 	| JSON param name for Humidity reading 	| true 	|
 | updateInterval 	| update interval for reading Sensors, default is 60000 = 60 seconds = 1 minute 	| false 	|
+| mqttBroker 	| URL of MQTT Broker 	| true/fale 	|
+| mqttPort 	| MQTT port 	| false 	|
+| mqttTemperature 	| Temperature Topic 	| true 	|
+| mqttHumidity 	| Humidity Topic 	| true 	|
+| mqttUsername 	| MQTT Broker username 	| false 	|
+| mqttPassword 	| MQTT Broker password 	| false 	|
 
 <p>
 <br>
