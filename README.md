@@ -16,7 +16,8 @@
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen">
 
 
-This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor.<br><br>
+This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor. 
+Temperature and Humidity can also be read using basic MQTT functionality.<br><br>
   
   
 ## 💡 Switch
@@ -50,7 +51,12 @@ This plugin communicate with your devices over HTTP. Currently it supports Switc
 
 ## 🌡️ Temperature and Humidity sensor
 > [!NOTE]
-> Sensor - Read JSON for Temperature, Humidity
+> Sensor - Read JSON Or MQTT for Temperature, Humidity  
+> For JSON read use param sensorUrl  
+> For MQTT use param mqttBroker  
+
+> [!IMPORTANT]
+> MQTT is just an basic implementation, no encription etc.
 
 Sensor JSON file example
 ```
@@ -127,6 +133,17 @@ Sensor JSON file example
                     "sensorUrl": "http://192.168.1.72/mesures.json",
                     "temperatureName": "t",
                     "updateInterval": 300000
+                },
+                {
+                    "deviceType": "Sensor",
+                    "deviceID": "65432258",
+                    "deviceName": "Balcony",
+                    "mqttBroker": "mqtt://192.168.1.200",
+                    "mqttPort": "1883",
+                    "mqttTemperature": "qiot/things/Attic/Temperature",
+                    "mqttHumidity": "qiot/things/Attic/Humidity",
+                    "mqttUsername": "testuser",
+                    "mqttPassword": "testuser"
                 }
             ]
         }

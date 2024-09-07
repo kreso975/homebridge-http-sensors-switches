@@ -53,6 +53,7 @@
     "typescript-eslint": "^8.0.1"
   },
   "dependencies": {
-    "@types/axios": "^0.14.0"
+    "@types/axios": "^0.14.0",
+    "mqtt": "^5.10.1"
   }
 }
