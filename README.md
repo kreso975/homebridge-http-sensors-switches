@@ -13,8 +13,8 @@
 
 **_Requirements:_**<br>
 <img src="https://img.shields.io/badge/node-^18.20.4%20%7C%7C%20^20.16.0%20%7C%7C%20^22.5.1-brightgreen"> &nbsp;
-<img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen">
-
+<img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen"> &nbsp;
+[![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 
 This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor. 
 Temperature and Humidity can also be read using basic MQTT functionality.<br><br>
@@ -214,4 +214,4 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 > This template currently has a
 > - `package.json -> engines.node` value of `"^18.20.4 || ^20.16.0 || ^22.5.1"`
 >
-> This plugin should be supporting Node v22 from October 2024.
+> This plugin should be supporting Node v22 from October 2024.  
