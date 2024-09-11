@@ -38,25 +38,39 @@ Temperature and Humidity can also be read using basic MQTT functionality.<br><br
 > urlOFF = 'URL that triggers your device to change state to OFF'
 
 > [!CAUTION]
-> Parameters:
+> Parameter:
 > urlStatus = 'url points to JSON with device status' when is set it will bind Accessory to 5 sec check status interval
 ```
 {
     "POWER": "ON"
 }
 ```
-<p>
-<br><br>
-</p>
+<br><br>  
+  
 
 ## 🌡️ Temperature and Humidity sensor
 > [!NOTE]
 > Sensor - Read JSON Or MQTT for Temperature, Humidity  
-> For JSON read use param sensorUrl  
-> For MQTT use param mqttBroker  
+>   
+
+> [!TIP]
+> Parameters required in Config:
+> 
+> deviceType = 'Sensor',  
+> deviceName = 'Name your Accessory',  
+> deviceID = 'Put something unique / chars and numbers',  
+>   
+> For JSON read use param sensorUrl:
+> sensorUrl = 'JSON file containing sensor readings (temperature, humidity)',
+>    
+> For MQTT use param mqttBroker:
+> mqttBroker = 'URL of MQTT Broker'  
+>   
 
 > [!IMPORTANT]
-> MQTT is just an basic implementation, no encription etc.
+> MQTT is just an basic implementation, no encription etc.  
+>  
+
 
 Sensor JSON file example
 ```
@@ -66,9 +80,7 @@ Sensor JSON file example
     "p": "1001.33"
 }
 ```
-<p>
-<br><br>
-</p>
+<br>
 
 ## ⚙️ Config example
 
@@ -150,9 +162,7 @@ Sensor JSON file example
     ]
 }
 ```
-<p>
 <br><br>
-</p>
 
 ## ⚙️ Config params
 
@@ -182,9 +192,8 @@ Sensor JSON file example
 | mqttUsername 	| MQTT Broker username 	| false 	|
 | mqttPassword 	| MQTT Broker password 	| false 	|
 
-<p>
-<br>
-</p>
+<br><br>  
+  
 
 Compromise: Switch accessory, in order to work properly getStatus is bind in 5 sec interval. This is for passive devices not pushing their 
 status.
@@ -194,9 +203,8 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
     "POWER": "ON"
 }
 ```
-<p>
-<br><br>
-</p>
+<br><br>  
+  
 
 > [!IMPORTANT]
 > **Homebridge v2.0 Information**
