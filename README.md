@@ -60,10 +60,10 @@ Temperature and Humidity can also be read using basic MQTT functionality.<br><br
 > deviceName = 'Name your Accessory',  
 > deviceID = 'Put something unique / chars and numbers',  
 >   
-> For JSON read use param sensorUrl:
+> For JSON read use param sensorUrl:  
 > sensorUrl = 'JSON file containing sensor readings (temperature, humidity)',
 >    
-> For MQTT use param mqttBroker:
+> For MQTT use param mqttBroker:  
 > mqttBroker = 'URL of MQTT Broker'  
 >   
 
