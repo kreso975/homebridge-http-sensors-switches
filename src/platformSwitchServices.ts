@@ -240,14 +240,14 @@ export class platformSwitch {
     this.mqttClient = mqtt.connect( mqttOptions );
     this.mqttClient.on('connect', () => {
       
-      this.platform.log(this.deviceName,': MQTT Connected');
+      this.platform.log.info(this.deviceName,': MQTT Connected');
 
       this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
-          this.platform.log(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
+          this.platform.log.info(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
         } else {
           // Need to insert error handler
-          this.platform.log(this.deviceName, err.toString());
+          this.platform.log.warn(this.deviceName, err.toString());
         }
       });
     });
@@ -255,7 +255,7 @@ export class platformSwitch {
     this.mqttClient.on('message', (topic, message) => {
       //this.platform.log(this.deviceName,': Received message: ', Number(message));  
       if ( topic === this.mqttSwitch ) {
-        this.platform.log(this.deviceName,': Status set to: ', this.getStatus(Boolean(Number(message))));
+        this.platform.log.info(this.deviceName,': Status set to: ', this.getStatus(Boolean(Number(message))));
         
         if ( message.toString() === '1' ) {
           this.switchStates.On = true;
@@ -271,7 +271,7 @@ export class platformSwitch {
     
     // Handle errors
     this.mqttClient.on('error', (err) => {
-      this.platform.log('Connection error:', err);
+      this.platform.log.warn(this.deviceName, ': Connection error:', err);
       this.mqttClient.end();
     });
 

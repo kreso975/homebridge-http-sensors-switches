@@ -198,14 +198,14 @@ export class platformSensors {
     this.mqttClient = mqtt.connect( mqttOptions);
     this.mqttClient.on('connect', () => {
       
-      this.platform.log(this.deviceName,': MQTT Connected');
+      this.platform.log.info(this.deviceName,': MQTT Connected');
       
       this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
-          this.platform.log(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
+          this.platform.log.info(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
         } else {
           // Need to insert error handler
-          this.platform.log(this.deviceName, err.toString());
+          this.platform.log.warn(this.deviceName, err.toString());
         }
       });
     });
@@ -214,13 +214,13 @@ export class platformSensors {
       //this.platform.log(this.deviceName,': Received message: ${message.toString()}');
       
       if ( topic === this.mqttTemperature ) {
-        this.platform.log(this.deviceName,': Temperature = ',message.toString());
+        this.platform.log.info(this.deviceName,': Temperature = ',message.toString());
         this.currentTemperature = Number(message.toString());
         this.temperatureService.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.currentTemperature);
       }
 
       if ( topic === this.mqttHumidity ) {
-        this.platform.log(this.deviceName,': Humidity = ',message.toString());
+        this.platform.log.info(this.deviceName,': Humidity = ',message.toString());
         this.currentHumidity = Number(message.toString());
         this.humidityService.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.currentHumidity);
       }
