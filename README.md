@@ -150,10 +150,20 @@ Sensor JSON file example
                     "updateInterval": 300000
                 },
                 {
+                    "deviceType": "Switch",
+                    "deviceID": "wqwweqwee65432258",
+                    "deviceName": "Relay",
+                    "mqttBroker": "192.168.1.200",
+                    "mqttPort": "1883",
+                    "mqttSwitch": "iot/things/StergoTestSwitch/switch1",
+                    "mqttUsername": "testuser",
+                    "mqttPassword": "testuser"
+                },
+                {
                     "deviceType": "Sensor",
                     "deviceID": "65432258",
                     "deviceName": "Balcony",
-                    "mqttBroker": "mqtt://192.168.1.200",
+                    "mqttBroker": "192.168.1.200",
                     "mqttPort": "1883",
                     "mqttTemperature": "qiot/things/Attic/Temperature",
                     "mqttHumidity": "qiot/things/Attic/Humidity",
