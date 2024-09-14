@@ -16,8 +16,7 @@
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen"> &nbsp;
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 
-This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor. 
-Temperature, Humidity can also be read using basic MQTT functionality. Switch can be used with MQTT as well.<br><br>
+This plugin communicates with your devices over HTTP and MQTT. Currently it supports Switches and Temperature/Humidity sensor.<br><br>
   
   
 ## 💡 Switch
@@ -150,10 +149,20 @@ Sensor JSON file example
                     "updateInterval": 300000
                 },
                 {
+                    "deviceType": "Switch",
+                    "deviceID": "wqwweqwee65432258",
+                    "deviceName": "Relay",
+                    "mqttBroker": "192.168.1.200",
+                    "mqttPort": "1883",
+                    "mqttSwitch": "iot/things/StergoTestSwitch/switch1",
+                    "mqttUsername": "testuser",
+                    "mqttPassword": "testuser"
+                },
+                {
                     "deviceType": "Sensor",
                     "deviceID": "65432258",
                     "deviceName": "Balcony",
-                    "mqttBroker": "mqtt://192.168.1.200",
+                    "mqttBroker": "192.168.1.200",
                     "mqttPort": "1883",
                     "mqttTemperature": "qiot/things/Attic/Temperature",
                     "mqttHumidity": "qiot/things/Attic/Humidity",
@@ -194,6 +203,7 @@ Sensor JSON file example
 | mqttHumidity 	| Humidity Topic 	| true 	|
 | mqttUsername 	| MQTT Broker username 	| false 	|
 | mqttPassword 	| MQTT Broker password 	| false 	|
+| mqttSwitch 	| Switch Topic 	| true 	|
 
 <br><br>  
   
