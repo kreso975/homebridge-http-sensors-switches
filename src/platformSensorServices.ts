@@ -195,12 +195,12 @@ export class platformSensors {
       mqttSubscribedTopics.push(this.mqttHumidity);
     }
 
-    const client = mqtt.connect( mqttOptions);
-    client.on('connect', () => {
+    this.mqttClient = mqtt.connect( mqttOptions);
+    this.mqttClient.on('connect', () => {
       
       this.platform.log(this.deviceName,': MQTT Connected');
       
-      client.subscribe(mqttSubscribedTopics, (err) => {
+      this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
           this.platform.log(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
         } else {
@@ -210,8 +210,8 @@ export class platformSensors {
       });
     });
   
-    client.on('message', (topic, message) => {
-      //this.platform.log(`Received message: ${message.toString()}`);
+    this.mqttClient.on('message', (topic, message) => {
+      //this.platform.log(this.deviceName,': Received message: ${message.toString()}');
       
       if ( topic === this.mqttTemperature ) {
         this.platform.log(this.deviceName,': Temperature = ',message.toString());
@@ -225,5 +225,13 @@ export class platformSensors {
         this.humidityService.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.currentHumidity);
       }
     });
+
+    
+    // Handle errors
+    this.mqttClient.on('error', (err) => {
+      this.platform.log.warn(this.deviceName,': Connection error:', err);
+      this.mqttClient.end();
+    });
+    
   }
 }

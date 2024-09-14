@@ -92,13 +92,9 @@ export class platformSwitch {
         // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
         this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
 
-        // each service must implement at-minimum the "required characteristics" for the given service type
-        // see https://developers.homebridge.io/#/service/Lightbulb
-
         // Try to fetch init power Status of device and check the status every 5 sec
         // We are checking status because if it's manualy changed/switched Homekit is not notified
         // If we do not have urlStatus defined in config we will skip reading Switch status
-        
         if ( this.urlStatus ) {
           this.getOn();
           setInterval(this.getOn.bind(this), 5000);
@@ -119,12 +115,12 @@ export class platformSwitch {
 
           this.service.getCharacteristic(this.platform.Characteristic.On)
             .on('set', this.publishMQTTmessage.bind(this));
-
         }
       }
     } 
   }
 
+  // Silly function :)
   getStatus(isOn: boolean): string {
     return isOn ? 'ON' : 'OFF';
   }
@@ -133,7 +129,6 @@ export class platformSwitch {
    * Handle "SET" requests from HomeKit
    * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
    */
-  
   async setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     // 
     this.switchStates.On = value as boolean;
@@ -155,38 +150,35 @@ export class platformSwitch {
     }
   
     axios.get(this.url)
-    //  .then((response) => {
-    // handle success
-    //    callback(response.data);
-    //    this.platform.log.debug('Success: ', error);
-    //  })
+      // We are not going to wait, we will presume everything is OK and if it's not Error handler will handle it
+      //  .then((response) => {
+      // handle success
+      //    callback(response.data);
+      //    this.platform.log.debug('Success: ', error);
+      //  })
       .catch((error) => {
-      // handle error
-      // Let's reverse On value since we couldn't reach URL
-        this.service.updateCharacteristic(this.platform.Characteristic.On, !this.switchStates.On);
+        // handle error
+        // Let's reverse On value since we couldn't reach URL
         this.switchStates.On = !value;
-        //this.platform.log.debug('Setting power state to :', this.switchStates.On  );
+        this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
         this.platform.log.warn(this.deviceName,': Setting power state to :', this.switchStates.On  );
-        //this.platform.log.debug('Error: ', error);
+        
         this.platform.log.warn(this.deviceName,': Error: ', error.message);
         //callback(error);
       });
 
     callback(null);
-    //this.platform.log.debug('Success: Switch ',this.deviceName,' is: ', value);
     this.platform.log.info('Success: Switch ',this.deviceName,' is: ', this.getStatus(this.switchStates.On));
   }
 
   async getOn() {
     // Check if we have Status URL setup
-    // this.platform.log.debug(this.accessory.context.device.urlStatus);
     if (!this.urlStatus) {
       this.platform.log.warn(this.deviceName,': Ignoring request; No status url defined.');
       return;
     }
 
     try {
-      //this.platform.log.debug(this.accessory.context.device.urlStatus);
       const response = await axios({
         url: this.urlStatus,
         method: 'get',
@@ -197,6 +189,7 @@ export class platformSwitch {
       });
       const data = response.data;
 
+      // Check against Config value for ON
       if( data[this.statusStateParam] === this.statusOnCheck ) {
         
         if( this.switchStates.On !== true ) {
@@ -204,6 +197,7 @@ export class platformSwitch {
           this.platform.log.info(this.deviceName,': Switch is ON');
           this.service.updateCharacteristic(this.platform.Characteristic.On, true);
         }
+        // Check against Config value for OFF
       } else if ( data[this.statusStateParam] === this.statusOffCheck ) {
 
         if( this.switchStates.On !== false ) {
@@ -259,9 +253,9 @@ export class platformSwitch {
     });
   
     this.mqttClient.on('message', (topic, message) => {
-      //this.platform.log(`Received message: ${message.toString()}`);  
+      //this.platform.log(this.deviceName,': Received message: ', Number(message));  
       if ( topic === this.mqttSwitch ) {
-        this.platform.log(this.deviceName,': Status set to: ', this.getStatus(Boolean(message.toString())));
+        this.platform.log(this.deviceName,': Status set to: ', this.getStatus(Boolean(Number(message))));
         
         if ( message.toString() === '1' ) {
           this.switchStates.On = true;
@@ -273,6 +267,14 @@ export class platformSwitch {
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
       }
     });
+
+    
+    // Handle errors
+    this.mqttClient.on('error', (err) => {
+      this.platform.log('Connection error:', err);
+      this.mqttClient.end();
+    });
+
   }
 
   // Function to publish a message

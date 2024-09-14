@@ -73,12 +73,11 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
         this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
 
         // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. e.g.:
-        // existingAccessory.context.device = device;
-        // this.api.updatePlatformAccessories([existingAccessory]);
+        // We will update the existing accessory.context to ensure that changes in the config take effect.
+        existingAccessory.context.device = device;
+        this.api.updatePlatformAccessories([existingAccessory]);
 
         // create the accessory handler for the restored accessory
-        // this is imported from `platformAccessory.ts`
-        
         switch ( device.deviceType ) {
         case 'Switch':
           new platformSwitch(this, existingAccessory);
@@ -86,8 +85,6 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
         case 'Sensor':
           new platformSensors(this, existingAccessory);
         }
-
-        //new HttpSensorsAndSwitchesHomebridgePlatformAccessory(this, existingAccessory);
 
         // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, e.g.:
         // remove platform accessories when no longer present
@@ -114,8 +111,6 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
           new platformSensors(this, accessory);
         }
         
-        //new HttpSensorsAndSwitchesHomebridgePlatformAccessory(this, accessory);
-
         // link the accessory to your platform
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
       }
