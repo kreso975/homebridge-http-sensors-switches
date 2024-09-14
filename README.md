@@ -204,6 +204,7 @@ Sensor JSON file example
 | mqttHumidity 	| Humidity Topic 	| true 	|
 | mqttUsername 	| MQTT Broker username 	| false 	|
 | mqttPassword 	| MQTT Broker password 	| false 	|
+| mqttSwitch 	| Switch Topic 	| true 	|
 
 <br><br>  
   
