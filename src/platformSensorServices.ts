@@ -2,8 +2,7 @@ import { PlatformAccessory, Service  } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
-import mqtt from 'mqtt';
-
+import * as mqtt from 'mqtt';
 
 
 /**
@@ -14,6 +13,8 @@ import mqtt from 'mqtt';
 export class platformSensors {
   public temperatureService!: Service;
   public humidityService!: Service;
+
+  public mqttClient!: mqtt.MqttClient;
 
   public deviceId: string = '';
   public deviceType: string = '';
@@ -34,15 +35,10 @@ export class platformSensors {
   public mqttHumidity: string = '';
   public mqttUsername: string = '';
   public mqttPassword: string = '';
-  public mqttSubscribeTopics = Array;
-
-  public mqttOptions = {};
-  
+ 
   public currentTemperature: number = 20;
   public currentHumidity: number = 50;
   public updateInterval = 300000;
-  
-
   
 
   constructor(
@@ -70,15 +66,6 @@ export class platformSensors {
     this.mqttHumidity = accessory.context.device.mqttHumidity;
     this.mqttUsername = accessory.context.device.mqttUsername;
     this.mqttPassword = accessory.context.device.mqttPassword;
-
-    this.mqttOptions = {
-      keepalive: 10,
-      clientId: this.deviceName,
-      clean: true,
-      username: 'testuser',
-      password: 'testuser',
-      rejectUnauthorized: false,
-    };
 
     if ( !this.deviceType ) {
       return;
@@ -129,12 +116,12 @@ export class platformSensors {
       }
       
       // We can now use MQTT
-      if ( this.mqttBroker ){
+      if ( this.mqttBroker ) {
         this.getSensorDataMQTT();
       }
       
       // IF we are going with JSON over HTTP
-      if ( this.sensorUrl ){
+      if ( this.sensorUrl ) {
         this.getSensorData();
         setInterval(this.getSensorData.bind(this), this.updateInterval);
       }
@@ -184,27 +171,42 @@ export class platformSensors {
     callback(null, this.currentHumidity);
   }
   
+  
   //
   // Connect to MQTT and update Temperature and Humidity
   getSensorDataMQTT() {
     const mqttSubscribedTopics: string | string[] | mqtt.ISubscriptionMap = [];
+
+    const mqttOptions = {
+      keepalive: 10,
+      host: this.mqttBroker,
+      port: Number(this.mqttPort),
+      clientId: this.deviceName,
+      clean: true,
+      username: this.mqttUsername,
+      password: this.mqttPassword,
+      rejectUnauthorized: false,
+    };  
+
     if (this.mqttTemperature) {
-      //this.mqttSubscribeTopics(this.mqttTemperature);
       mqttSubscribedTopics.push(this.mqttTemperature);
     }
     if (this.mqttHumidity) {
-      //this.mqttSubscribeTopics(this.mqttHumidity);
       mqttSubscribedTopics.push(this.mqttHumidity);
     }
 
-    const client = mqtt.connect( this.mqttBroker, this.mqttOptions);
+    const client = mqtt.connect( mqttOptions);
     client.on('connect', () => {
+      
       this.platform.log(this.deviceName,': MQTT Connected');
+      
       client.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
           this.platform.log(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
+        } else {
+          // Need to insert error handler
+          this.platform.log(err.toString());
         }
-        // Need to insert error handler
       });
     });
   

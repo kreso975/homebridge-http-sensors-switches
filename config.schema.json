@@ -125,7 +125,7 @@
             "required": false
           },
           "mqttBroker": {
-            "title": "URL Broker",
+            "title": "Host Broker",
             "description": "",
             "type": "string",
             "required": false
@@ -156,6 +156,12 @@
           },
           "mqttPassword": {
             "title": "MQTT Password",
+            "description": "",
+            "type": "string",
+            "required": false
+          },
+          "mqttSwitch": {
+            "title": "MQTT Topic Switch",
             "description": "",
             "type": "string",
             "required": false
