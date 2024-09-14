@@ -70,7 +70,7 @@ export class platformSwitch {
   
   
     if ( !this.deviceType) {
-      this.platform.log.warn('Ignoring accessory; No deviceType defined.');
+      this.platform.log.warn(this.deviceName,': Ignoring accessory; No deviceType defined.');
       return;
     }
 
@@ -125,6 +125,10 @@ export class platformSwitch {
     } 
   }
 
+  getStatus(isOn: boolean): string {
+    return isOn ? 'ON' : 'OFF';
+  }
+
   /**
    * Handle "SET" requests from HomeKit
    * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
@@ -135,18 +139,18 @@ export class platformSwitch {
     this.switchStates.On = value as boolean;
     
     if (!this.urlON || !this.urlOFF) {
-      this.platform.log.warn('Ignoring request; No Switch trigger url defined.');
+      this.platform.log.warn(this.deviceName,': Ignoring request; No Switch trigger url defined.');
       callback(new Error('No Switch trigger url defined.'));
       return;
     }
 
     if (this.switchStates.On) {
       this.url = this.urlON;
-      this.platform.log.debug('Setting power state to ON');
+      this.platform.log.debug(this.deviceName,': Setting power state to ON');
       this.service.updateCharacteristic(this.platform.Characteristic.On, true);
     } else {
       this.url = this.urlOFF;
-      this.platform.log.debug('Setting power state to OFF');
+      this.platform.log.debug(this.deviceName,': Setting power state to OFF');
       this.service.updateCharacteristic(this.platform.Characteristic.On, false);
     }
   
@@ -162,7 +166,7 @@ export class platformSwitch {
         this.service.updateCharacteristic(this.platform.Characteristic.On, !this.switchStates.On);
         this.switchStates.On = !value;
         //this.platform.log.debug('Setting power state to :', this.switchStates.On  );
-        this.platform.log.warn('Setting power state to :', this.switchStates.On  );
+        this.platform.log.warn(this.deviceName,': Setting power state to :', this.switchStates.On  );
         //this.platform.log.debug('Error: ', error);
         this.platform.log.warn(this.deviceName,': Error: ', error.message);
         //callback(error);
@@ -170,14 +174,14 @@ export class platformSwitch {
 
     callback(null);
     //this.platform.log.debug('Success: Switch ',this.deviceName,' is: ', value);
-    this.platform.log.info('Success: Switch ',this.deviceName,' is: ', this.switchStates.On);
+    this.platform.log.info('Success: Switch ',this.deviceName,' is: ', this.getStatus(this.switchStates.On));
   }
 
   async getOn() {
     // Check if we have Status URL setup
     // this.platform.log.debug(this.accessory.context.device.urlStatus);
     if (!this.urlStatus) {
-      this.platform.log.warn('Ignoring request; No status url defined.');
+      this.platform.log.warn(this.deviceName,': Ignoring request; No status url defined.');
       return;
     }
 
@@ -197,14 +201,14 @@ export class platformSwitch {
         
         if( this.switchStates.On !== true ) {
           this.switchStates.On = true;
-          this.platform.log.info('Switch is ON');
+          this.platform.log.info(this.deviceName,': Switch is ON');
           this.service.updateCharacteristic(this.platform.Characteristic.On, true);
         }
       } else if ( data[this.statusStateParam] === this.statusOffCheck ) {
 
         if( this.switchStates.On !== false ) {
           this.switchStates.On = false;
-          this.platform.log.info('Switch is OFF');
+          this.platform.log.info(this.deviceName,': Switch is OFF');
           this.service.updateCharacteristic(this.platform.Characteristic.On, false);
         }
       } else {
@@ -219,9 +223,6 @@ export class platformSwitch {
     }
   }
 
-  getStatus(isOn: boolean): string {
-    return isOn ? 'ON' : 'OFF';
-  }
   //
   // Connect to MQTT and update Switches
   initMQTT() {
@@ -252,7 +253,7 @@ export class platformSwitch {
           this.platform.log(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
         } else {
           // Need to insert error handler
-          this.platform.log(err.toString());
+          this.platform.log(this.deviceName, err.toString());
         }
       });
     });

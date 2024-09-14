@@ -205,7 +205,7 @@ export class platformSensors {
           this.platform.log(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
         } else {
           // Need to insert error handler
-          this.platform.log(err.toString());
+          this.platform.log(this.deviceName, err.toString());
         }
       });
     });

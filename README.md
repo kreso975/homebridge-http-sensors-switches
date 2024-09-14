@@ -17,19 +17,22 @@
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 
 This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor. 
-Temperature and Humidity can also be read using basic MQTT functionality.<br><br>
+Temperature, Humidity can also be read using basic MQTT functionality. Switch can be used with MQTT as well.<br><br>
   
   
 ## 💡 Switch
 > [!NOTE]
-> Read Status (On/Off), Turn ON (url), Turn OFF (url)
+> HTTP - Read Status (On/Off), Turn ON (url), Turn OFF (url)  
+> MQTT - Turn ON/OFF
 
 > [!TIP]
 > If you don't have Manual switch and you don't mind when Homebridge is rebooted, your device is going to be set as OFF
 > then you don't have to use Parameter urlStatus. 
 
 > [!IMPORTANT]
-> Parameters required in Config:
+> Use HTTP or MQTT not both for same accessory.  
+>   
+> Parameters required in Config:  
 > 
 > deviceType = 'Switch',  
 > deviceName = 'Name your Accessory',  
