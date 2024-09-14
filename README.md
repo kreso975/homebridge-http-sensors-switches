@@ -16,8 +16,7 @@
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen"> &nbsp;
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 
-This plugin communicate with your devices over HTTP. Currently it supports Switches and Temperature/Humidity sensor. 
-Temperature, Humidity can also be read using basic MQTT functionality. Switch can be used with MQTT as well.<br><br>
+This plugin communicates with your devices over HTTP and MQTT. Currently it supports Switches and Temperature/Humidity sensor.<br><br>
   
   
 ## 💡 Switch
