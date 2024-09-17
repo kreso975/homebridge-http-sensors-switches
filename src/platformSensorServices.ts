@@ -2,7 +2,7 @@ import { PlatformAccessory, Service  } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
-import * as mqtt from 'mqtt';
+import mqtt, { IClientOptions }  from 'mqtt';
 
 
 /**
@@ -49,7 +49,7 @@ export class platformSensors {
     this.deviceType = this.accessory.context.device.deviceType;
     this.deviceName = this.accessory.context.device.deviceName || 'NoName';
     this.deviceManufacturer = this.accessory.context.device.deviceManufacturer || 'Stergo';
-    this.deviceModel = this.accessory.context.device.deviceModel || 'Switch';
+    this.deviceModel = this.accessory.context.device.deviceModel || 'Sensor';
     this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
     this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
     
@@ -177,8 +177,9 @@ export class platformSensors {
   getSensorDataMQTT() {
     const mqttSubscribedTopics: string | string[] | mqtt.ISubscriptionMap = [];
 
-    const mqttOptions = {
+    const mqttOptions: IClientOptions = {
       keepalive: 10,
+      protocol: 'mqtt',
       host: this.mqttBroker,
       port: Number(this.mqttPort),
       clientId: this.deviceName,
@@ -196,10 +197,10 @@ export class platformSensors {
     }
 
     this.mqttClient = mqtt.connect( mqttOptions);
+    
     this.mqttClient.on('connect', () => {
-      
-      this.platform.log.info(this.deviceName,': MQTT Connected');
-      
+    
+      this.platform.log.info(this.deviceName,': MQTT Connected');  
       this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
           this.platform.log.info(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
@@ -226,6 +227,17 @@ export class platformSensors {
       }
     });
 
+    this.mqttClient.on('offline', () => {
+      this.platform.log.debug(this.deviceName,': Client is offline');
+    });
+
+    this.mqttClient.on('reconnect', () => {
+      this.platform.log.debug(this.deviceName,': Reconnecting...');
+    });
+    
+    this.mqttClient.on('close', () => {
+      this.platform.log.debug(this.deviceName,': Connection closed');
+    });
     
     // Handle errors
     this.mqttClient.on('error', (err) => {

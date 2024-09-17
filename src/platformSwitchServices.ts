@@ -2,7 +2,7 @@ import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Serv
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
-import * as mqtt from 'mqtt';
+import mqtt, { IClientOptions } from 'mqtt';
 
 /**
  * Platform Accessory
@@ -222,8 +222,9 @@ export class platformSwitch {
   initMQTT() {
     const mqttSubscribedTopics: string | string[] | mqtt.ISubscriptionMap = [];
 
-    const mqttOptions = {
+    const mqttOptions: IClientOptions = {
       keepalive: 10,
+      protocol: 'mqtt',
       host: this.mqttBroker,
       port: Number(this.mqttPort),
       clientId: this.deviceName,
@@ -268,6 +269,17 @@ export class platformSwitch {
       }
     });
 
+    this.mqttClient.on('offline', () => {
+      this.platform.log.debug(this.deviceName,': Client is offline');
+    });
+
+    this.mqttClient.on('reconnect', () => {
+      this.platform.log.debug(this.deviceName,': Reconnecting...');
+    });
+    
+    this.mqttClient.on('close', () => {
+      this.platform.log.debug(this.deviceName,': Connection closed');
+    });
     
     // Handle errors
     this.mqttClient.on('error', (err) => {
@@ -284,7 +296,7 @@ export class platformSwitch {
 
     this.mqttClient.publish(this.mqttSwitch, String(Number(!this.switchStates.On)), { qos: 1, retain: true }, (err) => {
       if (err) {
-        this.platform.log.debug(this.deviceName, ': Failed to publish message:', err);
+        this.platform.log.debug(this.deviceName, ': Failed to publish message: ', err);
       } else {
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
         this.platform.log.debug(this.deviceName, ': Message published successfully');
