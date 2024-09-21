@@ -32,7 +32,7 @@ Simple Discord Webhooks available in Switches
 > If you don't have Manual switch and you don't mind when Homebridge is rebooted, your device is going to be set as OFF
 > then you don't have to use Parameter urlStatus. 
 >  
-> How to setup Discord Webhooks: [link](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks){:target="_blank" rel="noopener noreferrer"}
+> How to setup Discord Webhooks: [link](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks)
 
 > [!IMPORTANT]
 > Use HTTP or MQTT not both for same accessory.  
