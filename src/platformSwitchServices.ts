@@ -3,6 +3,7 @@ import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
+import { discordWebHooks } from './inc/discordWebHooks.js';
 
 /**
  * Platform Accessory
@@ -37,6 +38,11 @@ export class platformSwitch {
   public mqttUsername: string = '';
   public mqttPassword: string = '';
 
+  public discordWebhook: string = '';
+  public discordUsername: string = '';
+  public discordAvatar: string = '';
+  public discordMessage: string = '';
+
   public switchStates = {
     On: false,
   };
@@ -66,7 +72,12 @@ export class platformSwitch {
     this.mqttPort = accessory.context.device.mqttPort;
     this.mqttSwitch = accessory.context.device.mqttSwitch;
     this.mqttUsername = accessory.context.device.mqttUsername;
-    this.mqttPassword = accessory.context.device.mqttPassword;    
+    this.mqttPassword = accessory.context.device.mqttPassword;
+
+    this.discordWebhook = this.accessory.context.device.discordWebhook;
+    this.discordUsername = this.accessory.context.device.discordUsername;
+    this.discordAvatar = this.accessory.context.device.discordAvatar;
+    this.discordMessage = this.accessory.context.device.discordMessage;
   
   
     if ( !this.deviceType) {
@@ -300,9 +311,19 @@ export class platformSwitch {
       } else {
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
         this.platform.log.debug(this.deviceName, ': Message published successfully');
+        const ret = this.initDiscordWebhooks();
+        this.platform.log.debug(String(ret));
       }
     });
 
     callback(null);
+  }
+
+  initDiscordWebhooks(){
+    // mozda
+    const message = this.discordMessage+this.getStatus(this.switchStates.On);
+    const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
+    const as = discord.discordSimpleSend();
+    return as;
   }
 }
