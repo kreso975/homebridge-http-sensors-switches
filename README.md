@@ -16,7 +16,7 @@
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen"> &nbsp;
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 
-This plugin communicates with your devices over HTTP or MQTT. Currently it supports Switches and Temperature/Humidity sensor. 
+This plugin communicates with your devices over HTTP or MQTT. Currently it supports Switches and Temperature/Humidity sensor.  
 Simple Discord Webhooks available in Switches  
 
 <br><br>
@@ -25,14 +25,14 @@ Simple Discord Webhooks available in Switches
 ## 💡 Switch
 > [!NOTE]
 > HTTP - Read Status (On/Off), Turn ON (url), Turn OFF (url)  
-> MQTT - Turn ON/OFF | Values On = 1, Off = 0
-> Dicord Webhook publishes switch status to your Discord channel
+> MQTT - Turn ON/OFF | Values: On = 1, Off = 0    
+> Dicord Webhook publishes switch status to your Discord channel    
 
 > [!TIP]
 > If you don't have Manual switch and you don't mind when Homebridge is rebooted, your device is going to be set as OFF
 > then you don't have to use Parameter urlStatus. 
 >  
-> How to setup Discord Webhooks: [Link](https://github.com/user/repo/blob/branch/other_file.md)
+> How to setup Discord Webhooks: [link](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks)
 
 > [!IMPORTANT]
 > Use HTTP or MQTT not both for same accessory.  
@@ -156,13 +156,17 @@ Sensor JSON file example
                 },
                 {
                     "deviceType": "Switch",
-                    "deviceID": "wqwweqwee65432258",
+                    "deviceID": "21wqwweqwee65432258",
                     "deviceName": "Relay",
                     "mqttBroker": "192.168.1.200",
                     "mqttPort": "1883",
                     "mqttSwitch": "iot/things/StergoTestSwitch/switch1",
                     "mqttUsername": "testuser",
-                    "mqttPassword": "testuser"
+                    "mqttPassword": "testuser",
+                    "discordWebhook": "https://discordapp.com/api/webhooks/XXXXX",
+                    "discordUsername": "SmartHome",
+                    "discordAvatar": "",
+                    "discordMessage": " is "
                 },
                 {
                     "deviceType": "Sensor",
