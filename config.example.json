@@ -73,13 +73,28 @@
                     "mqttPassword": "testuser"
                 },
                 {
+                    "deviceType": "Switch",
+                    "deviceID": "21wqwweqwaee65432258",
+                    "deviceName": "Attic Relay",
+                    "mqttBroker": "192.168.1.200",
+                    "mqttPort": "1883",
+                    "mqttSwitch": "iot/things/StergoTestSwitch/switch1",
+                    "mqttUsername": "testuser",
+                    "mqttPassword": "testuser",
+                    "discordWebhook": "https://discordapp.com/api/webhooks/XXXXX",
+                    "discordUsername": "SmartHome",
+                    "discordAvatar": "",
+                    "discordMessage": " is "
+                },
+                {
                     "deviceType": "Sensor",
                     "deviceID": "65432258",
                     "deviceName": "Balcony",
                     "sensorUrl": "http://192.168.1.72/mesures.json",
                     "humidityName": "h",
                     "updateInterval": 300000
-                }
+                },
+
             ]
         }
     ]

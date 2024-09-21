@@ -3,7 +3,7 @@ import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
-import { discordWebHooks } from './inc/discordWebHooks.js';
+import { discordWebHooks } from './lib/discordWebHooks.js';
 
 /**
  * Platform Accessory
@@ -75,8 +75,9 @@ export class platformSwitch {
     this.mqttPassword = accessory.context.device.mqttPassword;
 
     this.discordWebhook = this.accessory.context.device.discordWebhook;
-    this.discordUsername = this.accessory.context.device.discordUsername;
-    this.discordAvatar = this.accessory.context.device.discordAvatar;
+    this.discordUsername = this.accessory.context.device.discordUsername || 'StergoSmart';
+    this.discordAvatar = this.accessory.context.device.discordAvatar
+      || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
     this.discordMessage = this.accessory.context.device.discordMessage;
   
   
@@ -132,7 +133,7 @@ export class platformSwitch {
   }
 
   // Silly function :)
-  getStatus(isOn: boolean): string {
+  private getStatus(isOn: boolean): string {
     return isOn ? 'ON' : 'OFF';
   }
 
@@ -140,7 +141,7 @@ export class platformSwitch {
    * Handle "SET" requests from HomeKit
    * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
    */
-  async setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+  private async setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     // 
     this.switchStates.On = value as boolean;
     
@@ -178,11 +179,16 @@ export class platformSwitch {
         //callback(error);
       });
 
+    // If is set dicordWebhook address
+    if (this.discordWebhook) {
+      this.initDiscordWebhooks(); 
+    }
+
     callback(null);
     this.platform.log.info('Success: Switch ',this.deviceName,' is: ', this.getStatus(this.switchStates.On));
   }
 
-  async getOn() {
+  private async getOn() {
     // Check if we have Status URL setup
     if (!this.urlStatus) {
       this.platform.log.warn(this.deviceName,': Ignoring request; No status url defined.');
@@ -230,7 +236,7 @@ export class platformSwitch {
 
   //
   // Connect to MQTT and update Switches
-  initMQTT() {
+  private initMQTT() {
     const mqttSubscribedTopics: string | string[] | mqtt.ISubscriptionMap = [];
 
     const mqttOptions: IClientOptions = {
@@ -277,6 +283,10 @@ export class platformSwitch {
         }
         
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
+        // If is set dicordWebhook address
+        if (this.discordWebhook) {
+          this.initDiscordWebhooks(); 
+        }
       }
     });
 
@@ -301,7 +311,7 @@ export class platformSwitch {
   }
 
   // Function to publish a message
-  publishMQTTmessage(value: CharacteristicValue, callback: CharacteristicSetCallback): void {
+  private publishMQTTmessage(value: CharacteristicValue, callback: CharacteristicSetCallback): void {
     
     this.platform.log.debug(this.deviceName, ': Setting power state to:', this.getStatus(!this.switchStates.On) );
 
@@ -310,20 +320,20 @@ export class platformSwitch {
         this.platform.log.debug(this.deviceName, ': Failed to publish message: ', err);
       } else {
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
-        this.platform.log.debug(this.deviceName, ': Message published successfully');
-        const ret = this.initDiscordWebhooks();
-        this.platform.log.debug(String(ret));
+        this.platform.log.debug(this.deviceName, ': Message published successfully');  
       }
     });
 
     callback(null);
   }
 
-  initDiscordWebhooks(){
-    // mozda
-    const message = this.discordMessage+this.getStatus(this.switchStates.On);
+  private initDiscordWebhooks(){
+    // OK
+    const message = this.deviceName + ': ' + this.discordMessage+this.getStatus(this.switchStates.On);
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
-    const as = discord.discordSimpleSend();
-    return as;
+    discord.discordSimpleSend().then((result) => {
+      this.platform.log.info(result);
+    });
+    
   }
 }

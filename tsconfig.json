@@ -20,6 +20,6 @@
     "eslint.config.js",
     "homebridge-ui",
     "src",
-    "src/inc"
+    "src/lib"
   ]
 }
