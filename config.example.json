@@ -74,8 +74,8 @@
                 },
                 {
                     "deviceType": "Switch",
-                    "deviceID": "21wqwweqwaee65432258",
-                    "deviceName": "Attic Relay",
+                    "deviceID": "21qweqwe22wqwweqwaee65432258",
+                    "deviceName": "Attic LED",
                     "mqttBroker": "192.168.1.200",
                     "mqttPort": "1883",
                     "mqttSwitch": "iot/things/StergoTestSwitch/switch1",
