@@ -328,11 +328,12 @@ export class platformSwitch {
   }
 
   private initDiscordWebhooks(){
-    // OK
+    // Prepare message just to send On Off status
     const message = this.deviceName + ': ' + this.discordMessage+this.getStatus(this.switchStates.On);
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
+    
     discord.discordSimpleSend().then((result) => {
-      this.platform.log.info(result);
+      this.platform.log.info(this.deviceName, ': ', result);
     });
     
   }
