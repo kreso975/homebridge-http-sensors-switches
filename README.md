@@ -25,8 +25,8 @@ Simple Discord Webhooks available in Switches
 ## 💡 Switch
 > [!NOTE]
 > HTTP - Read Status (On/Off), Turn ON (url), Turn OFF (url)  
-> MQTT - Turn ON/OFF | Values On = 1, Off = 0
-> Dicord Webhook publishes switch status to your Discord channel
+> MQTT - Turn ON/OFF | Values: On = 1, Off = 0    
+> Dicord Webhook publishes switch status to your Discord channel    
 
 > [!TIP]
 > If you don't have Manual switch and you don't mind when Homebridge is rebooted, your device is going to be set as OFF
