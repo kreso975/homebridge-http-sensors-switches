@@ -130,7 +130,7 @@ export class platformSensors {
   }
 
   
-  async getSensorData() {
+  private async getSensorData() {
     try {
       const response = await axios.get(this.sensorUrl);
       const data = response.data;
@@ -163,18 +163,18 @@ export class platformSensors {
     }
   }
   
-  async getTemperature(callback: (arg0: null, arg1: number) => void) {
+  private async getTemperature(callback: (arg0: null, arg1: number) => void) {
     callback(null, this.currentTemperature);
   }
 
-  async getHumidity(callback: (arg0: null, arg1: number) => void) {
+  private async getHumidity(callback: (arg0: null, arg1: number) => void) {
     callback(null, this.currentHumidity);
   }
   
   
   //
   // Connect to MQTT and update Temperature and Humidity
-  getSensorDataMQTT() {
+  private getSensorDataMQTT() {
     const mqttSubscribedTopics: string | string[] | mqtt.ISubscriptionMap = [];
 
     const mqttOptions: IClientOptions = {
