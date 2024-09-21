@@ -156,13 +156,17 @@ Sensor JSON file example
                 },
                 {
                     "deviceType": "Switch",
-                    "deviceID": "wqwweqwee65432258",
+                    "deviceID": "21wqwweqwee65432258",
                     "deviceName": "Relay",
                     "mqttBroker": "192.168.1.200",
                     "mqttPort": "1883",
                     "mqttSwitch": "iot/things/StergoTestSwitch/switch1",
                     "mqttUsername": "testuser",
-                    "mqttPassword": "testuser"
+                    "mqttPassword": "testuser",
+                    "discordWebhook": "https://discordapp.com/api/webhooks/XXXXX",
+                    "discordUsername": "SmartHome",
+                    "discordAvatar": "",
+                    "discordMessage": " is "
                 },
                 {
                     "deviceType": "Sensor",
