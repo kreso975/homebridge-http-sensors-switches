@@ -93,8 +93,7 @@
                     "sensorUrl": "http://192.168.1.72/mesures.json",
                     "humidityName": "h",
                     "updateInterval": 300000
-                },
-
+                }
             ]
         }
     ]
