@@ -39,8 +39,7 @@ export class discordWebHooks {
       return new Promise((resolve) => {
         setTimeout(() => resolve('Success sending Discord Message'), 1000);
       });
-      //return String('Success sending Discord Message');
-      //return(data);
+
     } catch (e) {
       const error = e as AxiosError;
       if (axios.isAxiosError(error)) {
