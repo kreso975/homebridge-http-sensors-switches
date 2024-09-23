@@ -15,7 +15,7 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
-  
+
   constructor(
     public readonly log: Logging,
     public readonly config: PlatformConfig,
@@ -56,63 +56,65 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
   discoverDevices() {
     // Plugin a user-defined array in the platform config.
     const platformConfigDevices = this.config.devices;
-    
+
     // loop over the discovered devices and register each one if it has not already been registered
-    for (const device of platformConfigDevices) {
-      // generate a unique id for the accessory this should be generated from
-      // something globally unique, but constant, for example, the device serial
-      // number or MAC address
-      const uuid = this.api.hap.uuid.generate(device.deviceID);
+    if (Array.isArray(platformConfigDevices)) {
+      for (const device of platformConfigDevices) {
+        // generate a unique id for the accessory this should be generated from
+        // something globally unique, but constant, for example, the device serial
+        // number or MAC address
+        const uuid = this.api.hap.uuid.generate(device.deviceID);
 
-      // see if an accessory with the same uuid has already been registered and restored from
-      // the cached devices we stored in the `configureAccessory` method above
-      const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
+        // see if an accessory with the same uuid has already been registered and restored from
+        // the cached devices we stored in the `configureAccessory` method above
+        const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
 
-      if (existingAccessory) {
-        // the accessory already exists
-        this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
+        if (existingAccessory) {
+          // the accessory already exists
+          this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
 
-        // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. e.g.:
-        // We will update the existing accessory.context to ensure that changes in the config take effect.
-        existingAccessory.context.device = device;
-        this.api.updatePlatformAccessories([existingAccessory]);
+          // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. e.g.:
+          // We will update the existing accessory.context to ensure that changes in the config take effect.
+          existingAccessory.context.device = device;
+          this.api.updatePlatformAccessories([existingAccessory]);
 
-        // create the accessory handler for the restored accessory
-        switch ( device.deviceType ) {
-        case 'Switch':
-          new platformSwitch(this, existingAccessory);
-          break;
-        case 'Sensor':
-          new platformSensors(this, existingAccessory);
+          // create the accessory handler for the restored accessory
+          switch (device.deviceType) {
+          case 'Switch':
+            new platformSwitch(this, existingAccessory);
+            break;
+          case 'Sensor':
+            new platformSensors(this, existingAccessory);
+          }
+
+          // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, e.g.:
+          // remove platform accessories when no longer present
+          // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
+          // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
+        } else {
+          // the accessory does not yet exist, so we need to create it
+          this.log.info('Adding new accessory:', device.deviceName);
+
+          // create a new accessory
+          const accessory = new this.api.platformAccessory(device.deviceName, uuid);
+
+          // store a copy of the device object in the `accessory.context`
+          // the `context` property can be used to store any data about the accessory you may need
+          accessory.context.device = device;
+
+          // create the accessory handler for the newly create accessory
+          // this is imported from `platformAccessory.ts`
+          switch (accessory.context.device.deviceType) {
+          case 'Switch':
+            new platformSwitch(this, accessory);
+            break;
+          case 'Sensor':
+            new platformSensors(this, accessory);
+          }
+
+          // link the accessory to your platform
+          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         }
-
-        // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, e.g.:
-        // remove platform accessories when no longer present
-        // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
-        // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
-      } else {
-        // the accessory does not yet exist, so we need to create it
-        this.log.info('Adding new accessory:', device.deviceName);
-
-        // create a new accessory
-        const accessory = new this.api.platformAccessory(device.deviceName, uuid);
-
-        // store a copy of the device object in the `accessory.context`
-        // the `context` property can be used to store any data about the accessory you may need
-        accessory.context.device = device;
-
-        // create the accessory handler for the newly create accessory
-        // this is imported from `platformAccessory.ts`
-        switch ( accessory.context.device.deviceType ) {
-        case 'Switch':
-          new platformSwitch(this, accessory);
-          break;
-        case 'Sensor':
-          new platformSensors(this, accessory);
-        }
-        
-        // link the accessory to your platform
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
       }
     }
   }

@@ -65,85 +65,85 @@
               "type": "string",
               "required": false
             },
-              "deviceFirmwareVersion": {
+            "deviceFirmwareVersion": {
               "title": "Device Firmware version",
               "description": "Device Firmware version",
               "type": "string",
               "required": false
             },
-              "urlON": {
+            "urlON": {
               "title": "URL ON",
               "description": "URL to Turn On the Switch",
               "type": "string",
               "required": false
             },
-              "urlOFF": {
+            "urlOFF": {
               "title": "URL OFF",
               "description": "URL to Turn OFF the Switch",
               "type": "string",
               "required": false
             },
-              "urlStatus": {
+            "urlStatus": {
               "title": "URL Status",
               "description": "URL to retrieve the switch status (on/off)",
               "type": "string",
               "required": false
             },
-              "stateName": {
+            "stateName": {
               "title": "State Name",
               "description": "State JASON param Name",
               "type": "string",
               "required": false
             },
-              "onStatusValue": {
+            "onStatusValue": {
               "title": "On Status Value",
               "description": "JSON return Value for status ON",
               "type": "string",
               "required": false
             },
-              "offStatusValue": {
+            "offStatusValue": {
               "title": "OFF Status Value",
               "description": "JSON return Value for status OFF",
               "type": "string",
               "required": false
             },
-              "sensorUrl": {
+            "sensorUrl": {
               "title": "Sensor JSON URL",
               "description": "JSON file containing sensor readings (temperature, humidity)",
               "type": "string",
               "required": false
             },
-              "temperatureName": {
+            "temperatureName": {
               "title": "Temperature Name",
               "description": "JSON param name for Temperature reading",
               "type": "string",
               "required": false
             },
-              "humidityName": {
+            "humidityName": {
               "title": "Humidity Name",
               "description": "JSON param name for Humidity reading",
               "type": "string",
               "required": false
             },
-              "updateInterval": {
+            "updateInterval": {
               "title": "Update interval",
               "description": "update interval for reading Sensors, default is 60000 = 60 seconds = 1 minute",
               "type": "integer",
               "required": false
             },
-              "mqttBroker": {
+            "mqttBroker": {
               "title": "MQTT Broker",
               "description": "URL of MQTT Broker",
               "type": "string",
               "required": false
             },
-              "mqttPort": {
+            "mqttPort": {
               "title": "MQTT port",
               "description": "1883",
               "type": "number",
               "required": false
             },
-              "mqttUsername": {
+            "mqttUsername": {
               "title": "MQTT Username",
               "description": "MQTT Username",
               "type": "string",
@@ -155,31 +155,31 @@
               "type": "string",
               "required": false
             },
-              "mqttTemperature": {
+            "mqttTemperature": {
               "title": "mqtt Topic Temperature",
               "description": "mqtt Topic Temperature",
               "type": "string",
               "required": false
             },
-              "mqttHumidity": {
+            "mqttHumidity": {
               "title": "mqtt Topic Humidity",
               "description": "mqtt Topic Humidity",
               "type": "string",
               "required": false
             },
-              "mqttSwitch": {
+            "mqttSwitch": {
               "title": "MQTT Topic Switch",
               "description": "MQTT Topic Switch",
               "type": "string",
               "required": false
             },
-              "discordWebhook": {
+            "discordWebhook": {
               "title": "Discord WebHook",
               "description": "URL to Discord WebHook",
               "type": "string",
               "required": false
             },
-              "discordUsername": {
+            "discordUsername": {
               "title": "Discord Username",
               "description": "Name for publisher",
               "type": "string",
