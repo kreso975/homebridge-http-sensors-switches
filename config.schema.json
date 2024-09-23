@@ -3,7 +3,7 @@
   "pluginType": "platform",
   "headerDisplay": "Sensors and Switches",
   "footerDisplay": "Please use Unique ID's",
-  "singular": false,
+  "singular": true,
   "schema": {
     "type": "object",
     "properties": {     
@@ -221,7 +221,10 @@
         "items": [{
             "key": "devices[]",
             "type": "fieldset",
-            "title": "HTTP Switch Settings",
+            "title": "Switch Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Switch';"
+              },
             "expandable": true,
             "expanded": false,
             "items": [
@@ -245,7 +248,10 @@
           {
             "key": "devices[]",
             "type": "fieldset",
-            "title": "HTTP Sensor Settings",
+            "title": "Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Sensor';"
+              },
             "expandable": true,
             "expanded": false,
             "items": [

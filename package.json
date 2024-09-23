@@ -15,6 +15,10 @@
   "bugs": {
     "url": "https://github.com/kreso975/homebridge-http-sensors-switches/issues"
   },
+  "funding": {
+  "type" : "paypal",
+  "url" : "https://paypal.me/kreso975"
+  },
   "keywords": [
     "homebridge-plugin",
     "homebridge",
