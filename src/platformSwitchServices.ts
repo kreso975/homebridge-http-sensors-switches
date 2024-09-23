@@ -206,29 +206,33 @@ export class platformSwitch {
       });
       const data = response.data;
 
-      // Check against Config value for ON
-      if( data[this.statusStateParam] === this.statusOnCheck ) {
+      // Check if provided KEY EXIST in JSON
+      if ( this.statusStateParam in data ) {
+        // Check against Config value for ON
+        if( data[this.statusStateParam] === this.statusOnCheck ) {
         
-        if( this.switchStates.On !== true ) {
-          this.switchStates.On = true;
-          this.platform.log.info(this.deviceName,': Switch is ON');
-          this.service.updateCharacteristic(this.platform.Characteristic.On, true);
-        }
-        // Check against Config value for OFF
-      } else if ( data[this.statusStateParam] === this.statusOffCheck ) {
-
-        if( this.switchStates.On !== false ) {
-          this.switchStates.On = false;
-          this.platform.log.info(this.deviceName,': Switch is OFF');
-          this.service.updateCharacteristic(this.platform.Characteristic.On, false);
+          if( this.switchStates.On !== true ) {
+            this.switchStates.On = true;
+            this.platform.log.info(this.deviceName,': Switch is ON');
+            this.service.updateCharacteristic(this.platform.Characteristic.On, true);
+          }
+          // Check against Config value for OFF
+        } else if ( data[this.statusStateParam] === this.statusOffCheck ) {
+          if( this.switchStates.On !== false ) {
+            this.switchStates.On = false;
+            this.platform.log.info(this.deviceName,': Switch is OFF');
+            this.service.updateCharacteristic(this.platform.Characteristic.On, false);
+          }
+        } else {
+          this.platform.log.warn(this.deviceName,': Error: Something is wrong with defined CHECK VALUES in JSON' );
         }
       } else {
-        return;
+        this.platform.log.warn(this.deviceName,': Error: Cannot find: KEY: ',this.statusStateParam,' in JSON' );
       }
     } catch (e) {
       const error = e as AxiosError;
       if (axios.isAxiosError(error)) {
-        this.platform.log.debug(this.deviceName,': Error: ', error.message );
+        this.platform.log.warn(this.deviceName,': Error: URL Status check: ', error.message );
       }
       
     }

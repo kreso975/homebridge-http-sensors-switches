@@ -134,17 +134,21 @@ export class platformSensors {
     try {
       const response = await axios.get(this.sensorUrl);
       const data = response.data;
-      
+
       // If we have Config setup for Temperature
-      if ( this.temperatureName ) {
+      if ( this.temperatureName && this.temperatureName in data ) {
         this.currentTemperature = Number(data[this.temperatureName]);
         this.temperatureService.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.currentTemperature);
+      } else {
+        this.platform.log.warn(this.deviceName,': Error: Cannot find: ', this.temperatureName, ' in JSON' );
       }
 
       // If we have Config setup for Humidity
-      if (this.humidityName) {
+      if (this.humidityName && this.humidityName in data ) {
         this.currentHumidity = Number(data[this.humidityName]);
         this.humidityService.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.currentHumidity);
+      } else {
+        this.platform.log.warn(this.deviceName,': Error: Cannot find: ', this.humidityName, ' in JSON' );
       }
       
       // If we have Config setup for Air Pressure

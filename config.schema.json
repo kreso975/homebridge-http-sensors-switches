@@ -91,7 +91,7 @@
             },
             "stateName": {
               "title": "State Name",
-              "description": "State JASON param Name",
+              "description": "State JSON param Name",
               "type": "string",
               "required": false
             },
