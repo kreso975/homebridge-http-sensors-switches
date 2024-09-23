@@ -197,9 +197,9 @@ Sensor JSON file example
 | deviceModel 	| Name of model for this Accessory 	| false 	|
 | deviceSerialNumber 	| Unique serial number 	| false 	|
 | deviceFirmwareVersion 	| Firmware running on device 	| false 	|
-| urlON 	| URL for Switch turn ON 	| true 	|
-| urlOFF 	| URL for Switch turn OFF 	| true 	|
-| urlStatus 	| URL for reading status of Switch (on/off) 	| true 	|
+| urlON 	| URL to Turn ON the Switch 	| true 	|
+| urlOFF 	| URL to Turn OFF the Switch 	| true 	|
+| urlStatus 	| URL to retrieve the switch status (on/off) 	| true 	|
 | stateName 	| JSON status param 	| true 	|
 | onStatusValue 	| JSON return Value for status ON 	| true 	|
 | offStatusValue 	| JSON return Value for status OFF 	| true 	|

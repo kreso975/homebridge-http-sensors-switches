@@ -1,10 +1,12 @@
 {
   "pluginAlias": "HttpSensorsAndSwitches",
   "pluginType": "platform",
-  "singular": true,
+  "headerDisplay": "Sensors and Switches",
+  "footerDisplay": "Please use Unique ID's",
+  "singular": false,
   "schema": {
     "type": "object",
-    "properties": {
+    "properties": {     
       "name": {
         "title": "Name",
         "type": "string",
@@ -14,184 +16,253 @@
         "title": "Description",
         "type": "string",
         "required": true
-      }
-    },
-    "devices": {
-      "type": "array",
-      "items": {
-        "title": "Device",
-        "type": "object",
-        "properties": {
-          "deviceType": {
-            "title": "Device Type",
-            "description": "",
-            "type": "string",
-            "required": true
-          },
-          "deviceID": {
-            "title": "Device ID",
-            "description": "Please input Unique ID for this device",
-            "type": "string",
-            "required": true
-          },
-          "deviceName": {
-            "title": "Device name",
-            "description": "",
-            "type": "string",
-            "required": true
-          },
-          "deviceManufacturer": {
-            "title": "Device Manufacturer",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "deviceModel": {
-            "title": "Device Model",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "deviceSerialNumber": {
-            "title": "Device Serial number or leave it blank and will be generated automaticaly",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "deviceFirmwareVersion": {
-            "title": "Device Firmware version",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "urlON": {
-            "title": "URL ON",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "urlOFF": {
-            "title": "URL OFF",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "urlStatus": {
-            "title": "URL Status",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "stateName": {
-            "title": "State JASON param Name",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "onStatusValue": {
-            "title": "JSON return Value for status On",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "offStatusValue": {
-            "title": "JSON return Value for status Off",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "temperatureName": {
-            "title": "URL Status",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "humidityName": {
-            "title": "URL Status",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "sensorUrl": {
-            "title": "sensor JSON url",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "updateInterval": {
-            "title": "URL Status",
-            "description": "",
-            "type": "integer",
-            "required": false
-          },
-          "mqttBroker": {
-            "title": "Host Broker",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "mqttPort": {
-            "title": "MQTT port",
-            "description": "1883",
-            "type": "number",
-            "required": false
-          },
-          "mqttTemperature": {
-            "title": "mqtt Topic Temperature",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "mqttHumidity": {
-            "title": "mqtt Topic Humidity",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "mqttUsername": {
-            "title": "MQTT Username",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "mqttPassword": {
-            "title": "MQTT Password",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "mqttSwitch": {
-            "title": "MQTT Topic Switch",
-            "description": "",
-            "type": "string",
-            "required": false
-          },
-          "discordWebhook": {
-            "title": "Discord WebHook",
-            "description": "URL to Discord WebHook",
-            "type": "string",
-            "required": false
-          },
-          "discordUsername": {
-            "title": "Discord Username",
-            "description": "Name for publisher",
-            "type": "string",
-            "required": false
-          },
-          "discordAvatar": {
-            "title": "Discord Avatar",
-            "description": "URL to Online Avatar image",
-            "type": "string",
-            "required": false
-          },
-          "discordMessage": {
-            "title": "Discord Message",
-            "description": "Message",
-            "type": "string",
-            "required": false
+      }, 
+      "devices": {
+        "type": "array",
+        "title": "Devices",
+        "description": "Device Selector",
+        "items": {
+          "type": "object",
+          "properties": {
+            "deviceType": {
+              "type": "string",
+              "title": "Device Type",
+              "oneOf":
+              [
+                { "title": "Sensor", "enum": ["Sensor"] },
+                { "title": "Switch", "enum": ["Switch"] }
+              ],
+              "required": true,
+              "placeholder": "Switch"
+            },
+            "deviceID": {
+              "title": "Device ID",
+              "description": "Please input Unique ID for this device",
+              "type": "string",
+              "required": true
+            },
+              "deviceName": {
+              "title": "Device name",
+              "description": "Device name",
+              "type": "string",
+              "required": true
+            },
+            "deviceManufacturer": {
+              "title": "Device Manufacturer",
+              "description": "Device Manufacturer",
+              "type": "string",
+              "required": false
+            },
+              "deviceModel": {
+              "title": "Device Model",
+              "description": "Device Model",
+              "type": "string",
+              "required": false
+            },
+              "deviceSerialNumber": {
+              "title": "Device Serial Number",
+              "description": "Device Serial number or leave it blank and will be generated automaticaly",
+              "type": "string",
+              "required": false
+            },
+              "deviceFirmwareVersion": {
+              "title": "Device Firmware version",
+              "description": "Device Firmware version",
+              "type": "string",
+              "required": false
+            },
+              "urlON": {
+              "title": "URL ON",
+              "description": "URL to Turn On the Switch",
+              "type": "string",
+              "required": false
+            },
+              "urlOFF": {
+              "title": "URL OFF",
+              "description": "URL to Turn OFF the Switch",
+              "type": "string",
+              "required": false
+            },
+              "urlStatus": {
+              "title": "URL Status",
+              "description": "URL to retrieve the switch status (on/off)",
+              "type": "string",
+              "required": false
+            },
+              "stateName": {
+              "title": "State Name",
+              "description": "State JASON param Name",
+              "type": "string",
+              "required": false
+            },
+              "onStatusValue": {
+              "title": "On Status Value",
+              "description": "JSON return Value for status ON",
+              "type": "string",
+              "required": false
+            },
+              "offStatusValue": {
+              "title": "OFF Status Value",
+              "description": "JSON return Value for status OFF",
+              "type": "string",
+              "required": false
+            },
+              "sensorUrl": {
+              "title": "Sensor JSON URL",
+              "description": "JSON file containing sensor readings (temperature, humidity)",
+              "type": "string",
+              "required": false
+            },
+              "temperatureName": {
+              "title": "Temperature Name",
+              "description": "JSON param name for Temperature reading",
+              "type": "string",
+              "required": false
+            },
+              "humidityName": {
+              "title": "Humidity Name",
+              "description": "JSON param name for Humidity reading",
+              "type": "string",
+              "required": false
+            },
+              "updateInterval": {
+              "title": "Update interval",
+              "description": "update interval for reading Sensors, default is 60000 = 60 seconds = 1 minute",
+              "type": "integer",
+              "required": false
+            },
+              "mqttBroker": {
+              "title": "MQTT Broker",
+              "description": "URL of MQTT Broker",
+              "type": "string",
+              "required": false
+            },
+              "mqttPort": {
+              "title": "MQTT port",
+              "description": "1883",
+              "type": "number",
+              "required": false
+            },
+              "mqttUsername": {
+              "title": "MQTT Username",
+              "description": "MQTT Username",
+              "type": "string",
+              "required": false
+            },
+            "mqttPassword": {
+              "title": "MQTT Password",
+              "description": "MQTT Password",
+              "type": "string",
+              "required": false
+            },
+              "mqttTemperature": {
+              "title": "mqtt Topic Temperature",
+              "description": "mqtt Topic Temperature",
+              "type": "string",
+              "required": false
+            },
+              "mqttHumidity": {
+              "title": "mqtt Topic Humidity",
+              "description": "mqtt Topic Humidity",
+              "type": "string",
+              "required": false
+            },
+              "mqttSwitch": {
+              "title": "MQTT Topic Switch",
+              "description": "MQTT Topic Switch",
+              "type": "string",
+              "required": false
+            },
+              "discordWebhook": {
+              "title": "Discord WebHook",
+              "description": "URL to Discord WebHook",
+              "type": "string",
+              "required": false
+            },
+              "discordUsername": {
+              "title": "Discord Username",
+              "description": "Name for publisher",
+              "type": "string",
+              "required": false
+            },
+            "discordAvatar": {
+              "title": "Discord Avatar",
+              "description": "URL to Online Avatar image",
+              "type": "string",
+              "required": false
+            },
+            "discordMessage": {
+              "title": "Discord Message",
+              "description": "Message",
+              "type": "string",
+              "required": false
+            }
           }
         }
       }
     }
-  }
+  },
+  "layout": [{
+    "key": "devices",
+    "type": "tabarray",
+    "title": "{{ value.deviceName || 'new Device' }}",
+    "items": [
+      "devices[].deviceType",
+      "devices[].deviceName",
+      "devices[].deviceID",
+      "devices[].deviceManufacturer",
+      "devices[].deviceModel",
+      "devices[].deviceSerialNumber",
+      "devices[].deviceFirmwareVersion",
+      {
+        "key": "devices[]",
+        "type": "fieldset",
+        "title": "{{ value.title }}",
+        "items": [{
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Switch Settings",
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].urlON",
+              "devices[].urlOFF",
+              "devices[].urlStatus",
+              "devices[].stateName",
+              "devices[].onStatusValue",
+              "devices[].offStatusValue",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttSwitch",
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Sensor Settings",
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].sensorUrl",
+              "devices[].temperatureName",
+              "devices[].humidityName",
+              "devices[].updateInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttTemperature",
+              "devices[].mqttHumidity"
+            ]
+          }  
+        ]
+      }
+    ]
+  }]
 }
