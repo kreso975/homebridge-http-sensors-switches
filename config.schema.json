@@ -221,7 +221,7 @@
         "items": [{
             "key": "devices[]",
             "type": "fieldset",
-            "title": "Switch Settings",
+            "title": "HTTP Switch Settings",
             "condition": {
                 "functionBody": "return model.devices[arrayIndices].deviceType === 'Switch';"
               },
@@ -233,12 +233,36 @@
               "devices[].urlStatus",
               "devices[].stateName",
               "devices[].onStatusValue",
-              "devices[].offStatusValue",
+              "devices[].offStatusValue"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Switch Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Switch';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
               "devices[].mqttBroker",
               "devices[].mqttPort",
               "devices[].mqttUsername",
               "devices[].mqttPassword",
-              "devices[].mqttSwitch",
+              "devices[].mqttSwitch"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Switch Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Switch';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
               "devices[].discordWebhook",
               "devices[].discordUsername",
               "devices[].discordAvatar",
@@ -248,7 +272,7 @@
           {
             "key": "devices[]",
             "type": "fieldset",
-            "title": "Sensor Settings",
+            "title": "HTTP Sensor Settings",
             "condition": {
                 "functionBody": "return model.devices[arrayIndices].deviceType === 'Sensor';"
               },
@@ -258,7 +282,19 @@
               "devices[].sensorUrl",
               "devices[].temperatureName",
               "devices[].humidityName",
-              "devices[].updateInterval",
+              "devices[].updateInterval"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Sensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
               "devices[].mqttBroker",
               "devices[].mqttPort",
               "devices[].mqttUsername",
