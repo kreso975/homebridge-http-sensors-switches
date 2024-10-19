@@ -32,6 +32,7 @@ export class platformSwitch {
   public statusOnCheck: string = '';
   public statusOffCheck: string = '';
 
+  public mqttReconnectInterval: string = '';
   public mqttBroker: string = '';
   public mqttPort: string = '';
   public mqttSwitch: string = '';
@@ -68,11 +69,12 @@ export class platformSwitch {
     this.urlON = this.accessory.context.device.urlON;
     this.urlOFF = this.accessory.context.device.urlOFF;
 
-    this.mqttBroker = accessory.context.device.mqttBroker;
-    this.mqttPort = accessory.context.device.mqttPort;
-    this.mqttSwitch = accessory.context.device.mqttSwitch;
-    this.mqttUsername = accessory.context.device.mqttUsername;
-    this.mqttPassword = accessory.context.device.mqttPassword;
+    this.mqttReconnectInterval = this.accessory.context.device.mqttReconnectInterval || 60; // 60 sec default
+    this.mqttBroker = this.accessory.context.device.mqttBroker;
+    this.mqttPort = this.accessory.context.device.mqttPort;
+    this.mqttSwitch = this.accessory.context.device.mqttSwitch;
+    this.mqttUsername = this.accessory.context.device.mqttUsername;
+    this.mqttPassword = this.accessory.context.device.mqttPassword;
 
     this.discordWebhook = this.accessory.context.device.discordWebhook;
     this.discordUsername = this.accessory.context.device.discordUsername || 'StergoSmart';
@@ -253,6 +255,7 @@ export class platformSwitch {
       username: this.mqttUsername,
       password: this.mqttPassword,
       rejectUnauthorized: false,
+      reconnectPeriod: Number(this.mqttReconnectInterval)*1000,
     }; 
 
     if (this.mqttSwitch) {
@@ -309,7 +312,8 @@ export class platformSwitch {
     // Handle errors
     this.mqttClient.on('error', (err) => {
       this.platform.log.warn(this.deviceName, ': Connection error:', err);
-      this.mqttClient.end();
+      this.platform.log.warn(this.deviceName, ': Reconnecting in: ', this.mqttReconnectInterval, ' seconds.');
+      //this.mqttClient.end();
     });
 
   }

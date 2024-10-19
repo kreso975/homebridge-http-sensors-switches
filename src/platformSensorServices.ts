@@ -29,6 +29,7 @@ export class platformSensors {
   public humidityName: string = '';
   public airPressureName: string = '';
 
+  public mqttReconnectInterval: string = '';
   public mqttBroker: string = '';
   public mqttPort: string = '';
   public mqttTemperature: string = '';
@@ -60,6 +61,7 @@ export class platformSensors {
     this.airPressureName = this.accessory.context.device.airPressureName;
     this.updateInterval = accessory.context.device.updateInterval || 300000; // Default update interval is 300 seconds
 
+    this.mqttReconnectInterval = this.accessory.context.device.mqttReconnectInterval || 60; // 60 sec default
     this.mqttBroker = accessory.context.device.mqttBroker;
     this.mqttPort = accessory.context.device.mqttPort;
     this.mqttTemperature = accessory.context.device.mqttTemperature;
@@ -191,6 +193,7 @@ export class platformSensors {
       username: this.mqttUsername,
       password: this.mqttPassword,
       rejectUnauthorized: false,
+      reconnectPeriod: Number(this.mqttReconnectInterval)*1000,
     };  
 
     if (this.mqttTemperature) {
@@ -246,7 +249,8 @@ export class platformSensors {
     // Handle errors
     this.mqttClient.on('error', (err) => {
       this.platform.log.warn(this.deviceName,': Connection error:', err);
-      this.mqttClient.end();
+      this.platform.log.warn(this.deviceName, ': Reconnecting in: ', this.mqttReconnectInterval, ' seconds.');
+      //this.mqttClient.end();
     });
     
   }

@@ -173,6 +173,12 @@
               "type": "string",
               "required": false
             },
+            "mqttReconnectInterval": {
+              "title": "Reconnect interval (sec)",
+              "description": "60",
+              "type": "number",
+              "required": false
+            },
             "discordWebhook": {
               "title": "Discord WebHook",
               "description": "URL to Discord WebHook",
@@ -246,6 +252,7 @@
             "expandable": true,
             "expanded": false,
             "items": [
+              "devices[].mqttReconnectInterval",
               "devices[].mqttBroker",
               "devices[].mqttPort",
               "devices[].mqttUsername",
@@ -295,6 +302,7 @@
             "expandable": true,
             "expanded": false,
             "items": [
+              "devices[].mqttReconnectInterval",
               "devices[].mqttBroker",
               "devices[].mqttPort",
               "devices[].mqttUsername",
