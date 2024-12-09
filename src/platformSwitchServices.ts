@@ -1,4 +1,4 @@
-import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service  } from 'homebridge';
+import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
@@ -47,8 +47,8 @@ export class platformSwitch {
   public switchStates = {
     On: false,
   };
- 
-  
+
+
   constructor(
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
@@ -81,14 +81,14 @@ export class platformSwitch {
     this.discordAvatar = this.accessory.context.device.discordAvatar
       || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
     this.discordMessage = this.accessory.context.device.discordMessage;
-  
-  
-    if ( !this.deviceType) {
-      this.platform.log.warn(this.deviceName,': Ignoring accessory; No deviceType defined.');
+
+
+    if (!this.deviceType) {
+      this.platform.log.warn(this.deviceName, ': Ignoring accessory; No deviceType defined.');
       return;
     }
 
-    if ( this.deviceType === 'Switch' && ( this.urlON || this.mqttBroker )) {
+    if (this.deviceType === 'Switch' && (this.urlON || this.mqttBroker)) {
 
       // set accessory information
       this.accessory.getService(this.platform.Service.AccessoryInformation)!
@@ -96,9 +96,9 @@ export class platformSwitch {
         .setCharacteristic(this.platform.Characteristic.Model, this.deviceModel)
         .setCharacteristic(this.platform.Characteristic.FirmwareRevision, this.deviceFirmwareVersion)
         .setCharacteristic(this.platform.Characteristic.SerialNumber, this.deviceSerialNumber);
-      
 
-      if ( this.urlON || this.mqttBroker ) {
+
+      if (this.urlON || this.mqttBroker) {
         // get the Switch service if it exists, otherwise create a new Switch service
         this.service = this.accessory.getService(this.platform.Service.Switch) || this.accessory.addService(this.platform.Service.Switch);
 
@@ -109,12 +109,12 @@ export class platformSwitch {
         // Try to fetch init power Status of device and check the status every 5 sec
         // We are checking status because if it's manualy changed/switched Homekit is not notified
         // If we do not have urlStatus defined in config we will skip reading Switch status
-        if ( this.urlStatus ) {
+        if (this.urlStatus) {
           this.getOn();
           setInterval(this.getOn.bind(this), 5000);
         }
 
-        if ( this.urlON ) {
+        if (this.urlON) {
           // register handlers for the On/Off Characteristic
           this.service.getCharacteristic(this.platform.Characteristic.On)
             .on('set', this.setOn.bind(this))
@@ -122,16 +122,16 @@ export class platformSwitch {
               callback(null, this.switchStates.On);
             });
         }
-        
+
         // We can now use MQTT
-        if ( this.mqttBroker ) {
+        if (this.mqttBroker) {
           this.initMQTT();
 
           this.service.getCharacteristic(this.platform.Characteristic.On)
             .on('set', this.publishMQTTmessage.bind(this));
         }
       }
-    } 
+    }
   }
 
   // Silly function :)
@@ -146,23 +146,23 @@ export class platformSwitch {
   private async setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     // 
     this.switchStates.On = value as boolean;
-    
+
     if (!this.urlON || !this.urlOFF) {
-      this.platform.log.warn(this.deviceName,': Ignoring request; No Switch trigger url defined.');
+      this.platform.log.warn(this.deviceName, ': Ignoring request; No Switch trigger url defined.');
       callback(new Error('No Switch trigger url defined.'));
       return;
     }
 
     if (this.switchStates.On) {
       this.url = this.urlON;
-      this.platform.log.debug(this.deviceName,': Setting power state to ON');
+      this.platform.log.debug(this.deviceName, ': Setting power state to ON');
       this.service.updateCharacteristic(this.platform.Characteristic.On, true);
     } else {
       this.url = this.urlOFF;
-      this.platform.log.debug(this.deviceName,': Setting power state to OFF');
+      this.platform.log.debug(this.deviceName, ': Setting power state to OFF');
       this.service.updateCharacteristic(this.platform.Characteristic.On, false);
     }
-  
+
     axios.get(this.url)
       // We are not going to wait, we will presume everything is OK and if it's not Error handler will handle it
       //  .then((response) => {
@@ -175,25 +175,33 @@ export class platformSwitch {
         // Let's reverse On value since we couldn't reach URL
         this.switchStates.On = !value;
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
-        this.platform.log.warn(this.deviceName,': Setting power state to :', this.switchStates.On  );
-        
-        this.platform.log.warn(this.deviceName,': Error: ', error.message);
+        this.platform.log.warn(this.deviceName, ': Setting power state to :', this.switchStates.On);
+
+        this.platform.log.warn(this.deviceName, ': Error: ', error.message);
         //callback(error);
       });
 
     // If is set dicordWebhook address
     if (this.discordWebhook) {
-      this.initDiscordWebhooks(); 
+      this.initDiscordWebhooks();
     }
 
     callback(null);
-    this.platform.log.info('Success: Switch ',this.deviceName,' is: ', this.getStatus(this.switchStates.On));
+    this.platform.log.info('Success: Switch ', this.deviceName, ' is: ', this.getStatus(this.switchStates.On));
+  }
+
+  private updateSwitchState(isOn: boolean, deviceName: string) {
+    if (this.switchStates.On !== isOn) {
+      this.switchStates.On = isOn;
+      this.platform.log.info(deviceName, `: Switch is ${isOn ? 'ON' : 'OFF'}`);
+      this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);
+    }
   }
 
   private async getOn() {
     // Check if we have Status URL setup
     if (!this.urlStatus) {
-      this.platform.log.warn(this.deviceName,': Ignoring request; No status url defined.');
+      this.platform.log.warn(this.deviceName, ': Ignoring request; No status url defined.');
       return;
     }
 
@@ -209,36 +217,46 @@ export class platformSwitch {
       const data = response.data;
 
       // Check if provided KEY EXIST in JSON
-      if ( this.statusStateParam in data ) {
-        // Check against Config value for ON
-        if( data[this.statusStateParam] === this.statusOnCheck ) {
-        
-          if( this.switchStates.On !== true ) {
-            this.switchStates.On = true;
-            this.platform.log.info(this.deviceName,': Switch is ON');
-            this.service.updateCharacteristic(this.platform.Characteristic.On, true);
-          }
-          // Check against Config value for OFF
-        } else if ( data[this.statusStateParam] === this.statusOffCheck ) {
-          if( this.switchStates.On !== false ) {
-            this.switchStates.On = false;
-            this.platform.log.info(this.deviceName,': Switch is OFF');
-            this.service.updateCharacteristic(this.platform.Characteristic.On, false);
-          }
+      if (this.statusStateParam in data) {
+        const value = data[this.statusStateParam];
+        const valueType = typeof value;
+
+        // Convert statusOnCheck and statusOffCheck to the appropriate type
+        let statusOnCheck: boolean | number | string;
+        let statusOffCheck: boolean | number | string;
+
+        if (valueType === 'boolean') {
+          statusOnCheck = true;
+          statusOffCheck = false;
+        } else if (valueType === 'number') {
+          statusOnCheck = parseFloat(this.statusOnCheck);
+          statusOffCheck = parseFloat(this.statusOffCheck);
         } else {
-          this.platform.log.warn(this.deviceName,': Error: Something is wrong with defined CHECK VALUES in JSON' );
+          statusOnCheck = this.statusOnCheck;
+          statusOffCheck = this.statusOffCheck;
+        }
+
+  
+        // Check and update switch state
+        if (value === statusOnCheck) {
+          this.updateSwitchState(true, this.deviceName);
+        } else if (value === statusOffCheck) {
+          this.updateSwitchState(false, this.deviceName);
+        } else {
+          this.platform.log.warn(this.deviceName, `: The value of ${this.statusStateParam} does not match statusOnCheck or statusOffCheck.`);
         }
       } else {
-        this.platform.log.warn(this.deviceName,': Error: Cannot find: KEY: ',this.statusStateParam,' in JSON' );
+        this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.statusStateParam, 'in JSON');
       }
     } catch (e) {
       const error = e as AxiosError;
       if (axios.isAxiosError(error)) {
-        this.platform.log.warn(this.deviceName,': Error: URL Status check: ', error.message );
+        this.platform.log.warn(this.deviceName, ': Error: URL Status check:', error.message);
       }
-      
     }
   }
+
+
 
   //
   // Connect to MQTT and update Switches
@@ -255,60 +273,60 @@ export class platformSwitch {
       username: this.mqttUsername,
       password: this.mqttPassword,
       rejectUnauthorized: false,
-      reconnectPeriod: Number(this.mqttReconnectInterval)*1000,
-    }; 
+      reconnectPeriod: Number(this.mqttReconnectInterval) * 1000,
+    };
 
     if (this.mqttSwitch) {
-      mqttSubscribedTopics.push( this.mqttSwitch );
+      mqttSubscribedTopics.push(this.mqttSwitch);
     }
-    
-    this.mqttClient = mqtt.connect( mqttOptions );
+
+    this.mqttClient = mqtt.connect(mqttOptions);
     this.mqttClient.on('connect', () => {
-      
-      this.platform.log.info(this.deviceName,': MQTT Connected');
+
+      this.platform.log.info(this.deviceName, ': MQTT Connected');
 
       this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
-          this.platform.log.info(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
+          this.platform.log.info(this.deviceName, ': Subscribed to: ', mqttSubscribedTopics.toString());
         } else {
           // Need to insert error handler
           this.platform.log.warn(this.deviceName, err.toString());
         }
       });
     });
-  
+
     this.mqttClient.on('message', (topic, message) => {
       //this.platform.log(this.deviceName,': Received message: ', Number(message));  
-      if ( topic === this.mqttSwitch ) {
-        this.platform.log.info(this.deviceName,': Status set to: ', this.getStatus(Boolean(Number(message))));
-        
-        if ( message.toString() === '1' ) {
+      if (topic === this.mqttSwitch) {
+        this.platform.log.info(this.deviceName, ': Status set to: ', this.getStatus(Boolean(Number(message))));
+
+        if (message.toString() === '1') {
           this.switchStates.On = true;
         }
-        if ( message.toString() === '0' ) {
+        if (message.toString() === '0') {
           this.switchStates.On = false;
         }
-        
+
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
         // If is set dicordWebhook address
         if (this.discordWebhook) {
-          this.initDiscordWebhooks(); 
+          this.initDiscordWebhooks();
         }
       }
     });
 
     this.mqttClient.on('offline', () => {
-      this.platform.log.debug(this.deviceName,': Client is offline');
+      this.platform.log.debug(this.deviceName, ': Client is offline');
     });
 
     this.mqttClient.on('reconnect', () => {
-      this.platform.log.debug(this.deviceName,': Reconnecting...');
+      this.platform.log.debug(this.deviceName, ': Reconnecting...');
     });
-    
+
     this.mqttClient.on('close', () => {
-      this.platform.log.debug(this.deviceName,': Connection closed');
+      this.platform.log.debug(this.deviceName, ': Connection closed');
     });
-    
+
     // Handle errors
     this.mqttClient.on('error', (err) => {
       this.platform.log.warn(this.deviceName, ': Connection error:', err);
@@ -320,29 +338,29 @@ export class platformSwitch {
 
   // Function to publish a message
   private publishMQTTmessage(value: CharacteristicValue, callback: CharacteristicSetCallback): void {
-    
-    this.platform.log.debug(this.deviceName, ': Setting power state to:', this.getStatus(!this.switchStates.On) );
+
+    this.platform.log.debug(this.deviceName, ': Setting power state to:', this.getStatus(!this.switchStates.On));
 
     this.mqttClient.publish(this.mqttSwitch, String(Number(!this.switchStates.On)), { qos: 1, retain: true }, (err) => {
       if (err) {
         this.platform.log.debug(this.deviceName, ': Failed to publish message: ', err);
       } else {
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
-        this.platform.log.debug(this.deviceName, ': Message published successfully');  
+        this.platform.log.debug(this.deviceName, ': Message published successfully');
       }
     });
 
     callback(null);
   }
 
-  private initDiscordWebhooks(){
+  private initDiscordWebhooks() {
     // Prepare message just to send On Off status
-    const message = this.deviceName + ': ' + this.discordMessage+this.getStatus(this.switchStates.On);
+    const message = this.deviceName + ': ' + this.discordMessage + this.getStatus(this.switchStates.On);
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
-    
+
     discord.discordSimpleSend().then((result) => {
       this.platform.log.info(this.deviceName, ': ', result);
     });
-    
+
   }
 }
