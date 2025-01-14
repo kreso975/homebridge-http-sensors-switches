@@ -101,7 +101,6 @@ export class platformMotionSensor {
 
   // Add getMotion method
   getMotion(callback: (error: Error | null, value?: boolean) => void) {
-    // Implement your logic to get the motion status
     callback(null, this.motionDetected);
   }
 
