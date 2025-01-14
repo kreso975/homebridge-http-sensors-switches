@@ -16,12 +16,17 @@
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen"> &nbsp;
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 
-This plugin communicates with your devices over HTTP or MQTT. Currently it supports Switches and Temperature/Humidity sensor.  
+This plugin communicates with your devices over HTTP or MQTT. Currently it supports Switches, Temperature/Humidity and Motion sensor.  
 Simple Discord Webhooks available in Switches  
 
 <br><br>
-  
-  
+
+## 🕺 Motion Sensor 
+> [!NOTE]  
+> HTTP - Read status (true/false) from JSON - {"Motion": true}  
+> MQTT - Read status (true/false)  
+
+
 ## 💡 Switch
 > [!NOTE]
 > HTTP - Read Status (On/Off), Turn ON (url), Turn OFF (url)  
@@ -215,6 +220,10 @@ Sensor JSON file example
 | mqttUsername 	| MQTT Broker username 	| false 	|
 | mqttPassword 	| MQTT Broker password 	| false 	|
 | mqttSwitch 	| Switch Topic 	| true 	|
+| mqttMotionSensor 	| Motion Sensor Topic 	| true 	|
+| motionSensorName 	| JSON param name for Motion Sensor reading 	| true 	|
+| motionSensorUrl 	| SON file containing Motion Sensor readings 	| true 	|
+| updateIntervalMotionSensor 	| update interval for reading Motion Sensor, default is 60000 = 60 seconds = 1 minute 	| true 	|
 | discordWebhook 	| URL to Discord WebHook 	| false 	|
 | discordUsername 	| Name for message publisher 	| false 	|
 | discordAvatar 	| URL to Online Avatar image 	| false 	|

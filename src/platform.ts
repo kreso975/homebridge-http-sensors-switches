@@ -2,6 +2,7 @@ import type { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAcces
 
 import { platformSensors } from './platformSensorServices.js';
 import { platformSwitch } from './platformSwitchServices.js';
+import { platformMotionSensor } from './platformMotionSensorServices.js';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 
 /**
@@ -85,6 +86,10 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
             break;
           case 'Sensor':
             new platformSensors(this, existingAccessory);
+            break;
+          case 'MotionSensor':
+            new platformMotionSensor(this, existingAccessory);
+            break;
           }
 
           // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, e.g.:
@@ -110,6 +115,10 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
             break;
           case 'Sensor':
             new platformSensors(this, accessory);
+            break;
+          case 'MotionSensor':
+            new platformMotionSensor(this, accessory);
+            break;
           }
 
           // link the accessory to your platform

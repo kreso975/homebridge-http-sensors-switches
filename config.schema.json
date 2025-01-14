@@ -30,6 +30,7 @@
               "oneOf":
               [
                 { "title": "Sensor", "enum": ["Sensor"] },
+                { "title": "Motion Sensor", "enum": ["MotionSensor"] },
                 { "title": "Switch", "enum": ["Switch"] }
               ],
               "required": true,
@@ -125,6 +126,24 @@
               "type": "string",
               "required": false
             },
+            "motionSensorName": {
+              "title": "Motion Sensor Name",
+              "description": "JSON param name for Motion Sensor reading",
+              "type": "string",
+              "required": false
+            },
+            "motionSensorUrl": {
+              "title": "Motion Sensor JSON URL",
+              "description": "JSON file containing Motion Sensor readings",
+              "type": "string",
+              "required": false
+            },
+            "updateIntervalMotionSensor": {
+              "title": "Update interval Motion Sensor",
+              "description": "update interval for reading Motion Sensor, default is 60000 = 60 seconds = 1 minute",
+              "type": "integer",
+              "required": false
+            },
             "updateInterval": {
               "title": "Update interval",
               "description": "update interval for reading Sensors, default is 60000 = 60 seconds = 1 minute",
@@ -177,6 +196,12 @@
               "title": "Reconnect interval (sec)",
               "description": "60",
               "type": "number",
+              "required": false
+            },
+            "mqttMotionSensor": {
+              "title": "MQTT Topic Motion Sensor",
+              "description": "MQTT Topic Motion Sensor",
+              "type": "string",
               "required": false
             },
             "discordWebhook": {
@@ -309,6 +334,39 @@
               "devices[].mqttPassword",
               "devices[].mqttTemperature",
               "devices[].mqttHumidity"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Motion Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].motionSensorUrl",
+              "devices[].motionSensorName",
+              "devices[].updateIntervalMotionSensor"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Motion Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttMotionSensor"
             ]
           }  
         ]
