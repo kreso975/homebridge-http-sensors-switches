@@ -172,14 +172,15 @@ export class platformMotionSensor {
 
       // If we have Config setup for Motion
       if (this.motionSensorName && this.motionSensorName in data) {
-        this.motionDetected = data[this.motionSensorName] === true;
-        this.motionService.updateCharacteristic(this.platform.Characteristic.MotionDetected, this.motionDetected);
+        const newMotionDetected = data[this.motionSensorName] === true;
+        if (this.motionDetected !== newMotionDetected) {
+          this.motionDetected = newMotionDetected;
+          this.motionService.updateCharacteristic(this.platform.Characteristic.MotionDetected, this.motionDetected);
+          this.platform.log.info(this.deviceName, ': Status set to: ', this.motionDetected);
+        }
       } else {
         this.platform.log.warn(this.deviceName, ': Error: Cannot find: ', this.motionSensorName, ' in JSON');
       }
-
-      //this.platform.log.info(this.deviceName, ': ', JSON.stringify(data));
-
     } catch (e) {
       const error = e as AxiosError;
       if (axios.isAxiosError(error)) {
@@ -187,4 +188,5 @@ export class platformMotionSensor {
       }
     }
   }
+
 }
