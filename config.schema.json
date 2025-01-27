@@ -31,7 +31,8 @@
               [
                 { "title": "Sensor", "enum": ["Sensor"] },
                 { "title": "Motion Sensor", "enum": ["MotionSensor"] },
-                { "title": "Switch", "enum": ["Switch"] }
+                { "title": "Switch", "enum": ["Switch"] },
+                { "title": "Outlet", "enum": ["Outlet"] }
               ],
               "required": true,
               "placeholder": "Switch"
@@ -105,6 +106,24 @@
             "offStatusValue": {
               "title": "OFF Status Value",
               "description": "JSON return Value for status OFF",
+              "type": "string",
+              "required": false
+            },
+            "inUseStateName": {
+              "title": "in USe State Name",
+              "description": "In Use State JSON param Name",
+              "type": "string",
+              "required": false
+            },
+            "inUseOnStatusValue": {
+              "title": "In Use ON Status Value",
+              "description": "JSON return Value for status In Use ON",
+              "type": "string",
+              "required": false
+            },
+            "inUseOffStatusValue": {
+              "title": "In Use OFF Status Value",
+              "description": "JSON return Value for status in use OFF",
               "type": "string",
               "required": false
             },
@@ -189,6 +208,12 @@
             "mqttSwitch": {
               "title": "MQTT Topic Switch",
               "description": "MQTT Topic Switch",
+              "type": "string",
+              "required": false
+            },
+            "mqttInUse": {
+              "title": "MQTT Topic In Use",
+              "description": "MQTT Topic In Use",
               "type": "string",
               "required": false
             },
@@ -367,6 +392,62 @@
               "devices[].mqttUsername",
               "devices[].mqttPassword",
               "devices[].mqttMotionSensor"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Outlet Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Outlet';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].urlON",
+              "devices[].urlOFF",
+              "devices[].urlStatus",
+              "devices[].stateName",
+              "devices[].onStatusValue",
+              "devices[].offStatusValue",
+              "devices[].inUseStateName",
+              "devices[].inUseOnStatusValue",
+              "devices[].inUseOffStatusValue"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Outlet Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Outlet';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttSwitch",
+              "devices[].mqttInUse"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Outlet Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Outlet';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
             ]
           }  
         ]

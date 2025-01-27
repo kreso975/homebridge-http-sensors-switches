@@ -300,10 +300,10 @@ export class platformSwitch {
       if (topic === this.mqttSwitch) {
         this.platform.log.info(this.deviceName, ': Status set to: ', this.getStatus(Boolean(Number(message))));
 
-        if (message.toString() === '1') {
+        if (message.toString() === '1'  || message.toString() === 'true') {
           this.switchStates.On = true;
         }
-        if (message.toString() === '0') {
+        if (message.toString() === '0'  || message.toString() === 'false') {
           this.switchStates.On = false;
         }
 
