@@ -31,7 +31,7 @@ Simple Discord Webhooks available in Switches
 }
 ```
  
-## <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/switch.png?raw=true" height=32 width=32> <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/outlet.png?raw=true" height=24 width=24 alt="Publish" title="Publish"> &nbsp;&nbsp;Switch & Outlet  
+## <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/switch.png?raw=true" height=32 width=32> <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/outlet.png?raw=true" height=28 width=28 alt="Publish" title="Publish"> &nbsp;&nbsp;Switch & Outlet  
 > [!NOTE]  
 > HTTP:
 > - Read Status (On/Off), Turn ON (url), Turn OFF (url)  
