@@ -43,7 +43,7 @@ Simple Discord Webhooks available in Light Bulb, Switches and Outlets.
 > - Turn ON/OFF | Values: On = true || 1, Off = false || 0  
 > - RGB in format #FFAA22 or without #     
 >  
-> SET only Parameters you intent to use  
+> SET only Parameters you intend to use  
 ```
 {
     "Light": true, "Brightness": 100, "RGB": "FF00AA", "Hue": 120, "Saturation": 20, "ColorTemperature": 500
