@@ -40,7 +40,7 @@ Simple Discord Webhooks available in Light Bulb, Switches and Outlets.
 > - Color Temperature: Mired (153-500) OR Kelvin (2000-6500)
 >  
 > MQTT:  
-> - Turn ON/OFF | Values: On = true || 1, Off = fale || 0  
+> - Turn ON/OFF | Values: On = true || 1, Off = false || 0  
 > - RGB in format #FFAA22 or without #     
 >  
 > SET only Parameters you intent to use  
