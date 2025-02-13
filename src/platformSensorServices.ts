@@ -13,9 +13,9 @@ import mqtt, { IClientOptions }  from 'mqtt';
 export class platformSensors {
   public temperatureService!: Service;
   public humidityService!: Service;
-
   public mqttClient!: mqtt.MqttClient;
 
+  public enableLogging: boolean = true;
   public deviceId: string = '';
   public deviceType: string = '';
   public deviceName: string = '';
@@ -55,6 +55,8 @@ export class platformSensors {
     this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
     
     // From Config
+    this.enableLogging = this.accessory.context.device.enableLogging;
+
     this.sensorUrl = this.accessory.context.device.sensorUrl;
     this.temperatureName = this.accessory.context.device.temperatureName;
     this.humidityName = this.accessory.context.device.humidityName;
@@ -114,7 +116,9 @@ export class platformSensors {
       // If we have Config setup for Air Pressure
       // Not implementd yet
       if ( this.airPressureName ) {
-        this.platform.log.info(this.deviceName,': ',this.airPressureName);
+        if ( this.enableLogging) {
+          this.platform.log.info(this.deviceName,': ',this.airPressureName);
+        }
       }
       
       // We can now use MQTT
@@ -160,10 +164,13 @@ export class platformSensors {
       }
       // If we have Config setup for Air Pressure
       if ( this.airPressureName ) {
-        this.platform.log.info(this.deviceName,': ',this.airPressureName);
+        if ( this.enableLogging) {
+          this.platform.log.info(this.deviceName,': ',this.airPressureName);
+        }
       }
-
-      this.platform.log.info(this.deviceName,': ',JSON.stringify(data));
+      if ( this.enableLogging) {
+        this.platform.log.info(this.deviceName,': ',JSON.stringify(data));
+      }
       //this.platform.log.debug(JSON.stringify(data));
 
     } catch (e) {
@@ -211,11 +218,14 @@ export class platformSensors {
     this.mqttClient = mqtt.connect( mqttOptions);
     
     this.mqttClient.on('connect', () => {
-    
-      this.platform.log.info(this.deviceName,': MQTT Connected');  
+      if ( this.enableLogging) {
+        this.platform.log.info(this.deviceName,': MQTT Connected');  
+      }
       this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
-          this.platform.log.info(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
+          if ( this.enableLogging) {
+            this.platform.log.info(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
+          }
         } else {
           // Need to insert error handler
           this.platform.log.warn(this.deviceName, err.toString());
@@ -227,13 +237,17 @@ export class platformSensors {
       //this.platform.log(this.deviceName,': Received message: ${message.toString()}');
       
       if ( topic === this.mqttTemperature ) {
-        this.platform.log.info(this.deviceName,': Temperature = ',message.toString());
+        if ( this.enableLogging) {
+          this.platform.log.info(this.deviceName,': Temperature = ',message.toString());
+        }
         this.currentTemperature = Number(message.toString());
         this.temperatureService.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.currentTemperature);
       }
 
       if ( topic === this.mqttHumidity ) {
-        this.platform.log.info(this.deviceName,': Humidity = ',message.toString());
+        if ( this.enableLogging) {
+          this.platform.log.info(this.deviceName,': Humidity = ',message.toString());
+        }
         this.currentHumidity = Number(message.toString());
         this.humidityService.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.currentHumidity);
       }

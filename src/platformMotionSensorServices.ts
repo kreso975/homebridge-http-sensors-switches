@@ -13,6 +13,7 @@ export class platformMotionSensor {
   public motionService!: Service;
   public mqttClient!: mqtt.MqttClient;
 
+  public enableLogging: boolean = true;
   public deviceId: string = '';
   public deviceType: string = '';
   public deviceName: string = '';
@@ -48,6 +49,8 @@ export class platformMotionSensor {
     this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
     
     // From Config
+    this.enableLogging = this.accessory.context.device.enableLogging;
+
     this.motionSensorUrl = this.accessory.context.device.motionSensorUrl;
     this.motionSensorName = this.accessory.context.device.motionSensorName;
     this.updateIntervalMotionSensor = accessory.context.device.updateIntervalMotionSensor || 300000; // Default update interval is 300 seconds
@@ -128,10 +131,14 @@ export class platformMotionSensor {
     this.mqttClient = mqtt.connect(mqttOptions);
     
     this.mqttClient.on('connect', () => {
-      this.platform.log.info(this.deviceName, ': MQTT Connected');  
+      if ( this.enableLogging) {
+        this.platform.log.info(this.deviceName, ': MQTT Connected');  
+      }
       this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
-          this.platform.log.info(this.deviceName, ': Subscribed to: ', mqttSubscribedTopics.toString());
+          if ( this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': Subscribed to: ', mqttSubscribedTopics.toString());
+          }
         } else {
           this.platform.log.warn(this.deviceName, err.toString());
         }
@@ -140,8 +147,11 @@ export class platformMotionSensor {
   
     this.mqttClient.on('message', (topic, message) => {
       if (topic === this.mqttMotionSensor) {
-        this.platform.log.info(this.deviceName, ': Motion = ', message.toString());
-        this.motionDetected = message.toString() === 'true';
+        if ( this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Motion = ', message.toString());
+        }
+        this.motionDetected = (message.toString() === 'true' || message.toString() === '1');
+        
         this.motionService.updateCharacteristic(this.platform.Characteristic.MotionDetected, this.motionDetected);
       }
     });
@@ -172,11 +182,14 @@ export class platformMotionSensor {
 
       // If we have Config setup for Motion
       if (this.motionSensorName && this.motionSensorName in data) {
-        const newMotionDetected = data[this.motionSensorName] === true;
+        // eslint-disable-next-line max-len
+        const newMotionDetected = (data[this.motionSensorName] === true || data[this.motionSensorName] === 'true' || data[this.motionSensorName] === 1 || data[this.motionSensorName] === '1');
         if (this.motionDetected !== newMotionDetected) {
           this.motionDetected = newMotionDetected;
           this.motionService.updateCharacteristic(this.platform.Characteristic.MotionDetected, this.motionDetected);
-          this.platform.log.info(this.deviceName, ': Status set to: ', this.motionDetected);
+          if ( this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': Status set to: ', this.motionDetected);
+          }
         }
       } else {
         this.platform.log.warn(this.deviceName, ': Error: Cannot find: ', this.motionSensorName, ' in JSON');

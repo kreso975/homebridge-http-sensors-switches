@@ -1,7 +1,7 @@
 {
   "pluginAlias": "HttpSensorsAndSwitches",
   "pluginType": "platform",
-  "headerDisplay": "Sensors and Switches",
+  "headerDisplay": "Sensors, Switches, Lights",
   "footerDisplay": "Please use Unique ID's",
   "singular": true,
   "schema": {
@@ -32,10 +32,19 @@
                 { "title": "Sensor", "enum": ["Sensor"] },
                 { "title": "Motion Sensor", "enum": ["MotionSensor"] },
                 { "title": "Switch", "enum": ["Switch"] },
-                { "title": "Outlet", "enum": ["Outlet"] }
+                { "title": "Outlet", "enum": ["Outlet"] },
+                { "title": "Light Bulb", "enum": ["LightBulb"] }
               ],
               "required": true,
+              "default": "Switch",
               "placeholder": "Switch"
+            },
+            "enableLogging": {
+              "title": "Enable Logging",
+              "description": "Enable console Logging",
+              "type": "boolean",
+              "required": false,
+              "default": true
             },
             "deviceID": {
               "title": "Device ID",
@@ -74,85 +83,139 @@
               "required": false
             },
             "urlON": {
-              "title": "URL ON",
-              "description": "URL to Turn On the Switch",
+              "title": "URL turn ON",
+              "description": "URL to Turn On the Switch / Light",
               "type": "string",
               "required": false
             },
             "urlOFF": {
-              "title": "URL OFF",
-              "description": "URL to Turn OFF the Switch",
+              "title": "URL turn OFF",
+              "description": "URL to Turn OFF the Switch / Light",
               "type": "string",
               "required": false
             },
             "urlStatus": {
               "title": "URL Status",
-              "description": "URL to retrieve the switch status (on/off)",
+              "description": "URL to retrieve JSON of Device status",
               "type": "string",
               "required": false
             },
             "stateName": {
-              "title": "State Name",
-              "description": "State JSON param Name",
+              "title": "Parameter Name for On/Off",
+              "description": "JSON Parameter Name for On/Off status",
               "type": "string",
               "required": false
             },
             "onStatusValue": {
-              "title": "On Status Value",
-              "description": "JSON return Value for status ON",
+              "title": "Parameter Value for status On",
+              "description": "JSON return Value for status ON (true, 1, ON)",
               "type": "string",
               "required": false
             },
             "offStatusValue": {
-              "title": "OFF Status Value",
-              "description": "JSON return Value for status OFF",
+              "title": "Parameter Value for status OFF",
+              "description": "JSON return Value for status OFF (false, 0, OFF)",
               "type": "string",
               "required": false
             },
             "inUseStateName": {
-              "title": "in USe State Name",
-              "description": "In Use State JSON param Name",
+              "title": "Parameter Name for: in USE",
+              "description": "JSON Parameter Name for in Use status",
               "type": "string",
               "required": false
             },
             "inUseOnStatusValue": {
-              "title": "In Use ON Status Value",
-              "description": "JSON return Value for status In Use ON",
+              "title": "Parameter value for In Use Status ON",
+              "description": "JSON return Value for status In Use ON (true, 1)",
               "type": "string",
               "required": false
             },
             "inUseOffStatusValue": {
-              "title": "In Use OFF Status Value",
-              "description": "JSON return Value for status in use OFF",
+              "title": "Parameter value for In Use Status OFF",
+              "description": "JSON return Value for status in use OFF (false, 0)",
+              "type": "string",
+              "required": false
+            },
+            "useRGB": {
+              "title": "Use RGB Color",
+              "description": "Use RGB instead of HSV",
+              "type": "boolean",
+              "required": false
+            },
+            "useBrightness255": {
+              "title": "Use Brightness 0 - 255",
+              "description": "Use Brightness 0 - 255 not 0 - 100",
+              "type": "boolean",
+              "required": false
+            },
+            "useColorTKelvin": {
+              "title": "Color Temperature in Kelvin",
+              "description": "Mired (153-500), Kelvin (2000-6500)",
+              "type": "boolean",
+              "required": false
+            },
+            "rgbParamName": {
+              "title": "Parameter Name for RGB",
+              "description": "JSON Parameter Name for RGB color",
+              "type": "string",
+              "required": false
+            },
+            "urlLightBulbControl": {
+              "title": "HTTP address Light Bulb Control",
+              "description": "HTTP address where to send Device control commands",
+              "type": "string",
+              "required": false
+            },
+            "brightnessParamName": {
+              "title": "Parameter Name for Brightness",
+              "description": "JSON Parameter Name for Brightness",
+              "type": "string",
+              "required": false
+            },
+            "saturationParamName": {
+              "title": "Parameter Name for Saturation",
+              "description": "JSON Parameter Name for Saturation",
+              "type": "string",
+              "required": false
+            },
+            "hueParamName": {
+              "title": "Parameter Name for HUE",
+              "description": "JSON Parameter Name for HUE",
+              "type": "string",
+              "required": false
+            },
+            "colorTemperatureParamName": {
+              "title": "Parameter Name for Color Temperature",
+              "description": "JSON Parameter Name for Color Temperature",
               "type": "string",
               "required": false
             },
             "sensorUrl": {
-              "title": "Sensor JSON URL",
+              "title": "Sensor URL",
               "description": "JSON file containing sensor readings (temperature, humidity)",
               "type": "string",
               "required": false
             },
             "temperatureName": {
-              "title": "Temperature Name",
-              "description": "JSON param name for Temperature reading",
+              "title": "Parameter Name for Temperature",
+              "description": "JSON parameter name for Temperature reading",
               "type": "string",
               "required": false
             },
             "humidityName": {
-              "title": "Humidity Name",
-              "description": "JSON param name for Humidity reading",
+              "title": "Parameter Name for Humidity",
+              "description": "JSON parameter name for Humidity reading",
               "type": "string",
               "required": false
             },
             "motionSensorName": {
-              "title": "Motion Sensor Name",
+              "title": "Parameter Name for Motion Sensor",
               "description": "JSON param name for Motion Sensor reading",
               "type": "string",
               "required": false
             },
             "motionSensorUrl": {
-              "title": "Motion Sensor JSON URL",
+              "title": "Motion Sensor URL",
               "description": "JSON file containing Motion Sensor readings",
               "type": "string",
               "required": false
@@ -194,13 +257,13 @@
               "required": false
             },
             "mqttTemperature": {
-              "title": "mqtt Topic Temperature",
+              "title": "MQTT Topic Temperature",
               "description": "mqtt Topic Temperature",
               "type": "string",
               "required": false
             },
             "mqttHumidity": {
-              "title": "mqtt Topic Humidity",
+              "title": "MQTT Topic Humidity",
               "description": "mqtt Topic Humidity",
               "type": "string",
               "required": false
@@ -211,6 +274,36 @@
               "type": "string",
               "required": false
             },
+            "mqttRGB": {
+              "title": "MQTT Topic RGB",
+              "description": "MQTT Topic RGB",
+              "type": "string",
+              "required": false
+            },
+            "mqttBrightness": {
+              "title": "MQTT Topic Brightness",
+              "description": "MQTT Topic Brightness",
+              "type": "string",
+              "required": false
+            },
+            "mqttHue": {
+              "title": "MQTT Topic Hue",
+              "description": "MQTT Topic Hue",
+              "type": "string",
+              "required": false
+            },
+            "mqttSaturation": {
+              "title": "MQTT Topic Saturation",
+              "description": "MQTT Topic Saturation",
+              "type": "string",
+              "required": false
+            },
+            "mqttColorTemperature": {
+              "title": "MQTT Topic Color Temperature",
+              "description": "MQTT Topic Color Temperature (Kelvin)",
+              "type": "string",
+              "required": false
+            },
             "mqttInUse": {
               "title": "MQTT Topic In Use",
               "description": "MQTT Topic In Use",
@@ -218,8 +311,8 @@
               "required": false
             },
             "mqttReconnectInterval": {
-              "title": "Reconnect interval (sec)",
-              "description": "60",
+              "title": "MQTT Reconnect interval (sec)",
+              "description": "MQTT Reconnect interval default is set to 60 sec",
               "type": "number",
               "required": false
             },
@@ -263,6 +356,7 @@
     "type": "tabarray",
     "title": "{{ value.deviceName || 'new Device' }}",
     "items": [
+      "devices[].enableLogging",
       "devices[].deviceType",
       "devices[].deviceName",
       "devices[].deviceID",
@@ -392,6 +486,117 @@
               "devices[].mqttUsername",
               "devices[].mqttPassword",
               "devices[].mqttMotionSensor"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "condition": {
+              "functionBody": "return model.devices[arrayIndices].deviceType === 'LightBulb';"
+            },
+            "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].useRGB",
+                  "devices[].useBrightness255",
+                  "devices[].useColorTKelvin"
+                ]
+              }
+            ]
+          },          
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Light Bulb Settings",
+            "condition": {
+              "functionBody": "return model.devices[arrayIndices].deviceType === 'LightBulb';"
+            },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].urlON",
+              "devices[].urlOFF",
+              "devices[].urlStatus",
+              "devices[].stateName",
+              "devices[].onStatusValue",
+              "devices[].offStatusValue",
+              "devices[].urlLightBulbControl",
+              "devices[].brightnessParamName",
+              {
+                "key": "devices[].rgbParamName",
+                "condition": {
+                  "functionBody": "return model.devices[arrayIndices].useRGB;"
+                }
+              },
+              {
+                "key": "devices[].saturationParamName",
+                "condition": {
+                  "functionBody": "return !model.devices[arrayIndices].useRGB;"
+                }
+              },
+              {
+                "key": "devices[].hueParamName",
+                "condition": {
+                  "functionBody": "return !model.devices[arrayIndices].useRGB;"
+                }
+              },
+              "devices[].colorTemperatureParamName"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Light Bulb Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'LightBulb';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttSwitch",
+              "devices[].mqttBrightness",
+              {
+                "key": "devices[].mqttRGB",
+                "condition": {
+                  "functionBody": "return model.devices[arrayIndices].useRGB;"
+                }
+              },
+              {
+                "key": "devices[].mqttHue",
+                "condition": {
+                  "functionBody": "return !model.devices[arrayIndices].useRGB;"
+                }
+              },
+              {
+                "key": "devices[].mqttSaturation",
+                "condition": {
+                  "functionBody": "return !model.devices[arrayIndices].useRGB;"
+                }
+              },
+              "devices[].mqttColorTemperature"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Light Bulb Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'LightBulb';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
             ]
           },
           {

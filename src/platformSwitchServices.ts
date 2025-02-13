@@ -12,9 +12,9 @@ import { discordWebHooks } from './lib/discordWebHooks.js';
  */
 export class platformSwitch {
   public service!: Service;
-
   public mqttClient!: mqtt.MqttClient;
 
+  public enableLogging: boolean = true;
   public deviceId: string = '';
   public deviceType: string = '';
   public deviceName: string = '';
@@ -62,6 +62,8 @@ export class platformSwitch {
     this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
 
     // From Config
+    this.enableLogging = this.accessory.context.device.enableLogging;
+
     this.urlStatus = this.accessory.context.device.urlStatus;
     this.statusStateParam = this.accessory.context.device.stateName;
     this.statusOnCheck = this.accessory.context.device.onStatusValue;
@@ -187,13 +189,17 @@ export class platformSwitch {
     }
 
     callback(null);
-    this.platform.log.info('Success: Switch ', this.deviceName, ' is: ', this.getStatus(this.switchStates.On));
+    if ( this.enableLogging) {
+      this.platform.log.info('Success: Switch ', this.deviceName, ' is: ', this.getStatus(this.switchStates.On));
+    }
   }
 
   private updateSwitchState(isOn: boolean, deviceName: string) {
     if (this.switchStates.On !== isOn) {
       this.switchStates.On = isOn;
-      this.platform.log.info(deviceName, `: Switch is ${isOn ? 'ON' : 'OFF'}`);
+      if ( this.enableLogging) {
+        this.platform.log.info(deviceName, `: Switch is ${isOn ? 'ON' : 'OFF'}`);
+      }
       this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);
     }
   }
@@ -256,9 +262,6 @@ export class platformSwitch {
     }
   }
 
-
-
-  //
   // Connect to MQTT and update Switches
   private initMQTT() {
     const mqttSubscribedTopics: string | string[] | mqtt.ISubscriptionMap = [];
@@ -282,12 +285,14 @@ export class platformSwitch {
 
     this.mqttClient = mqtt.connect(mqttOptions);
     this.mqttClient.on('connect', () => {
-
-      this.platform.log.info(this.deviceName, ': MQTT Connected');
-
+      if ( this.enableLogging) {
+        this.platform.log.info(this.deviceName, ': MQTT Connected');
+      }
       this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
-          this.platform.log.info(this.deviceName, ': Subscribed to: ', mqttSubscribedTopics.toString());
+          if ( this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': Subscribed to: ', mqttSubscribedTopics.toString());
+          }
         } else {
           // Need to insert error handler
           this.platform.log.warn(this.deviceName, err.toString());
@@ -298,7 +303,9 @@ export class platformSwitch {
     this.mqttClient.on('message', (topic, message) => {
       //this.platform.log(this.deviceName,': Received message: ', Number(message));  
       if (topic === this.mqttSwitch) {
-        this.platform.log.info(this.deviceName, ': Status set to: ', this.getStatus(Boolean(Number(message))));
+        if ( this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Status set to: ', this.getStatus(Boolean(Number(message))));
+        }
 
         if (message.toString() === '1'  || message.toString() === 'true') {
           this.switchStates.On = true;
@@ -359,7 +366,9 @@ export class platformSwitch {
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
 
     discord.discordSimpleSend().then((result) => {
-      this.platform.log.info(this.deviceName, ': ', result);
+      if ( this.enableLogging) {
+        this.platform.log.info(this.deviceName, ': ', result);
+      }
     });
 
   }

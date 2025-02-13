@@ -1,10 +1,18 @@
 import type { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 
-import { platformSensors } from './platformSensorServices.js';
-import { platformSwitch } from './platformSwitchServices.js';
-import { platformMotionSensor } from './platformMotionSensorServices.js';
-import { platformOutlet } from './platformOutletServices.js';
-import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
+import { PLATFORM_NAME, PLUGIN_NAME, listOfServices  } from './settings.js';
+
+/**
+ * Dynamically import services from listOfServices in ./settings.js
+ */
+const importedServices = await Promise.all(
+  listOfServices.map(async ([deviceType, servicePath, className]) => {
+    const serviceModule = await import(servicePath);
+    return { deviceType, service: serviceModule[className] };
+  }),
+);
+
+const serviceMap = Object.assign({}, ...importedServices.map(({ deviceType, service }) => ({ [deviceType]: service })));
 
 /**
  * HomebridgePlatform
@@ -81,19 +89,12 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
           this.api.updatePlatformAccessories([existingAccessory]);
 
           // create the accessory handler for the restored accessory
-          switch (device.deviceType) {
-          case 'Switch':
-            new platformSwitch(this, existingAccessory);
-            break;
-          case 'Sensor':
-            new platformSensors(this, existingAccessory);
-            break;
-          case 'MotionSensor':
-            new platformMotionSensor(this, existingAccessory);
-            break;
-          case 'Outlet':
-            new platformOutlet(this, existingAccessory);
-            break;
+          // dynamically import the service based on the device type set in settings.js
+          if (device.deviceType in serviceMap) {
+            const ServiceConstructor = serviceMap[device.deviceType];
+            new ServiceConstructor(this, existingAccessory);
+          } else {
+            this.log.warn(`Unsupported device type: ${device.deviceType}`);
           }
 
           // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, e.g.:
@@ -113,20 +114,14 @@ export class HttpSensorsAndSwitchesHomebridgePlatform implements DynamicPlatform
 
           // create the accessory handler for the newly create accessory
           // this is imported from `platformAccessory.ts`
-          switch (accessory.context.device.deviceType) {
-          case 'Switch':
-            new platformSwitch(this, accessory);
-            break;
-          case 'Sensor':
-            new platformSensors(this, accessory);
-            break;
-          case 'MotionSensor':
-            new platformMotionSensor(this, accessory);
-            break;
-          case 'Outlet':
-            new platformOutlet(this, accessory);
-            break;
+          // dynamically import the service based on the device type set in settings.js
+          if (device.deviceType in serviceMap) {
+            const ServiceConstructor = serviceMap[device.deviceType];
+            new ServiceConstructor(this, accessory);
+          } else {
+            this.log.warn(`Unsupported device type: ${device.deviceType}`);
           }
+
 
           // link the accessory to your platform
           this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);

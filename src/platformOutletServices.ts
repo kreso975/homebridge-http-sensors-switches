@@ -7,9 +7,9 @@ import { discordWebHooks } from './lib/discordWebHooks.js';
 
 export class platformOutlet {
   public service!: Service;
-
   public mqttClient!: mqtt.MqttClient;
 
+  public enableLogging: boolean = true;
   public deviceId: string = '';
   public deviceType: string = '';
   public deviceName: string = '';
@@ -59,6 +59,9 @@ export class platformOutlet {
     this.deviceModel = this.accessory.context.device.deviceModel || 'Outlet';
     this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
     this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
+
+    // Fro9m config
+    this.enableLogging = this.accessory.context.device.enableLogging;
 
     this.urlStatus = this.accessory.context.device.urlStatus;
     this.statusStateParam = this.accessory.context.device.stateName;
@@ -173,10 +176,14 @@ export class platformOutlet {
       
         if (value === statusOnCheck) {
           this.updateOutletState(true, this.deviceName);
-          this.platform.log.info(this.deviceName, ': State set to: ', this.getStatus(true));
+          if ( this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': State set to: ', this.getStatus(true));
+          }
         } else if (value === statusOffCheck) {
           this.updateOutletState(false, this.deviceName);
-          this.platform.log.info(this.deviceName, ': State set to: ', this.getStatus(false));
+          if ( this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': State set to: ', this.getStatus(false));
+          }
         } else {
           this.platform.log.warn(this.deviceName, `: The value of ${this.statusStateParam} does not match statusOnCheck or statusOffCheck.`);
         }
@@ -203,10 +210,14 @@ export class platformOutlet {
         // Update OutletInUse characteristic
         if (value === inUseOnCheck) {
           this.outletStates.OutletInUse = true;
-          this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(true));
+          if ( this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(true));
+          }
         } else if (value === inUseOffCheck) {
           this.outletStates.OutletInUse = false;
-          this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(false));
+          if ( this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(false));
+          }
         } else {
           this.platform.log.warn(this.deviceName, `: The value of ${this.inUseStateParam} does not match inUseOnCheck or inUseOffCheck.`);
         }
@@ -248,7 +259,9 @@ export class platformOutlet {
       .then(() => {
         this.outletStates.OutletInUse = this.outletStates.On;
         this.service.updateCharacteristic(this.platform.Characteristic.OutletInUse, this.outletStates.OutletInUse);
-        this.platform.log.info('Success: Outlet ', this.deviceName, ' is: ', this.getStatus(this.outletStates.On));
+        if ( this.enableLogging) {
+          this.platform.log.info('Success: Outlet ', this.deviceName, ' is: ', this.getStatus(this.outletStates.On));
+        }
       })
       .catch((error) => {
         this.outletStates.On = !value;
@@ -269,7 +282,9 @@ export class platformOutlet {
   private updateOutletState(isOn: boolean, deviceName: string) {
     if (this.outletStates.On !== isOn) {
       this.outletStates.On = isOn;
-      this.platform.log.info(deviceName, `: Outlet is ${isOn ? 'ON' : 'OFF'}`);
+      if ( this.enableLogging) {
+        this.platform.log.info(deviceName, `: Outlet is ${isOn ? 'ON' : 'OFF'}`);
+      }
       this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);
     }
   }
@@ -301,11 +316,14 @@ export class platformOutlet {
 
     this.mqttClient = mqtt.connect(mqttOptions);
     this.mqttClient.on('connect', () => {
-      this.platform.log.info(this.deviceName, ': MQTT Connected');
-
+      if ( this.enableLogging) {
+        this.platform.log.info(this.deviceName, ': MQTT Connected');
+      }
       this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
-          this.platform.log.info(this.deviceName, ': Subscribed to: ', mqttSubscribedTopics.toString());
+          if ( this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': Subscribed to: ', mqttSubscribedTopics.toString());
+          }
         } else {
           // Need to insert error handler
           this.platform.log.warn(this.deviceName, err.toString());
@@ -315,7 +333,9 @@ export class platformOutlet {
 
     this.mqttClient.on('message', (topic, message) => {
       if (topic === this.mqttSwitch) {
-        this.platform.log.info(this.deviceName, ': Status set to: ', this.getStatus(Boolean(Number(message))));
+        if ( this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Status set to: ', this.getStatus(Boolean(Number(message))));
+        }
 
         if ( message.toString() === '1' || message.toString() === 'true' ) {
           this.outletStates.On = true;
@@ -387,7 +407,9 @@ export class platformOutlet {
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
 
     discord.discordSimpleSend().then((result) => {
-      this.platform.log.info(this.deviceName, ': ', result);
+      if ( this.enableLogging) {
+        this.platform.log.info(this.deviceName, ': ', result);
+      }
     });
   }
 }
