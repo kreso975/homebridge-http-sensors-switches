@@ -24,6 +24,7 @@
     "homebridge",
     "homekit",
     "http",
+    "mqtt",
     "json",
     "thermometer",
     "humidity",
