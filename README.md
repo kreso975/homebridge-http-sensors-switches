@@ -16,7 +16,7 @@
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen"> &nbsp;
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 
-This plugin communicates with your devices over HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Temperature/Humidity and Motion sensor.  
+This plugin communicates with your devices over HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Fan, Temperature/Humidity and Motion sensor.  
 Simple Discord Webhooks available in Light Bulb, Switches and Outlets.   
 
 <br><br>

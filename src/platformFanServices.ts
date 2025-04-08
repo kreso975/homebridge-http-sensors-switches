@@ -156,7 +156,6 @@ export class platformFan {
         
         // We can now use MQTT
         if ( this.mqttBroker ) {
-          
           this.initMQTT();
           this.getStateDefinition().forEach(({ state, topic, setHandler }) => {
             if (topic && setHandler) { // Ensure topic is valid and setHandler is enabled
@@ -167,7 +166,6 @@ export class platformFan {
                 });
             }
           });
-          
         }
       }
     }       

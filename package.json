@@ -4,7 +4,7 @@
   "type": "module",
   "version": "1.5.0",
   "private": false,
-  "description": "This plugin communicates with your devices over HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Temperature/Humidity and Motion sensor. Simple Discord Webhooks available in Light Bulb, Switches and Outlets.",
+  "description": "This plugin communicates with your devices over HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Fan, Temperature/Humidity and Motion sensor. Simple Discord Webhooks available in Light Bulb, Switches and Outlets.",
   "author": "Kresimir Kokanovic",
   "license": "Apache-2.0",
   "homepage": "https://github.com/kreso975/homebridge-http-sensors-switches#readme",
@@ -65,7 +65,7 @@
   },
   "dependencies": {
     "@types/axios": "^0.14.0",
-    "hap-nodejs": "^1.1.1-beta.7",
-    "mqtt": "^5.10.1"
+    "mqtt": "^5.10.1",
+    "homebridge-lib": "^7.1.4"
   }
 }
