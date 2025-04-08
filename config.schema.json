@@ -33,7 +33,8 @@
                 { "title": "Motion Sensor", "enum": ["MotionSensor"] },
                 { "title": "Switch", "enum": ["Switch"] },
                 { "title": "Outlet", "enum": ["Outlet"] },
-                { "title": "Light Bulb", "enum": ["LightBulb"] }
+                { "title": "Light Bulb", "enum": ["LightBulb"] },
+                { "title": "Fan", "enum": ["Fan"] }
               ],
               "required": true,
               "default": "Switch",
@@ -148,6 +149,12 @@
               "type": "boolean",
               "required": false
             },
+            "methodUpdate": {
+              "title": "use GET method",
+              "description": "Default is POST method",
+              "type": "boolean",
+              "required": false
+            },
             "useColorTKelvin": {
               "title": "Color Temperature in Kelvin",
               "description": "Mired (153-500), Kelvin (2000-6500)",
@@ -187,6 +194,48 @@
             "colorTemperatureParamName": {
               "title": "Parameter Name for Color Temperature",
               "description": "JSON Parameter Name for Color Temperature",
+              "type": "string",
+              "required": false
+            },
+            "urlFanControl": {
+              "title": "HTTP address Fan Control",
+              "description": "HTTP address where to send Device control commands",
+              "type": "string",
+              "required": false
+            },
+            "paramNameActive": {
+              "title": "Parameter Name for Active",
+              "description": "JSON Parameter Name for Active (on/off)",
+              "type": "string",
+              "required": false
+            },
+            "paramNameRotationSpeed": {
+              "title": "Parameter Name for Rotation Speed",
+              "description": "JSON Parameter Name for Rotation Speed",
+              "type": "string",
+              "required": false
+            },
+            "paramNameRotationDirection": {
+              "title": "Parameter Name for Rotation Direction",
+              "description": "JSON Parameter Name for Rotation Direction",
+              "type": "string",
+              "required": false
+            },
+            "paramNameSwingMode": {
+              "title": "Parameter Name for Swing Mode",
+              "description": "JSON Parameter Name for Swing Mode",
+              "type": "string",
+              "required": false
+            },
+            "paramNameCurrentFanState": {
+              "title": "Parameter Name for Current Fan State",
+              "description": "JSON Parameter Name for Current Fan State",
+              "type": "string",
+              "required": false
+            },
+            "paramNameTargetFanState": {
+              "title": "Parameter Name for Target Fan State",
+              "description": "JSON Parameter Name for Target Fan State",
               "type": "string",
               "required": false
             },
@@ -319,6 +368,36 @@
             "mqttMotionSensor": {
               "title": "MQTT Topic Motion Sensor",
               "description": "MQTT Topic Motion Sensor",
+              "type": "string",
+              "required": false
+            },
+            "mqttRotationSpeed": {
+              "title": "Parameter Name for Rotation Speed",
+              "description": "JSON Parameter Name for Rotation Speed",
+              "type": "string",
+              "required": false
+            },
+            "mqttRotationDirection": {
+              "title": "MQTT Topic for Rotation Direction",
+              "description": "JSON Parameter Name for Rotation Direction",
+              "type": "string",
+              "required": false
+            },
+            "mqttSwingMode": {
+              "title": "MQTT Topic for Swing Mode",
+              "description": "JSON Parameter Name for Swing Mode",
+              "type": "string",
+              "required": false
+            },
+            "mqttCurrentFanState": {
+              "title": "MQTT Topic for Current Fan State",
+              "description": "JSON Parameter Name for Current Fan State",
+              "type": "string",
+              "required": false
+            },
+            "mqttTargetFanState": {
+              "title": "MQTT Topic for Target Fan State",
+              "description": "JSON Parameter Name for Target Fan State",
               "type": "string",
               "required": false
             },
@@ -654,7 +733,67 @@
               "devices[].discordAvatar",
               "devices[].discordMessage"
             ]
-          }  
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Fan Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Fan';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].methodUpdate",
+              "devices[].urlStatus",
+              "devices[].urlFanControl",
+              "devices[].paramNameActive",
+              "devices[].paramNameRotationSpeed",
+              "devices[].paramNameRotationDirection",
+              "devices[].paramNameSwingMode",
+              "devices[].paramNameCurrentFanState",
+              "devices[].paramNameTargetFanState"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Fan Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Fan';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttSwitch",
+              "devices[].mqttRotationSpeed",
+              "devices[].mqttRotationDirection",
+              "devices[].mqttSwingMode",
+              "devices[].mqttCurrentFanState",
+              "devices[].mqttTargetFanState"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Fan Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Fan';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
+            ]
+          }   
         ]
       }
     ]

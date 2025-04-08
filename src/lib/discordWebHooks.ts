@@ -23,7 +23,6 @@ export class discordWebHooks {
     
   }
 
-    
   public async discordSimpleSend(): Promise<string> {
     try {
       await axios({

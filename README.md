@@ -12,7 +12,7 @@
 </span>
 
 [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins) &nbsp;
-<img src="https://img.shields.io/badge/node-^18.20.4%20%7C%7C%20^20.16.0%20%7C%7C%20^22.5.1-brightgreen"> &nbsp;
+<img src="https://img.shields.io/badge/node-^18.20.4%20%7C%7C%20^20.18.0%20%7C%7C%20^22.10.0-brightgreen"> &nbsp;
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen"> &nbsp;
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 
@@ -103,7 +103,10 @@ Simple Discord Webhooks available in Light Bulb, Switches and Outlets.
 ## 🌡️ Temperature and Humidity sensor
 > [!NOTE]  
 > Sensor - Read JSON Or MQTT for Temperature, Humidity  
->   
+>  
+> Nested JSON  
+> Support for Nested JSON structure: sensor2.tCelsius  
+>    
 
 > [!TIP]  
 > Parameters required in Config:
@@ -125,17 +128,74 @@ Simple Discord Webhooks available in Light Bulb, Switches and Outlets.
 
 
 Sensor JSON file example
+<pre>
+{
+   "t": "25.25",
+   "h": "33.54",
+   "p": "1025.04",
+   "sensor2": {
+     "tCelsius": "22"
+   }
+}
+</pre>
+<br>
+
+## <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><path fill="currentColor" d="M13 .188C7.582.188 3.187 4.58 3.187 10c0 5.417 4.396 9.811 9.813 9.813c5.416-.002 9.813-4.396 9.813-9.813c0-5.421-4.399-9.813-9.813-9.813zm0 1.125c4.794 0 8.688 3.89 8.688 8.687c0 4.796-3.892 8.686-8.688 8.688a8.687 8.687 0 1 1 0-17.375zm-2.469 1.656c-1.176.115-2.349 1.63-1.625 3c.68 1.284 2.096 1.16 2.531 2.625c.405-.556 1.206-1.184 2.563-.531c.878-3.252-.975-5.332-3.469-5.094zm8.031 5.5c-1.45-.055-2.077 1.229-3.562.875c.277.627.432 1.65-.813 2.5c2.377 2.385 5.085 1.81 6.126-.469c.489-1.075-.201-2.85-1.75-2.906zm-5.812.25c-.59.12-1.031.655-1.031 1.281c0 .716.565 1.281 1.281 1.281s1.281-.565 1.281-1.281S13.716 8.719 13 8.719c-.09 0-.166-.018-.25 0zm-1.938 1.375c-3.254.865-4.11 3.521-2.656 5.562c.686.961 2.582 1.22 3.406-.094c.773-1.228-.05-2.39 1-3.5c-.681-.073-1.637-.466-1.75-1.968zM11 21c0 2.001-4 2.344-4 4v1h12v-1c0-1.656-4-1.999-4-4c0 0-.379.313-2 .313S11 21 11 21z"/></svg> Fan  
+  
+| **Param** 	| **Description** 	| **Values** 	|  
+|---	|---	|:---:	|  
+| Active 	| Turn Fan On / Off 	| 0 (Inactive), 1 (Active) 	|  
+| RotationSpeed 	| Rotation Speed 	| Valid range: 0 to 100 	| 
+| RotationDirection 	| Fan turn direction 	| 0 (Clockwise), 1 (Counterclockwise) 	| 
+| SwingMode 	| Swing Mode On / Off 	| 0 (Disabled), 1 (Enabled) 	| 
+| TargetFanState 	| Automatione mode 	|0 (Manual), 1 (Automatic) 	| 
+| CurrentFanState 	| Read Status of Fan 	| 0 (Inactive), 1 (Idle), 2 (Blowing Air) 	| 
+
+
+> [!NOTE]  
+>
+>
+> HTTP  
+> Read interval 5 sec  
+> Select HTTP Method - GET / POST  
+> 
+> MQTT  
+> param for ACIVE is mqttSwitch  
+>   
+> Parameters for SERVICES you do NOT NEED, leave BLANK  
+>  
+> Discord Webhook publishes Fan status to your Discord channel (On/Off)   
+  
+
+> [!IMPORTANT]  
+> Use HTTP or MQTT not both for same accessory.  
+>   
+> Parameters required in Config:  
+> HTTP  
+> urlFanControl, urlStatus
+> MQTT  
+> mqttBroker
+>  
+
+> [!CAUTION]  
+> Parameter:
+> urlStatus = 'url points to JSON with device status' when is set it will bind Accessory to 5 sec check status interval
+Fan JSON file example
 ```
 {
-    "t": "29.37",
-    "h": "48.26",
-    "p": "1001.33"
+    "Active": 0,
+    "RotationSpeed": 100,
+    "RotationDirection": 0,
+    "SwingMode": 1,
+    "CurrentFanState": 1,
+    "TargetFanState": 1
 }
 ```
 <br>
-
-## ⚙️ Config example
-```
+  
+<details>
+<summary>⚙️ Config example</summary>
+<pre>
 {
     "bridge": {
         "name": "Homebridge xxxx",
@@ -226,10 +286,12 @@ Sensor JSON file example
         }
     ]
 }
-```
-<br><br>
+</pre>
+</details>
+<br>
 
-## ⚙️ Config params
+<details>
+<summary>⚙️ Config params</summary>
 
 | **Param** 	| **Description** 	| **Param needed** 	|
 |---	|---	|:---:	|
@@ -262,6 +324,12 @@ Sensor JSON file example
 | saturationParamName 	| JSON Parameter Name for Saturation 	| false 	|
 | hueParamName 	| JSON Parameter Name for HUE 	| false 	|
 | colorTemperatureParamName 	| JSON Parameter Name for Color Temperature 	| false 	|
+| paramNameActive 	| JSON Parameter Name for On / Off 	| true 	|
+| paramNameRotationSpeed 	| JSON Parameter Name for Rotation speed 	| false 	|
+| paramNameRotationDirection 	| JSON Parameter Name for Rotation Direction 	| false 	|
+| paramNameSwingMode 	| JSON Parameter Name for Swing Mode 	| false 	|
+| paramNameCurrentFanState 	| JSON Parameter Name for Current Fans Status 	| false 	|
+| paramNameTargetFanState 	| JSON Parameter Name for Automation 	| false 	|
 | updateInterval 	| update interval for reading Sensors, default is 60000 = 60 seconds = 1 minute 	| false 	|
 | mqttBroker 	| URL of MQTT Broker 	| true/false 	|
 | mqttReconnectInterval 	| reconnect interval when no connection to MQTT Broker, default is 60 seconds 	| true/false 	|
@@ -278,14 +346,19 @@ Sensor JSON file example
 | mqttHue 	| MQTT Topic for Hue	| false 	|
 | mqttSaturation 	| MQTT Topic for Saturation	| false 	|
 | mqttColorTemperature 	| MQTT Topic for Color Temperature	| false 	|
+| mqttRotationSpeed 	| MQTT Topic for Rotation Speed	| false 	|
+| mqttRotationDirection 	| MQTT Topic for Rotation Direction	| false 	|
+| mqttSwingMode 	| MQTT Topic for Swing Mode	| false 	|
+| mqttCurrentFanState 	| MQTT Topic for Current Fan State	| false 	|
+| mqttTargetFanState 	| MQTT Topic for Automation	| false 	|
 | motionSensorName 	| JSON param name for Motion Sensor reading 	| true 	|
-| motionSensorUrl 	| SON file containing Motion Sensor readings 	| true 	|
+| motionSensorUrl 	| JSON file containing Motion Sensor readings 	| true 	|
 | updateIntervalMotionSensor 	| update interval for reading Motion Sensor, default is 60000 = 60 seconds = 1 minute 	| true 	|
 | discordWebhook 	| URL to Discord WebHook 	| false 	|
 | discordUsername 	| Name for message publisher 	| false 	|
 | discordAvatar 	| URL to Online Avatar image 	| false 	|
 | discordMessage 	| Message 	| false 	|
-
+</details>
 <br><br>  
   
 
@@ -314,5 +387,5 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 > **Node v22 Information**
 >
 > This template currently has a
-> - `package.json -> engines.node` value of `"^18.20.4 || ^20.16.0 || ^22.5.1"`
+> - `package.json -> engines.node` value of `"^18.20.4 || ^20.18.0 || ^22.10.0"`
 > 

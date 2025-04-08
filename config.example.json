@@ -93,6 +93,25 @@
                     "sensorUrl": "http://192.168.1.72/mesures.json",
                     "humidityName": "h",
                     "updateInterval": 300000
+                },
+                {
+                    "deviceType": "Fan",
+                    "enableLogging": false,
+                    "deviceID": "asf3fsd4gsdvxcvn",
+                    "deviceName": "Fan",
+                    "deviceManufacturer": "Kreso",
+                    "deviceModel": "fanv2",
+                    "deviceSerialNumber": "333ccc3444dccc",
+                    "deviceFirmwareVersion": "v1",
+                    "urlStatus": "http://192.168.1.1/test/Fanv2/fanv2.json",
+                    "methodUpdate": true,
+                    "urlFanControl": "http://192.168.1.1/test/Fanv2/fanv2.php",
+                    "paramNameActive": "Active",
+                    "paramNameRotationSpeed": "RotationSpeed",
+                    "paramNameRotationDirection": "RotationDirection",
+                    "paramNameSwingMode": "SwingMode",
+                    "paramNameCurrentFanState": "CurrentFanState",
+                    "paramNameTargetFanState": "TargetFanState"
                 }
             ]
         }

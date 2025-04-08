@@ -4,6 +4,8 @@ import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions }  from 'mqtt';
 
+import { getNestedValue } from './lib/utilities.js';
+
 
 /**
  * Platform Accessory
@@ -61,7 +63,7 @@ export class platformSensors {
     this.temperatureName = this.accessory.context.device.temperatureName;
     this.humidityName = this.accessory.context.device.humidityName;
     this.airPressureName = this.accessory.context.device.airPressureName;
-    this.updateInterval = accessory.context.device.updateInterval || 300000; // Default update interval is 300 seconds
+    this.updateInterval = accessory.context.device.updateInterval || 60000; // Default update interval is 300 seconds
 
     this.mqttReconnectInterval = this.accessory.context.device.mqttReconnectInterval || 60; // 60 sec default
     this.mqttBroker = accessory.context.device.mqttBroker;
@@ -134,7 +136,6 @@ export class platformSensors {
       
     } 
   }
-
   
   private async getSensorData() {
     try {
@@ -142,26 +143,53 @@ export class platformSensors {
       const data = response.data;
 
       // If Temperature Service is available
-      if ( this.temperatureService ) {
-        // If we have Config setup for Temperature
-        if ( this.temperatureName && this.temperatureName in data ) {
-          this.currentTemperature = Number(data[this.temperatureName]);
-          this.temperatureService.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.currentTemperature);
+      if (this.temperatureService) {
+        if (this.temperatureName) {
+          const tmpTemperature = getNestedValue(data, this.temperatureName, 'number');
+          
+          if (typeof tmpTemperature === 'number') {
+            this.currentTemperature = tmpTemperature;
+            this.temperatureService.updateCharacteristic(
+              this.platform.Characteristic.CurrentTemperature,
+              this.currentTemperature,
+            );
+          } else {
+            this.platform.log.warn(
+              this.deviceName,
+              ': Error: Cannot find or convert: ',
+              this.temperatureName,
+              ' in JSON',
+            );
+          }
         } else {
-          this.platform.log.warn(this.deviceName,': Error: Cannot find: ', this.temperatureName, ' in JSON' );
+          this.platform.log.warn(this.deviceName, ': Error: Temperature name is not defined');
         }
       }
 
       // If Humidity Service is available
-      if ( this.humidityService ) {
-        // If we have Config setup for Humidity
-        if (this.humidityName && this.humidityName in data ) {
-          this.currentHumidity = Number(data[this.humidityName]);
-          this.humidityService.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.currentHumidity);
+      if (this.humidityService) {
+        if (this.humidityName) {
+          const tmpHumidity = getNestedValue(data, this.humidityName, 'number');
+      
+          if (typeof tmpHumidity === 'number') {
+            this.currentHumidity = tmpHumidity;
+            this.humidityService.updateCharacteristic(
+              this.platform.Characteristic.CurrentRelativeHumidity,
+              this.currentHumidity,
+            );
+          } else {
+            this.platform.log.warn(
+              this.deviceName,
+              ': Error: Cannot find or convert: ',
+              this.humidityName,
+              ' in JSON',
+            );
+          }
         } else {
-          this.platform.log.warn(this.deviceName, ': Error: Cannot find: ', this.humidityName, ' in JSON');
+          this.platform.log.warn(this.deviceName, ': Error: Humidity name is not defined');
         }
       }
+      
       // If we have Config setup for Air Pressure
       if ( this.airPressureName ) {
         if ( this.enableLogging) {
@@ -171,7 +199,6 @@ export class platformSensors {
       if ( this.enableLogging) {
         this.platform.log.info(this.deviceName,': ',JSON.stringify(data));
       }
-      //this.platform.log.debug(JSON.stringify(data));
 
     } catch (e) {
       const error = e as AxiosError;

@@ -17,5 +17,6 @@ export const listOfServices = [
   ['MotionSensor', './platformMotionSensorServices.js', 'platformMotionSensor'],
   ['Outlet', './platformOutletServices.js', 'platformOutlet'],
   ['LightBulb', './platformLightBulbServices.js', 'platformLightBulb'],
+  ['Fan', './platformFanServices.js', 'platformFan'],
 ];
  
