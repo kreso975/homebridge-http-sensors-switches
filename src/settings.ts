@@ -18,5 +18,6 @@ export const listOfServices = [
   ['Outlet', './platformOutletServices.js', 'platformOutlet'],
   ['LightBulb', './platformLightBulbServices.js', 'platformLightBulb'],
   ['Fan', './platformFanServices.js', 'platformFan'],
+  ['CarbonDioxide', './platformCarbonDioxideServices.js', 'platformCarbonDioxide'],
 ];
  

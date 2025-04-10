@@ -35,10 +35,10 @@ export class platformCarbonDioxide {
   public mqttReconnectInterval: string = '';
   public mqttBroker: string = '';
   public mqttPort: string = '';
-  public mqttMotionSensor: string = '';
   public mqttUsername: string = '';
   public mqttPassword: string = '';
 
+  public mqttMotionSensor: string = '';
   public mqttCO2Detected: string = '';
   public mqttCO2Level: string = '';
   public mqttCO2PeakLevel: string = '';

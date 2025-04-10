@@ -1,271 +1,265 @@
 import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
+import { SharedPolling } from './lib/SharedPolling.js';       // Include shared polling library
+import { getNestedValue } from './lib/utilities.js';          // Include utility function for nested value retrieval
+import { discordWebHooks } from './lib/discordWebHooks.js';   // Include Discord webhook library
+
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
-import { discordWebHooks } from './lib/discordWebHooks.js';
 
-/**
- * Platform Accessory
- * An instance of this class is created for each accessory your platform registers
- * Each accessory may expose multiple services of different service types.
- */
 export class platformSwitch {
   public service!: Service;
   public mqttClient!: mqtt.MqttClient;
+  private sharedPollingInstance?: SharedPolling;
 
-  public enableLogging: boolean = true;
-  public deviceId: string = '';
-  public deviceType: string = '';
-  public deviceName: string = '';
-  public deviceManufacturer: string = '';
-  public deviceModel: string = '';
-  public deviceSerialNumber: string = '';
-  public deviceFirmwareVersion: string = '';
+  // Device and configuration properties
+  public enableLogging = true;
+  // Ensure backward compatibility for shared polling
+  public sharedPolling = false; // Default to false
+  public sharedPollingId = ''; // Default to empty
 
-  public urlON: string = '';
-  public urlOFF: string = '';
-  public url = '';
+  public deviceId = '';
+  public deviceType = '';
+  public deviceName = '';
+  public deviceManufacturer = '';
+  public deviceModel = '';
+  public deviceSerialNumber = '';
+  public deviceFirmwareVersion = '';
 
-  public urlStatus: string = '';
-  public statusStateParam: string = '';
-  public statusOnCheck: string = '';
-  public statusOffCheck: string = '';
+  public url: string = '';
+  public urlON = '';
+  public urlOFF = '';
+  public urlStatus = '';
+  public statusStateParam = '';
+  public statusOnCheck = '';
+  public statusOffCheck = '';
 
-  public mqttReconnectInterval: string = '';
-  public mqttBroker: string = '';
-  public mqttPort: string = '';
-  public mqttSwitch: string = '';
-  public mqttUsername: string = '';
-  public mqttPassword: string = '';
+  public mqttReconnectInterval = '';
+  public mqttBroker = '';
+  public mqttPort = '';
+  public mqttUsername = '';
+  public mqttPassword = '';
 
-  public discordWebhook: string = '';
-  public discordUsername: string = '';
-  public discordAvatar: string = '';
-  public discordMessage: string = '';
+  public mqttSwitch = '';
 
-  public switchStates = {
-    On: false,
-  };
+  public discordWebhook = '';
+  public discordUsername = '';
+  public discordAvatar = '';
+  public discordMessage = '';
 
+  public switchStates = { On: false };
+  private individualPollingInterval?: NodeJS.Timeout; // Individual polling interval
 
   constructor(
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
   ) {
+    const device = this.accessory.context.device;
 
-    this.deviceType = this.accessory.context.device.deviceType;
-    this.deviceName = this.accessory.context.device.deviceName || 'NoName';
-    this.deviceManufacturer = this.accessory.context.device.deviceManufacturer || 'Stergo';
-    this.deviceModel = this.accessory.context.device.deviceModel || 'Switch';
-    this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
-    this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
+    // Initialize device properties from the accessory context
+    this.deviceType = device.deviceType;
+    this.deviceName = device.deviceName || 'NoName';
+    this.deviceManufacturer = device.deviceManufacturer || 'Stergo';
+    this.deviceModel = device.deviceModel || 'Switch';
+    this.deviceSerialNumber = device.deviceSerialNumber || accessory.UUID;
+    this.deviceFirmwareVersion = device.deviceFirmwareVersion || '0.0';
+    this.enableLogging = device.enableLogging;
+    this.urlStatus = device.urlStatus;
+    this.statusStateParam = device.stateName;
+    this.statusOnCheck = device.onStatusValue;
+    this.statusOffCheck = device.offStatusValue;
+    this.urlON = device.urlON;
+    this.urlOFF = device.urlOFF;
+    this.mqttReconnectInterval = device.mqttReconnectInterval || '60';
+    this.mqttBroker = device.mqttBroker;
+    this.mqttPort = device.mqttPort;
+    this.mqttSwitch = device.mqttSwitch;
+    this.mqttUsername = device.mqttUsername;
+    this.mqttPassword = device.mqttPassword;
+    this.discordWebhook = device.discordWebhook;
+    this.discordUsername = device.discordUsername || 'StergoSmart';
+    this.discordAvatar = device.discordAvatar || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
+    this.discordMessage = device.discordMessage;
 
-    // From Config
-    this.enableLogging = this.accessory.context.device.enableLogging;
+    // Ensure backward compatibility for shared polling
+    this.sharedPolling = device.sharedPolling ?? false; // Default to false
+    this.sharedPollingId = device.sharedPollingId ?? ''; // Default to empty
 
-    this.urlStatus = this.accessory.context.device.urlStatus;
-    this.statusStateParam = this.accessory.context.device.stateName;
-    this.statusOnCheck = this.accessory.context.device.onStatusValue;
-    this.statusOffCheck = this.accessory.context.device.offStatusValue;
-    this.urlON = this.accessory.context.device.urlON;
-    this.urlOFF = this.accessory.context.device.urlOFF;
+    // Ensure backward compatibility for shared polling
+    this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
+    this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
 
-    this.mqttReconnectInterval = this.accessory.context.device.mqttReconnectInterval || 60; // 60 sec default
-    this.mqttBroker = this.accessory.context.device.mqttBroker;
-    this.mqttPort = this.accessory.context.device.mqttPort;
-    this.mqttSwitch = this.accessory.context.device.mqttSwitch;
-    this.mqttUsername = this.accessory.context.device.mqttUsername;
-    this.mqttPassword = this.accessory.context.device.mqttPassword;
+    if (this.sharedPolling && this.sharedPollingId) {
+      // Register the shared polling instance for the group
+      const sharedPollingInstance = SharedPolling.registerPolling(
+        this.sharedPollingId,
+        this.urlStatus, // URL shared by multiple devices
+        this.platform.log,
+      );
+    
+      // Periodically fetch shared data and update device state
+      setInterval(() => {
+        const data = sharedPollingInstance?.getData();
+        if (data) {
+          this.updateSwitchStatusFromSharedData(data);
+        }
+      }, 5000); // Poll every 5 seconds
+    } else if (this.urlStatus) {
+      // Fallback to individual polling if shared polling is not enabled
+      this.startIndividualPolling(this.urlStatus);
+    }       
+    
+    // Initialize the device accessory with HomeKit services and characteristics
+    this.initializeAccessory();
 
-    this.discordWebhook = this.accessory.context.device.discordWebhook;
-    this.discordUsername = this.accessory.context.device.discordUsername || 'StergoSmart';
-    this.discordAvatar = this.accessory.context.device.discordAvatar
-      || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
-    this.discordMessage = this.accessory.context.device.discordMessage;
+  }
 
-
+  private initializeAccessory(): void {
     if (!this.deviceType) {
-      this.platform.log.warn(this.deviceName, ': Ignoring accessory; No deviceType defined.');
+      this.platform.log.warn(`${this.deviceName}: Ignoring accessory; No deviceType defined.`);
+      this.cleanup(); // Stop active polling if accessory is invalid
       return;
     }
-
+  
+    if (this.deviceType === 'Switch' && !(this.urlON || this.mqttBroker)) {
+      this.platform.log.warn(`${this.deviceName}: Ignoring accessory; Missing required configuration.`);
+      this.cleanup(); // Stop active polling if configuration is invalid
+      return;
+    }
+  
+    // Configure Accessory Information and Services for valid configurations
     if (this.deviceType === 'Switch' && (this.urlON || this.mqttBroker)) {
-
-      // set accessory information
+      // Set accessory information
       this.accessory.getService(this.platform.Service.AccessoryInformation)!
         .setCharacteristic(this.platform.Characteristic.Manufacturer, this.deviceManufacturer)
         .setCharacteristic(this.platform.Characteristic.Model, this.deviceModel)
         .setCharacteristic(this.platform.Characteristic.FirmwareRevision, this.deviceFirmwareVersion)
         .setCharacteristic(this.platform.Characteristic.SerialNumber, this.deviceSerialNumber);
-
-
-      if (this.urlON || this.mqttBroker) {
-        // get the Switch service if it exists, otherwise create a new Switch service
-        this.service = this.accessory.getService(this.platform.Service.Switch) || this.accessory.addService(this.platform.Service.Switch);
-
-        // set the service name, this is what is displayed as the default name on the Home app
-        // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
-        this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
-
-        // Try to fetch init power Status of device and check the status every 5 sec
-        // We are checking status because if it's manualy changed/switched Homekit is not notified
-        // If we do not have urlStatus defined in config we will skip reading Switch status
-        if (this.urlStatus) {
-          this.getOn();
-          setInterval(this.getOn.bind(this), 5000);
-        }
-
-        if (this.urlON) {
-          // register handlers for the On/Off Characteristic
-          this.service.getCharacteristic(this.platform.Characteristic.On)
-            .on('set', this.setOn.bind(this))
-            .on('get', (callback) => {
-              callback(null, this.switchStates.On);
-            });
-        }
-
-        // We can now use MQTT
-        if (this.mqttBroker) {
-          this.initMQTT();
-
-          this.service.getCharacteristic(this.platform.Characteristic.On)
-            .on('set', this.publishMQTTmessage.bind(this));
-        }
+  
+      // Add or get the Switch service
+      this.service = this.accessory.getService(this.platform.Service.Switch) || this.accessory.addService(this.platform.Service.Switch);
+      this.service.setCharacteristic(this.platform.Characteristic.Name, this.deviceName);
+  
+      // Configure HTTP-based state changes
+      if ( this.urlON ) {
+        this.service.getCharacteristic(this.platform.Characteristic.On)
+          .on('set', this.setOn.bind(this)) // Handle setting the switch state
+          .on('get', (callback) => {
+            callback(null, this.switchStates.On); // Return the current state
+          });
+      }
+  
+      // Configure MQTT if provided
+      if (this.mqttBroker) {
+        this.initMQTT(); // Initialize MQTT functionality
+        this.service.getCharacteristic(this.platform.Characteristic.On)
+          .on('set', this.publishMQTTmessage.bind(this)); // Publish MQTT messages when state changes
       }
     }
   }
-
-  // Silly function :)
-  private getStatus(isOn: boolean): string {
-    return isOn ? 'ON' : 'OFF';
-  }
-
-  /**
-   * Handle "SET" requests from HomeKit
-   * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
-   */
-  private async setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
-    // 
-    this.switchStates.On = value as boolean;
-
-    if (!this.urlON || !this.urlOFF) {
-      this.platform.log.warn(this.deviceName, ': Ignoring request; No Switch trigger url defined.');
-      callback(new Error('No Switch trigger url defined.'));
+  
+  private updateSwitchStatusFromSharedData(data?: Record<string, unknown>): void {
+    if (!data) {
+      this.platform.log.warn(`${this.deviceName}: No data available for updating switch status.`);
       return;
     }
-
-    if (this.switchStates.On) {
-      this.url = this.urlON;
-      this.platform.log.debug(this.deviceName, ': Setting power state to ON');
-      this.service.updateCharacteristic(this.platform.Characteristic.On, true);
+  
+    // Proceed with processing the data
+    const value = data[this.statusStateParam];
+    if (value === this.statusOnCheck) {
+      this.updateSwitchState(true, this.deviceName);
+    } else if (value === this.statusOffCheck) {
+      this.updateSwitchState(false, this.deviceName);
     } else {
-      this.url = this.urlOFF;
-      this.platform.log.debug(this.deviceName, ': Setting power state to OFF');
-      this.service.updateCharacteristic(this.platform.Characteristic.On, false);
-    }
-
-    axios.get(this.url)
-      // We are not going to wait, we will presume everything is OK and if it's not Error handler will handle it
-      //  .then((response) => {
-      // handle success
-      //    callback(response.data);
-      //    this.platform.log.debug('Success: ', error);
-      //  })
-      .catch((error) => {
-        // handle error
-        // Let's reverse On value since we couldn't reach URL
-        this.switchStates.On = !value;
-        this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
-        this.platform.log.warn(this.deviceName, ': Setting power state to :', this.switchStates.On);
-
-        this.platform.log.warn(this.deviceName, ': Error: ', error.message);
-        //callback(error);
-      });
-
-    // If is set dicordWebhook address
-    if (this.discordWebhook) {
-      this.initDiscordWebhooks();
-    }
-
-    callback(null);
-    if ( this.enableLogging) {
-      this.platform.log.info('Success: Switch ', this.deviceName, ' is: ', this.getStatus(this.switchStates.On));
+      this.platform.log.warn(`${this.deviceName}: Unexpected value for ${this.statusStateParam}`);
     }
   }
+  
+  private startIndividualPolling(urlStatus: string): void {
+    const fetchStatus = async () => {
+      try {
+        const response = await axios.get(urlStatus, { timeout: 8000 });
+        const data = response.data;
+  
+        const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
+  
+        if (value === this.statusOnCheck) {
+          this.updateSwitchState(true, this.deviceName);
+        } else if (value === this.statusOffCheck) {
+          this.updateSwitchState(false, this.deviceName);
+        } else {
+          this.platform.log.warn(`${this.deviceName}: Unexpected value for ${this.statusStateParam}`);
+        }
+      } catch (error) {
+        const errorMessage = (error as AxiosError).message;
+        this.platform.log.error(`${this.deviceName}: Error fetching status - ${errorMessage}`);
+      }
+    };
+  
+    // Perform initial status check and set up polling
+    this.individualPollingInterval = setInterval(fetchStatus, 5000);
+  }  
 
-  private updateSwitchState(isOn: boolean, deviceName: string) {
+  private updateSwitchState(isOn: boolean, deviceName: string): void {
     if (this.switchStates.On !== isOn) {
       this.switchStates.On = isOn;
-      if ( this.enableLogging) {
-        this.platform.log.info(deviceName, `: Switch is ${isOn ? 'ON' : 'OFF'}`);
+      if (this.enableLogging) {
+        this.platform.log.info(`${deviceName}: Switch is ${isOn ? 'ON' : 'OFF'}`);
       }
       this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);
     }
   }
 
-  private async getOn() {
-    // Check if we have Status URL setup
-    if (!this.urlStatus) {
-      this.platform.log.warn(this.deviceName, ': Ignoring request; No status url defined.');
+  /**
+ * Handles "SET" requests from HomeKit.
+ * This method is triggered when the user changes the state of a switch.
+ */
+  private async setOn(value: CharacteristicValue, callback: CharacteristicSetCallback): Promise<void> {
+    this.switchStates.On = value as boolean;
+
+    if (!this.urlON || !this.urlOFF) {
+      this.platform.log.warn(`${this.deviceName}: Ignoring request; No Switch trigger URL defined.`);
+      callback(new Error('No Switch trigger URL defined.'));
       return;
     }
 
+    // Determine the URL to use based on the state
+    this.url = this.switchStates.On ? this.urlON : this.urlOFF;
+    this.platform.log.debug(`${this.deviceName}: Setting power state to ${this.switchStates.On ? 'ON' : 'OFF'}`);
+
+    // Update characteristic
+    this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
+
     try {
-      const response = await axios({
-        url: this.urlStatus,
-        method: 'get',
-        timeout: 8000,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      const data = response.data;
+    // Send the HTTP request to trigger the switch state
+      await axios.get(this.url);
 
-      // Check if provided KEY EXIST in JSON
-      if (this.statusStateParam in data) {
-        const value = data[this.statusStateParam];
-        const valueType = typeof value;
-
-        // Convert statusOnCheck and statusOffCheck to the appropriate type
-        let statusOnCheck: boolean | number | string;
-        let statusOffCheck: boolean | number | string;
-
-        if (valueType === 'boolean') {
-          statusOnCheck = true;
-          statusOffCheck = false;
-        } else if (valueType === 'number') {
-          statusOnCheck = parseFloat(this.statusOnCheck);
-          statusOffCheck = parseFloat(this.statusOffCheck);
-        } else {
-          statusOnCheck = this.statusOnCheck;
-          statusOffCheck = this.statusOffCheck;
-        }
-
-  
-        // Check and update switch state
-        if (value === statusOnCheck) {
-          this.updateSwitchState(true, this.deviceName);
-        } else if (value === statusOffCheck) {
-          this.updateSwitchState(false, this.deviceName);
-        } else {
-          this.platform.log.warn(this.deviceName, `: The value of ${this.statusStateParam} does not match statusOnCheck or statusOffCheck.`);
-        }
-      } else {
-        this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.statusStateParam, 'in JSON');
+      // If Discord Webhook is enabled, send status update
+      if (this.discordWebhook) {
+        this.initDiscordWebhooks();
       }
-    } catch (e) {
-      const error = e as AxiosError;
-      if (axios.isAxiosError(error)) {
-        this.platform.log.warn(this.deviceName, ': Error: URL Status check:', error.message);
+
+      // Log the success if logging is enabled
+      if (this.enableLogging) {
+        this.platform.log.info(`Success: Switch ${this.deviceName} is ${this.switchStates.On ? 'ON' : 'OFF'}`);
       }
+
+      callback(null); // Indicate success to HomeKit
+    } catch (error) {
+    // Handle errors and revert the switch state
+      const errorMessage = (error as AxiosError).message;
+      this.switchStates.On = !this.switchStates.On; // Revert state
+      this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
+      this.platform.log.warn(`${this.deviceName}: Error setting power state: ${errorMessage}`);
+
+      callback(new Error(errorMessage)); // Indicate error to HomeKit
     }
   }
 
-  // Connect to MQTT and update Switches
-  private initMQTT() {
-    const mqttSubscribedTopics: string | string[] | mqtt.ISubscriptionMap = [];
-
+  private initMQTT(): void {
+    const mqttSubscribedTopics: string[] = [];
+  
     const mqttOptions: IClientOptions = {
       keepalive: 10,
       protocol: 'mqtt',
@@ -278,98 +272,132 @@ export class platformSwitch {
       rejectUnauthorized: false,
       reconnectPeriod: Number(this.mqttReconnectInterval) * 1000,
     };
-
+  
     if (this.mqttSwitch) {
       mqttSubscribedTopics.push(this.mqttSwitch);
     }
-
+  
     this.mqttClient = mqtt.connect(mqttOptions);
+  
     this.mqttClient.on('connect', () => {
-      if ( this.enableLogging) {
-        this.platform.log.info(this.deviceName, ': MQTT Connected');
+      if (this.enableLogging) {
+        this.platform.log.info(`${this.deviceName}: MQTT Connected`);
       }
       this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
-          if ( this.enableLogging) {
-            this.platform.log.info(this.deviceName, ': Subscribed to: ', mqttSubscribedTopics.toString());
-          }
+          this.platform.log.info(`${this.deviceName}: Subscribed to topics - ${mqttSubscribedTopics.toString()}`);
         } else {
-          // Need to insert error handler
-          this.platform.log.warn(this.deviceName, err.toString());
+          this.platform.log.warn(`${this.deviceName}: MQTT subscription error - ${err.message}`);
         }
       });
     });
-
+  
     this.mqttClient.on('message', (topic, message) => {
-      //this.platform.log(this.deviceName,': Received message: ', Number(message));  
       if (topic === this.mqttSwitch) {
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Status set to: ', this.getStatus(Boolean(Number(message))));
-        }
-
-        if (message.toString() === '1'  || message.toString() === 'true') {
-          this.switchStates.On = true;
-        }
-        if (message.toString() === '0'  || message.toString() === 'false') {
-          this.switchStates.On = false;
-        }
-
+        this.platform.log.info(`${this.deviceName}: MQTT message received - ${message.toString()}`);
+        this.switchStates.On = message.toString() === '1' || message.toString() === 'true';
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
-        // If is set dicordWebhook address
+  
         if (this.discordWebhook) {
           this.initDiscordWebhooks();
         }
       }
     });
-
-    this.mqttClient.on('offline', () => {
-      this.platform.log.debug(this.deviceName, ': Client is offline');
-    });
-
-    this.mqttClient.on('reconnect', () => {
-      this.platform.log.debug(this.deviceName, ': Reconnecting...');
-    });
-
-    this.mqttClient.on('close', () => {
-      this.platform.log.debug(this.deviceName, ': Connection closed');
-    });
-
-    // Handle errors
+  
     this.mqttClient.on('error', (err) => {
-      this.platform.log.warn(this.deviceName, ': Connection error:', err);
-      this.platform.log.warn(this.deviceName, ': Reconnecting in: ', this.mqttReconnectInterval, ' seconds.');
-      //this.mqttClient.end();
+      this.platform.log.warn(`${this.deviceName}: MQTT connection error - ${err.message}`);
+      this.platform.log.warn(`${this.deviceName}: Attempting reconnection in ${this.mqttReconnectInterval} seconds`);
     });
-
   }
 
-  // Function to publish a message
   private publishMQTTmessage(value: CharacteristicValue, callback: CharacteristicSetCallback): void {
-
-    this.platform.log.debug(this.deviceName, ': Setting power state to:', this.getStatus(!this.switchStates.On));
-
-    this.mqttClient.publish(this.mqttSwitch, String(Number(!this.switchStates.On)), { qos: 1, retain: true }, (err) => {
+    const message = String(Number(value));
+    this.mqttClient.publish(this.mqttSwitch, message, { qos: 1, retain: true }, (err) => {
       if (err) {
-        this.platform.log.debug(this.deviceName, ': Failed to publish message: ', err);
+        this.platform.log.warn(`${this.deviceName}: Failed to publish MQTT message - ${err.message}`);
       } else {
-        this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
-        this.platform.log.debug(this.deviceName, ': Message published successfully');
+        this.platform.log.info(`${this.deviceName}: MQTT message published successfully - ${message}`);
       }
+      callback(null);
     });
-
-    callback(null);
   }
 
-  private initDiscordWebhooks() {
-    // Prepare message just to send On Off status
-    const message = this.deviceName + ': ' + this.discordMessage + this.getStatus(this.switchStates.On);
+  private initDiscordWebhooks(): void {
+    const message = `${this.deviceName}: ${this.discordMessage} ${this.switchStates.On ? 'ON' : 'OFF'}`;
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
-
+  
     discord.discordSimpleSend().then((result) => {
-      if ( this.enableLogging) {
-        this.platform.log.info(this.deviceName, ': ', result);
-      }
+      this.platform.log.info(`${this.deviceName}: Discord Webhook result - ${result}`);
+    }).catch((error) => {
+      this.platform.log.warn(`${this.deviceName}: Discord Webhook error - ${error.message}`);
     });
-
   }
+
+  private cleanup(): void {
+    const device = this.accessory.context.device;
+    this.platform.log.info(`Cleaning up device: ${device.deviceName}`); // Example usage of 'device'
+  
+    // Cleanup shared polling
+    if (this.sharedPolling && this.sharedPollingId && this.sharedPollingInstance) {
+      SharedPolling.unregisterPolling(this.sharedPollingId, this.platform.log);
+    }
+  
+    // Cleanup individual polling
+    if (this.individualPollingInterval) {
+      clearInterval(this.individualPollingInterval);
+      this.individualPollingInterval = undefined;
+      this.platform.log.info(`${this.deviceName}: Stopped individual polling.`);
+    }
+  }
+  
 }
+
+/*
+{
+  "platform": "HttpSensorsAndSwitches",
+  "devices": [
+    {
+      "deviceType": "Switch",
+      "deviceName": "Switch 1",
+      "deviceId": "switch1",
+      "statusStateParam": "POWER",
+      "onStatusValue": "ON",
+      "offStatusValue": "OFF",
+      "sharedPolling": true,
+      "sharedPollingId": "group1",
+      "urlStatus": "http://example.com/status",
+      "urlON": "http://example.com/switch1/on",
+      "urlOFF": "http://example.com/switch1/off",
+      "enableLogging": true
+    },
+    {
+      "deviceType": "Switch",
+      "deviceName": "Switch 2",
+      "deviceId": "switch2",
+      "statusStateParam": "POWER",
+      "onStatusValue": "ON",
+      "offStatusValue": "OFF",
+      "sharedPolling": true,
+      "sharedPollingId": "group1", 
+      "urlStatus": "http://example.com/status",
+      "urlON": "http://example.com/switch2/on",
+      "urlOFF": "http://example.com/switch2/off",
+      "enableLogging": true
+    },
+    {
+      "deviceType": "Switch",
+      "deviceName": "Switch 3",
+      "deviceId": "switch3",
+      "statusStateParam": "POWER",
+      "onStatusValue": "ON",
+      "offStatusValue": "OFF",
+      "sharedPolling": false, 
+      "urlStatus": "http://example.com/switch3/status",
+      "urlON": "http://example.com/switch3/on",
+      "urlOFF": "http://example.com/switch3/off",
+      "enableLogging": true
+    }
+  ]
+}
+
+*/
