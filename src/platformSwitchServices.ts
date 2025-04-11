@@ -83,10 +83,6 @@ export class platformSwitch {
     this.discordMessage = device.discordMessage;
 
     // Ensure backward compatibility for shared polling
-    this.sharedPolling = device.sharedPolling ?? false; // Default to false
-    this.sharedPollingId = device.sharedPollingId ?? ''; // Default to empty
-
-    // Ensure backward compatibility for shared polling
     this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
     this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
 
@@ -95,7 +91,7 @@ export class platformSwitch {
       const sharedPollingInstance = SharedPolling.registerPolling(
         this.sharedPollingId,
         this.urlStatus, // URL shared by multiple devices
-        this.platform.log,
+        this.platform, // Pass the entire platform instance
       );
     
       // Periodically fetch shared data and update device state
@@ -108,11 +104,10 @@ export class platformSwitch {
     } else if (this.urlStatus) {
       // Fallback to individual polling if shared polling is not enabled
       this.startIndividualPolling(this.urlStatus);
-    }       
+    }
     
     // Initialize the device accessory with HomeKit services and characteristics
     this.initializeAccessory();
-
   }
 
   private initializeAccessory(): void {
@@ -124,7 +119,7 @@ export class platformSwitch {
   
     if (this.deviceType === 'Switch' && !(this.urlON || this.mqttBroker)) {
       this.platform.log.warn(`${this.deviceName}: Ignoring accessory; Missing required configuration.`);
-      this.cleanup(); // Stop active polling if configuration is invalid
+      this.cleanup(); // Stop active polling if configuration is invalid - needs better handling
       return;
     }
   
@@ -166,7 +161,8 @@ export class platformSwitch {
     }
   
     // Proceed with processing the data
-    const value = data[this.statusStateParam];
+    const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
+
     if (value === this.statusOnCheck) {
       this.updateSwitchState(true, this.deviceName);
     } else if (value === this.statusOffCheck) {
@@ -175,9 +171,38 @@ export class platformSwitch {
       this.platform.log.warn(`${this.deviceName}: Unexpected value for ${this.statusStateParam}`);
     }
   }
+
+  private cleanup(): void {
+    const device = this.accessory.context.device;
+    this.platform.log.info(`Cleaning up device: ${device.deviceName}`); // Example usage of 'device'
+  
+    // Cleanup shared polling
+    if (this.sharedPolling && this.sharedPollingId) {
+      if (this.sharedPollingInstance) {
+        SharedPolling.unregisterPolling(this.sharedPollingId);
+        this.sharedPollingInstance = undefined; // Ensure this instance doesn't retain a reference
+        this.platform.log.info(`${device.deviceName}: Unregistered shared polling.`);
+      } else {
+        this.platform.log.info(`${device.deviceName}: No shared polling instance to cleanup.`);
+      }
+    }
+  
+    // Cleanup individual polling
+    if (this.individualPollingInterval) {
+      clearInterval(this.individualPollingInterval);
+      this.individualPollingInterval = undefined;
+      if (this.enableLogging) {
+        this.platform.log.info(`${device.deviceName}: Stopped individual polling.`);
+      }
+    }
+  }
+  
   
   private startIndividualPolling(urlStatus: string): void {
     const fetchStatus = async () => {
+      if (this.enableLogging) {
+        this.platform.log.info(`Started polling for URL: ${this.url}`);
+      }
       try {
         const response = await axios.get(urlStatus, { timeout: 8000 });
         const data = response.data;
@@ -333,71 +358,4 @@ export class platformSwitch {
     });
   }
 
-  private cleanup(): void {
-    const device = this.accessory.context.device;
-    this.platform.log.info(`Cleaning up device: ${device.deviceName}`); // Example usage of 'device'
-  
-    // Cleanup shared polling
-    if (this.sharedPolling && this.sharedPollingId && this.sharedPollingInstance) {
-      SharedPolling.unregisterPolling(this.sharedPollingId, this.platform.log);
-    }
-  
-    // Cleanup individual polling
-    if (this.individualPollingInterval) {
-      clearInterval(this.individualPollingInterval);
-      this.individualPollingInterval = undefined;
-      this.platform.log.info(`${this.deviceName}: Stopped individual polling.`);
-    }
-  }
-  
 }
-
-/*
-{
-  "platform": "HttpSensorsAndSwitches",
-  "devices": [
-    {
-      "deviceType": "Switch",
-      "deviceName": "Switch 1",
-      "deviceId": "switch1",
-      "statusStateParam": "POWER",
-      "onStatusValue": "ON",
-      "offStatusValue": "OFF",
-      "sharedPolling": true,
-      "sharedPollingId": "group1",
-      "urlStatus": "http://example.com/status",
-      "urlON": "http://example.com/switch1/on",
-      "urlOFF": "http://example.com/switch1/off",
-      "enableLogging": true
-    },
-    {
-      "deviceType": "Switch",
-      "deviceName": "Switch 2",
-      "deviceId": "switch2",
-      "statusStateParam": "POWER",
-      "onStatusValue": "ON",
-      "offStatusValue": "OFF",
-      "sharedPolling": true,
-      "sharedPollingId": "group1", 
-      "urlStatus": "http://example.com/status",
-      "urlON": "http://example.com/switch2/on",
-      "urlOFF": "http://example.com/switch2/off",
-      "enableLogging": true
-    },
-    {
-      "deviceType": "Switch",
-      "deviceName": "Switch 3",
-      "deviceId": "switch3",
-      "statusStateParam": "POWER",
-      "onStatusValue": "ON",
-      "offStatusValue": "OFF",
-      "sharedPolling": false, 
-      "urlStatus": "http://example.com/switch3/status",
-      "urlON": "http://example.com/switch3/on",
-      "urlOFF": "http://example.com/switch3/off",
-      "enableLogging": true
-    }
-  ]
-}
-
-*/

@@ -20,7 +20,7 @@
       "devices": {
         "type": "array",
         "title": "Devices",
-        "description": "Device Selector",
+        "description": "",
         "items": {
           "type": "object",
           "properties": {
@@ -34,7 +34,8 @@
                 { "title": "Switch", "enum": ["Switch"] },
                 { "title": "Outlet", "enum": ["Outlet"] },
                 { "title": "Light Bulb", "enum": ["LightBulb"] },
-                { "title": "Fan", "enum": ["Fan"] }
+                { "title": "Fan", "enum": ["Fan"] },
+                { "title": "Carbon Dioxide", "enum": ["CarbonDioxide"] }
               ],
               "required": true,
               "default": "Switch",
@@ -92,6 +93,18 @@
             "urlOFF": {
               "title": "URL turn OFF",
               "description": "URL to Turn OFF the Switch / Light",
+              "type": "string",
+              "required": false
+            },
+            "sharedPolling": {
+              "title": "Shared Polling",
+              "description": "Share url status between devices",
+              "type": "boolean",
+              "required": false
+            },
+            "sharedPollingId": {
+              "title": "Share Polling group name",
+              "description": "Share Polling group name",
               "type": "string",
               "required": false
             },
@@ -239,6 +252,42 @@
               "type": "string",
               "required": false
             },
+            "paramNameCO2Detected": {
+              "title": "Parameter Name for CO2 Detected",
+              "description": "JSON Parameter Name for CO2 Detected",
+              "type": "string",
+              "required": false
+            },
+            "paramNameCO2Level": {
+              "title": "Parameter Name for CO2 Level",
+              "description": "JSON Parameter Name for CO2 Level",
+              "type": "string",
+              "required": false
+            },
+            "paramNameCO2PeakLevel": {
+              "title": "Parameter Name for CO2 Peak Level",
+              "description": "JSON Parameter Name for CO2 Peak Level",
+              "type": "string",
+              "required": false
+            },
+            "paramNameFault": {
+              "title": "Parameter Name for Fault",
+              "description": "JSON Parameter Name Device Fault",
+              "type": "string",
+              "required": false
+            },
+            "paramNameLowBattery": {
+              "title": "Parameter Name for Low Battery",
+              "description": "JSON Parameter Name for Low Battery",
+              "type": "string",
+              "required": false
+            },
+            "paramNameTampered": {
+              "title": "Parameter Name for Tampered",
+              "description": "JSON Parameter Name Device is Tampered",
+              "type": "string",
+              "required": false
+            },
             "sensorUrl": {
               "title": "Sensor URL",
               "description": "JSON file containing sensor readings (temperature, humidity)",
@@ -373,31 +422,73 @@
             },
             "mqttRotationSpeed": {
               "title": "Parameter Name for Rotation Speed",
-              "description": "JSON Parameter Name for Rotation Speed",
+              "description": "MQTT Topic Name for Rotation Speed",
               "type": "string",
               "required": false
             },
             "mqttRotationDirection": {
               "title": "MQTT Topic for Rotation Direction",
-              "description": "JSON Parameter Name for Rotation Direction",
+              "description": "MQTT Topic Name for Rotation Direction",
               "type": "string",
               "required": false
             },
             "mqttSwingMode": {
               "title": "MQTT Topic for Swing Mode",
-              "description": "JSON Parameter Name for Swing Mode",
+              "description": "MQTT Topic Name for Swing Mode",
               "type": "string",
               "required": false
             },
             "mqttCurrentFanState": {
               "title": "MQTT Topic for Current Fan State",
-              "description": "JSON Parameter Name for Current Fan State",
+              "description": "MQTT Topic Name for Current Fan State",
               "type": "string",
               "required": false
             },
             "mqttTargetFanState": {
               "title": "MQTT Topic for Target Fan State",
-              "description": "JSON Parameter Name for Target Fan State",
+              "description": "MQTT Topic Name for Target Fan State",
+              "type": "string",
+              "required": false
+            },
+            "mqttCO2Detected": {
+              "title": "MQTT Topic for CO2 Detected",
+              "description": "MQTT Topic Name for CO2 Detected",
+              "type": "string",
+              "required": false
+            },
+            "mqttCO2Level": {
+              "title": "MQTT Topic for CO2 Level",
+              "description": "MQTT Topic Name for CO2 Level",
+              "type": "string",
+              "required": false
+            },
+            "mqttCO2PeakLevel": {
+              "title": "MQTT Topic for CO2 Peak Level",
+              "description": "MQTT Topic Name for CO2 Peak Level",
+              "type": "string",
+              "required": false
+            },
+            "mqttActive": {
+              "title": "MQTT Topic for Active",
+              "description": "MQTT Topic Name for Active (on/off)",
+              "type": "string",
+              "required": false
+            },
+            "mqttFault": {
+              "title": "MQTT Topic for Fault",
+              "description": "MQTT Topic Name for Device is Fault",
+              "type": "string",
+              "required": false
+            },
+            "mqttLowBattery": {
+              "title": "MQTT Topic for Low Battery",
+              "description": "MQTT Topic Name for Low Battery",
+              "type": "string",
+              "required": false
+            },
+            "mqttTampered": {
+              "title": "MQTT Topic for Tampered",
+              "description": "MQTT Topic Name for Tampered",
               "type": "string",
               "required": false
             },
@@ -434,8 +525,8 @@
     "key": "devices",
     "type": "tabarray",
     "title": "{{ value.deviceName || 'new Device' }}",
-    "items": [
-      "devices[].enableLogging",
+    "items": [   
+      "devices[].enableLogging",  
       "devices[].deviceType",
       "devices[].deviceName",
       "devices[].deviceID",
@@ -457,9 +548,17 @@
             "expandable": true,
             "expanded": false,
             "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId"
+                ]
+              },
+              "devices[].urlStatus",
               "devices[].urlON",
               "devices[].urlOFF",
-              "devices[].urlStatus",
               "devices[].stateName",
               "devices[].onStatusValue",
               "devices[].offStatusValue"
@@ -509,6 +608,14 @@
             "expandable": true,
             "expanded": false,
             "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId"
+                ]
+              },
               "devices[].sensorUrl",
               "devices[].temperatureName",
               "devices[].humidityName",
@@ -565,6 +672,75 @@
               "devices[].mqttUsername",
               "devices[].mqttPassword",
               "devices[].mqttMotionSensor"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Carbon Dioxide Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxide';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId"
+                ]
+              },
+              "devices[].urlStatus",
+              "devices[].updateInterval",
+              "devices[].paramNameCO2Detected",
+              "devices[].paramNameCO2Level",
+              "devices[].paramNameCO2PeakLevel",
+              "devices[].paramNameActive",
+              "devices[].paramNameFault",
+              "devices[].paramNameLowBattery",
+              "devices[].paramNameTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Carbon Dioxide Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxide';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttCO2Detected",
+              "devices[].mqttCO2Level",
+              "devices[].mqttCO2PeakLevel",
+              "devices[].mqttActive",
+              "devices[].mqttFault",
+              "devices[].mqttLowBattery",
+              "devices[].mqttTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Carbon Dioxide Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxide';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
             ]
           },
           {

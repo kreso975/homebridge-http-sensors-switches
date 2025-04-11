@@ -4,6 +4,7 @@ import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions }  from 'mqtt';
 
+import { SharedPolling } from './lib/SharedPolling.js';       // Include shared polling library
 import { getNestedValue } from './lib/utilities.js';
 
 
@@ -16,8 +17,13 @@ export class platformSensors {
   public temperatureService!: Service;
   public humidityService!: Service;
   public mqttClient!: mqtt.MqttClient;
+  private sharedPollingInstance?: SharedPolling;
 
   public enableLogging: boolean = true;
+  // Ensure backward compatibility for shared polling
+  public sharedPolling = false; // Default to false
+  public sharedPollingId = ''; // Default to empty
+
   public deviceId: string = '';
   public deviceType: string = '';
   public deviceName: string = '';
@@ -42,36 +48,61 @@ export class platformSensors {
   public currentTemperature: number = 20;
   public currentHumidity: number = 50;
   public updateInterval = 300000;
-  
 
   constructor(
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
   ) {
+    const device = this.accessory.context.device;
 
-    this.deviceType = this.accessory.context.device.deviceType;
-    this.deviceName = this.accessory.context.device.deviceName || 'NoName';
-    this.deviceManufacturer = this.accessory.context.device.deviceManufacturer || 'Stergo';
-    this.deviceModel = this.accessory.context.device.deviceModel || 'Sensor';
-    this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
-    this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
+    this.deviceType = device.deviceType;
+    this.deviceName = device.deviceName || 'NoName';
+    this.deviceManufacturer = device.deviceManufacturer || 'Stergo';
+    this.deviceModel = device.deviceModel || 'Sensor';
+    this.deviceSerialNumber = device.deviceSerialNumber || accessory.UUID;
+    this.deviceFirmwareVersion = device.deviceFirmwareVersion || '0.0';
     
     // From Config
-    this.enableLogging = this.accessory.context.device.enableLogging;
+    this.enableLogging = device.enableLogging;
 
-    this.sensorUrl = this.accessory.context.device.sensorUrl;
-    this.temperatureName = this.accessory.context.device.temperatureName;
-    this.humidityName = this.accessory.context.device.humidityName;
-    this.airPressureName = this.accessory.context.device.airPressureName;
-    this.updateInterval = accessory.context.device.updateInterval || 60000; // Default update interval is 300 seconds
+    this.sensorUrl = device.sensorUrl;
+    this.temperatureName = device.temperatureName;
+    this.humidityName = device.humidityName;
+    this.airPressureName = device.airPressureName;
+    this.updateInterval = device.updateInterval || 60000; // Default update interval is 300 seconds
 
-    this.mqttReconnectInterval = this.accessory.context.device.mqttReconnectInterval || 60; // 60 sec default
-    this.mqttBroker = accessory.context.device.mqttBroker;
-    this.mqttPort = accessory.context.device.mqttPort;
-    this.mqttTemperature = accessory.context.device.mqttTemperature;
-    this.mqttHumidity = accessory.context.device.mqttHumidity;
-    this.mqttUsername = accessory.context.device.mqttUsername;
-    this.mqttPassword = accessory.context.device.mqttPassword;
+    this.mqttReconnectInterval = device.mqttReconnectInterval || 60; // 60 sec default
+    this.mqttBroker = device.mqttBroker;
+    this.mqttPort = device.mqttPort;
+    this.mqttTemperature = device.mqttTemperature;
+    this.mqttHumidity = device.mqttHumidity;
+    this.mqttUsername = device.mqttUsername;
+    this.mqttPassword = device.mqttPassword;
+
+    // Ensure backward compatibility for shared polling
+    this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
+    this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
+
+    if (this.sharedPolling && this.sharedPollingId) {
+      // Register the shared polling instance for the group
+      const sharedPollingInstance = SharedPolling.registerPolling(
+        this.sharedPollingId,
+        this.sensorUrl, // URL shared by multiple devices
+        this.platform, // Pass the entire platform instance
+      );
+    
+      // Periodically fetch shared data and update device state
+      setInterval(() => {
+        const data = sharedPollingInstance?.getData();
+        if (data) {
+          this.updateSensorStatusFromSharedData(data);
+        }
+      }, 5000); // Poll every N seconds
+    } else if (this.sensorUrl) {
+      // Fallback to individual polling if shared polling is not enabled
+      this.getSensorData();
+      setInterval(this.getSensorData.bind(this), this.updateInterval);
+    }
 
     if ( !this.deviceType ) {
       return;
@@ -128,13 +159,67 @@ export class platformSensors {
         this.getSensorDataMQTT();
       }
       
-      // IF we are going with JSON over HTTP
-      if ( this.sensorUrl ) {
-        this.getSensorData();
-        setInterval(this.getSensorData.bind(this), this.updateInterval);
-      }
-      
     } 
+  }
+
+  private updateSensorStatusFromSharedData(data?: Record<string, unknown>): void {
+    if (!data) {
+      this.platform.log.warn(`${this.deviceName}: No data available for updating switch status.`);
+      return;
+    }
+  
+    // If Temperature Service is available
+    if (this.temperatureService) {
+      if (this.temperatureName) {
+        const tmpTemperature = getNestedValue(data, this.temperatureName, 'number');
+        
+        if (typeof tmpTemperature === 'number') {
+          this.currentTemperature = tmpTemperature;
+          this.temperatureService.updateCharacteristic(
+            this.platform.Characteristic.CurrentTemperature,
+            this.currentTemperature,
+          );
+        } else {
+          this.platform.log.warn(
+            this.deviceName,
+            ': Error: Cannot find or convert: ',
+            this.temperatureName,
+            ' in JSON',
+          );
+        }
+      } else {
+        this.platform.log.warn(this.deviceName, ': Error: Temperature name is not defined');
+      }
+    }
+
+    // If Humidity Service is available
+    if (this.humidityService) {
+      if (this.humidityName) {
+        const tmpHumidity = getNestedValue(data, this.humidityName, 'number');
+    
+        if (typeof tmpHumidity === 'number') {
+          this.currentHumidity = tmpHumidity;
+          this.humidityService.updateCharacteristic(
+            this.platform.Characteristic.CurrentRelativeHumidity,
+            this.currentHumidity,
+          );
+        } else {
+          this.platform.log.warn( this.deviceName, ': Error: Cannot find or convert: ', this.humidityName, ' in JSON' );
+        }
+      } else {
+        this.platform.log.warn(this.deviceName, ': Error: Humidity name is not defined');
+      }
+    }
+    
+    // If we have Config setup for Air Pressure
+    if ( this.airPressureName ) {
+      if ( this.enableLogging) {
+        this.platform.log.info(this.deviceName,': ',this.airPressureName);
+      }
+    }
+    if ( this.enableLogging) {
+      this.platform.log.info(this.deviceName,': ',JSON.stringify(data));
+    }
   }
   
   private async getSensorData() {

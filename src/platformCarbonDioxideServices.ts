@@ -3,7 +3,10 @@ import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
+
+import { SharedPolling } from './lib/SharedPolling.js';       // Include shared polling library
 import { discordWebHooks } from './lib/discordWebHooks.js';
+import { getNestedValue } from './lib/utilities.js';
 
 /**
  * Platform Accessory
@@ -13,8 +16,13 @@ import { discordWebHooks } from './lib/discordWebHooks.js';
 export class platformCarbonDioxide {
   public carbonDioxideService!: Service;
   public mqttClient!: mqtt.MqttClient;
+  private sharedPollingInstance?: SharedPolling;
 
   public enableLogging: boolean = true;
+  // Ensure backward compatibility for shared polling
+  public sharedPolling = false; // Default to false
+  public sharedPollingId = ''; // Default to empty
+
   public deviceId: string = '';
   public deviceType: string = '';
   public deviceName: string = '';
@@ -38,7 +46,6 @@ export class platformCarbonDioxide {
   public mqttUsername: string = '';
   public mqttPassword: string = '';
 
-  public mqttMotionSensor: string = '';
   public mqttCO2Detected: string = '';
   public mqttCO2Level: string = '';
   public mqttCO2PeakLevel: string = '';
@@ -47,7 +54,7 @@ export class platformCarbonDioxide {
   public mqttLowBattery: string = '';
   public mqttTampered: string = '';
 
-  public updateIntervalSensor = 300000;
+  public updateInterval = 60000;
 
   public discordWebhook: string = '';
   public discordUsername: string = '';
@@ -78,48 +85,73 @@ export class platformCarbonDioxide {
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
   ) {
+    const device = this.accessory.context.device;
 
-    this.deviceType = this.accessory.context.device.deviceType;
-    this.deviceName = this.accessory.context.device.deviceName || 'NoName';
-    this.deviceManufacturer = this.accessory.context.device.deviceManufacturer || 'Stergo';
-    this.deviceModel = this.accessory.context.device.deviceModel || 'Sensor';
-    this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
-    this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
+    this.deviceType = device.deviceType;
+    this.deviceName = device.deviceName || 'NoName';
+    this.deviceManufacturer = device.deviceManufacturer || 'Stergo';
+    this.deviceModel = device.deviceModel || 'Sensor';
+    this.deviceSerialNumber = device.deviceSerialNumber || accessory.UUID;
+    this.deviceFirmwareVersion = device.deviceFirmwareVersion || '0.0';
     
     // From Config
-    this.enableLogging = this.accessory.context.device.enableLogging;
+    this.enableLogging = device.enableLogging;
 
-    this.urlStatus = this.accessory.context.device.urlStatus;
-    this.paramNameCO2Detected = this.accessory.context.device.paramNameCO2Detected;
-    this.paramNameCO2Level = this.accessory.context.device.paramNameCO2Level;
-    this.paramNameCO2PeakLevel = this.accessory.context.device.paramNameCO2PeakLevel;
-    this.paramNameActive = this.accessory.context.device.paramNameActive;
-    this.paramNameFault = this.accessory.context.device.paramNameFault;
-    this.paramNameLowBattery = this.accessory.context.device.paramNameLowBattery;
-    this.paramNameTampered = this.accessory.context.device.paramNameTampered;
+    this.urlStatus = device.urlStatus;
+    this.paramNameCO2Detected = device.paramNameCO2Detected;
+    this.paramNameCO2Level = device.paramNameCO2Level;
+    this.paramNameCO2PeakLevel = device.paramNameCO2PeakLevel;
+    this.paramNameActive = device.paramNameActive;
+    this.paramNameFault = device.paramNameFault;
+    this.paramNameLowBattery = device.paramNameLowBattery;
+    this.paramNameTampered = device.paramNameTampered;
 
-    this.updateIntervalSensor = accessory.context.device.updateIntervalSensor || 300000; // Default update interval is 300 seconds
+    this.updateInterval = device.updateInterval || 60000; // Default update interval is 300 seconds
 
-    this.mqttReconnectInterval = this.accessory.context.device.mqttReconnectInterval || 60; // 60 sec default
-    this.mqttBroker = this.accessory.context.device.mqttBroker;
-    this.mqttPort = this.accessory.context.device.mqttPort;
-    this.mqttMotionSensor = this.accessory.context.device.mqttMotionSensor;
-    this.mqttUsername = this.accessory.context.device.mqttUsername;
-    this.mqttPassword = this.accessory.context.device.mqttPassword;
+    this.mqttReconnectInterval = device.mqttReconnectInterval || 60; // 60 sec default
+    this.mqttBroker = device.mqttBroker;
+    this.mqttPort = device.mqttPort;
+    this.mqttUsername = device.mqttUsername;
+    this.mqttPassword = device.mqttPassword;
 
-    this.mqttCO2Detected = this.accessory.context.device.mqttCO2Detected;
-    this.mqttCO2Level = this.accessory.context.device.mqttCO2Level;
-    this.mqttCO2PeakLevel = this.accessory.context.device.mqttCO2PeakLevel;
-    this.mqttActive = this.accessory.context.device.mqttActive;
-    this.mqttFault = this.accessory.context.device.mqttFault;
-    this.mqttLowBattery = this.accessory.context.device.mqttLowBattery;
-    this.mqttTampered = this.accessory.context.device.mqttTampered;
+    this.mqttCO2Detected = device.mqttCO2Detected;
+    this.mqttCO2Level = device.mqttCO2Level;
+    this.mqttCO2PeakLevel = device.mqttCO2PeakLevel;
+    this.mqttActive = device.mqttActive;
+    this.mqttFault = device.mqttFault;
+    this.mqttLowBattery = device.mqttLowBattery;
+    this.mqttTampered = device.mqttTampered;
 
-    this.discordWebhook = this.accessory.context.device.discordWebhook;
-    this.discordUsername = this.accessory.context.device.discordUsername || 'StergoSmart';
-    this.discordAvatar = this.accessory.context.device.discordAvatar
+    this.discordWebhook = device.discordWebhook;
+    this.discordUsername = device.discordUsername || 'StergoSmart';
+    this.discordAvatar = device.discordAvatar
       || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
-    this.discordMessage = this.accessory.context.device.discordMessage;
+    this.discordMessage = device.discordMessage;
+
+    // Ensure backward compatibility for shared polling
+    this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
+    this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
+
+    if (this.sharedPolling && this.sharedPollingId) {
+      // Register the shared polling instance for the group
+      const sharedPollingInstance = SharedPolling.registerPolling(
+        this.sharedPollingId,
+        this.urlStatus, // URL shared by multiple devices
+        this.platform, // Pass the entire platform instance
+      );
+    
+      // Periodically fetch shared data and update device state
+      setInterval(() => {
+        const data = sharedPollingInstance?.getData();
+        if (data) {
+          this.updateCarbonDioxideStatusFromSharedData(data);
+        }
+      }, 10000); // Poll every 10 seconds
+    } else if (this.urlStatus) {
+      // Fallback to individual polling if shared polling is not enabled
+      this.getCO2State();
+      setInterval(this.getCO2State.bind(this), this.updateInterval);
+    }
 
     if (!this.deviceType) {
       return;
@@ -143,10 +175,7 @@ export class platformCarbonDioxide {
         // Set the service name, this is what is displayed as the default name on the Home app
         this.carbonDioxideService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
         
-        if ( this.urlStatus ) {
-          this.getCO2State();
-          setInterval(this.getCO2State.bind(this), this.updateIntervalSensor);
-      
+        if ( this.urlStatus ) {      
           // Register handlers for the characteristics
           this.getStateDefinition().forEach(({ state, param }) => {
             if ( param ) { // Ensure the parameter is valid
@@ -182,6 +211,68 @@ export class platformCarbonDioxide {
     ];
   }
 
+  private updateCarbonDioxideStatusFromSharedData(data?: Record<string, unknown>): void {
+    if (!data) {
+      this.platform.log.warn(`${this.deviceName}: No data available for updating switch status.`);
+      return;
+    }
+
+    this.getStateDefinition().forEach(({ state, param, webhook }) => {
+      // Check if 'param' is defined in the config
+      if (!param) {
+        if (this.enableLogging) {
+          this.platform.log.debug(`${this.deviceName}: Parameter for ${state} is not configured. Skipping.`);
+        }
+        return; // Skip processing this state
+      }
+
+      //let value = data[param];
+      let value = getNestedValue(data, param, 'number');
+
+      // Check if 'data[param]' exists in the JSON
+      if (value === undefined) {
+        if (this.enableLogging) {
+          this.platform.log.warn(`${this.deviceName}: Parameter '${param}' not found in JSON for state ${state}.`);
+        }
+        return; // Skip processing this state
+      }
+
+      // Type validation and normalization
+      if (typeof value === 'boolean') {
+        value = value ? 1 : 0; // Convert boolean to 1 or 0
+      }
+
+      value = Number(value); // Ensure the value is a valid number
+      const range = this.CO2StatusRanges[state];
+
+      // General range validation for all states
+      if (
+        Array.isArray(range) &&
+             range.length === 2 &&
+             typeof range[0] === 'number' &&
+             typeof range[1] === 'number' &&
+             value >= range[0] &&
+             value <= range[1]
+      ) {
+        this.CO2States[state] = value; // Update the state
+        this.carbonDioxideService.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
+
+        if (this.enableLogging) {
+          this.platform.log.info(`${this.deviceName}: ${state} SET to: ${value}`);
+        }
+
+        // Trigger webhook if configured and value is 1
+        if (webhook && value === 1) {
+          this.initDiscordWebhooks(state);
+        }
+      } else if (this.enableLogging) {
+        this.platform.log.warn(
+          `${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`,
+        );
+      }
+    });
+  }
+
   private async getCO2State(): Promise<void> {
     if (!this.urlStatus) {
       this.platform.log.warn(this.deviceName, ': Ignoring request; No status URL defined.');
@@ -189,15 +280,7 @@ export class platformCarbonDioxide {
     }
 
     try {
-      const response = await axios({
-        url: this.urlStatus,
-        method: 'get',
-        timeout: 8000, // Set timeout for response
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
+      const response = await axios.get(this.urlStatus, { timeout: 8000 });
       const data = response.data;
 
       // Log fetched data for debugging
@@ -220,7 +303,8 @@ export class platformCarbonDioxide {
           return; // Skip processing this state
         }
 
-        let value = data[param];
+        //let value = data[param];
+        let value = getNestedValue(data, param, 'number');
 
         // Type validation and normalization
         if (typeof value === 'boolean') {

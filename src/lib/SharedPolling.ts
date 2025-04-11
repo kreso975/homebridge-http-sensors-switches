@@ -1,13 +1,8 @@
+import { HttpSensorsAndSwitchesHomebridgePlatform } from './../platform.js';
 import axios, { AxiosError } from 'axios';
 
 // Define the type for shared data
 type SharedData = Record<string, unknown>;
-
-// Define the log interface with explicitly typed methods
-interface Logger {
-  info(message: string): void;
-  error(message: string): void;
-}
 
 /**
  * The `SharedPolling` class provides a centralized polling mechanism for devices that share a common data source.
@@ -67,71 +62,91 @@ interface Logger {
  * ```
  */
 export class SharedPolling {
-  private static pollingInstances: Map<string, { instance: SharedPolling; deviceCount: number }> = new Map();
+  private static pollingInstances: Map<string, SharedPolling> = new Map();
   private intervalId?: NodeJS.Timeout;
   private data: SharedData = {};
- 
-  private constructor(private readonly url: string, private readonly log: Logger) {}
- 
+  private deviceCount: number = 0; // Tracks the number of devices in the group
+
+  // Constructor with platform for logging
+  private constructor(
+    private readonly url: string,
+    private readonly platform: HttpSensorsAndSwitchesHomebridgePlatform, // Use platform for consistent logging
+  ) {}
+
   // Register a shared polling instance
-  static registerPolling(uniqueId: string, url: string, log: Logger): SharedPolling {
-    if (SharedPolling.pollingInstances.has(uniqueId)) {
-      const group = SharedPolling.pollingInstances.get(uniqueId)!;
-      group.deviceCount += 1;
-      log.info(`Device added to existing SharedPolling group: "${uniqueId}". Total devices: ${group.deviceCount}`);
-      return group.instance;
+  static registerPolling(
+    uniqueId: string,
+    url: string,
+    platform: HttpSensorsAndSwitchesHomebridgePlatform,
+  ): SharedPolling {
+    let instance = SharedPolling.pollingInstances.get(uniqueId);
+
+    if (instance) {
+      instance.deviceCount += 1;
+      instance.platform.log.debug(`${uniqueId}: Device added to existing SharedPolling group. Total devices: ${instance.deviceCount}`);
+    } else {
+      platform.log.debug(`${uniqueId}: Registering new SharedPolling instance for group.`);
+      instance = new SharedPolling(url, platform);
+      instance.deviceCount = 1; // Initialize with one device
+      SharedPolling.pollingInstances.set(uniqueId, instance);
+      instance.startPolling();
     }
- 
-    log.info(`Registering new SharedPolling instance for group: "${uniqueId}"`);
-    const instance = new SharedPolling(url, log);
-    SharedPolling.pollingInstances.set(uniqueId, { instance, deviceCount: 1 });
-    instance.startPolling();
+
     return instance;
   }
- 
+
   // Unregister a device from shared polling
-  static unregisterPolling(uniqueId: string, log: Logger): void {
-    const group = SharedPolling.pollingInstances.get(uniqueId);
-    if (group) {
-      group.deviceCount -= 1;
-      log.info(`Device removed from SharedPolling group: "${uniqueId}". Remaining devices: ${group.deviceCount}`);
- 
-      if (group.deviceCount === 0) {
-        group.instance.stopPolling();
+  static unregisterPolling(uniqueId: string): void {
+    const instance = SharedPolling.pollingInstances.get(uniqueId);
+
+    if (instance) {
+      instance.deviceCount -= 1;
+      instance.platform.log.debug(`${uniqueId}: Device removed from SharedPolling group. Remaining devices: ${instance.deviceCount}`);
+
+      if (instance.deviceCount === 0) {
+        instance.stopPolling();
         SharedPolling.pollingInstances.delete(uniqueId);
-        log.info(`Stopped polling for group: "${uniqueId}" as no devices remain.`);
+        instance.platform.log.debug(`${uniqueId}: Stopped polling as no devices remain.`);
       }
+    } else {
+      console.warn(`${uniqueId}: No polling group found to unregister.`);
     }
   }
- 
+
+  // Start polling
   private startPolling(): void {
-    this.log.info(`Started polling for URL: ${this.url}`);
-    this.fetchData();
+    this.platform.log.debug(`Started polling for URL: ${this.url}`);
+    this.fetchData(); // Initial data fetch
     this.intervalId = setInterval(() => {
       this.fetchData();
     }, 5000); // Poll every 5 seconds
   }
- 
+
+  // Stop polling
   private stopPolling(): void {
     if (this.intervalId) {
       clearInterval(this.intervalId);
-      this.log.info(`Stopped polling for URL: ${this.url}`);
+      this.intervalId = undefined;
+      this.platform.log.debug(`Stopped polling for URL: ${this.url}`);
     }
   }
- 
+
+  // Fetch data
   private async fetchData(): Promise<void> {
     try {
       const response = await axios.get(this.url);
       this.data = response.data as SharedData;
-      this.log.info(`Updated data for URL: ${this.url}`);
+      this.platform.log.debug(`Updated data for URL: ${this.url}`);
     } catch (error) {
       const errorMessage = (error as AxiosError).message;
-      this.log.error(`Error fetching data for URL: ${this.url} - ${errorMessage}`);
+      this.platform.log.debug(`Error fetching data for URL: ${this.url} - ${errorMessage}`);
     }
   }
- 
+
+  // Get the latest data
   getData(): SharedData {
     return this.data;
   }
 }
+
  
