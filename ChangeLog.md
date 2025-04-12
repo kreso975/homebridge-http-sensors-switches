@@ -24,8 +24,8 @@
     - Detect Smoke
     - Low Battery
     - Tampered Status
-  - Added support for the `getNestedValue` function to process nested JSON data.
-
+  - Added support for the `getNestedValue` function to process nested JSON data.  
+  
 - **PlatformOccupancySensor Class**:
   - Added a new class `platformOccupancy` to support devices monitoring occupancy detection.
   - Integrated a new service for managing and reporting occupancy detection data.
@@ -34,8 +34,8 @@
     - Detect Occupancy
     - Low Battery
     - Tampered Status
-  - Added support for the `getNestedValue` function to process nested JSON data.
-
+  - Added support for the `getNestedValue` function to process nested JSON data.  
+  
   - **PlatformAirQualitySensor Class**:
   - Added a new class `platformAirQuality` to support devices monitoring air quality levels.
   - Integrated a new service for managing and reporting air quality data.
