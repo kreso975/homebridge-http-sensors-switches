@@ -119,7 +119,7 @@ export class SharedPolling {
     this.fetchData(); // Initial data fetch
     this.intervalId = setInterval(() => {
       this.fetchData();
-    }, 5000); // Poll every 5 seconds
+    }, 5000); // Poll every 5 seconds - this must be parametarised
   }
 
   // Stop polling

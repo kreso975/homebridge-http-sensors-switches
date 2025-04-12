@@ -6,8 +6,33 @@
   - Added support for the `getNestedValue` function to process nested JSON data.
 - **PlatformSensor Enhancements**:
   - Upgraded to fully integrate with `sharedPolling`.
+
 - **PlatformCarbonDioxide Class**:
   - Added a new class `platformCarbonDioxide` to support devices monitoring carbon dioxide levels.
   - Integrated a new service for managing and reporting CO₂ data.
-  - Support Discord - Detect CO2, Low Battery
+  - Integrated support for `sharedPolling` to optimize data retrieval processes.
+  - Support Discord:
+    - Detect CO₂
+    - Low Battery
   - Added support for the `getNestedValue` function to process nested JSON data.
+
+- **PlatformSmoke Class**:
+  - Added a new class `platformSmoke` to support devices monitoring smoke detection.
+  - Integrated a new service for managing and reporting smoke detection data.
+  - Integrated support for `sharedPolling` to optimize data retrieval processes.
+  - Support Discord:
+    - Detect Smoke
+    - Low Battery
+    - Tampered Status
+  - Added support for the `getNestedValue` function to process nested JSON data.
+
+- **PlatformOccupancy Class**:
+  - Added a new class `platformOccupancy` to support devices monitoring occupancy detection.
+  - Integrated a new service for managing and reporting occupancy detection data.
+  - Integrated support for `sharedPolling` to optimize data retrieval processes.
+  - Support Discord:
+    - Detect Occupancy
+    - Low Battery
+    - Tampered Status
+  - Added support for the `getNestedValue` function to process nested JSON data.
+

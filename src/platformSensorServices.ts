@@ -217,6 +217,7 @@ export class platformSensors {
         this.platform.log.info(this.deviceName,': ',this.airPressureName);
       }
     }
+
     if ( this.enableLogging) {
       this.platform.log.info(this.deviceName,': ',JSON.stringify(data));
     }
@@ -281,6 +282,7 @@ export class platformSensors {
           this.platform.log.info(this.deviceName,': ',this.airPressureName);
         }
       }
+      
       if ( this.enableLogging) {
         this.platform.log.info(this.deviceName,': ',JSON.stringify(data));
       }

@@ -13,8 +13,8 @@ import { getNestedValue } from './lib/utilities.js';
  * An instance of this class is created for each accessory your platform registers
  * Each accessory may expose multiple services of different service types.
  */
-export class platformCarbonDioxide {
-  public carbonDioxideService!: Service;
+export class platformOccupancySensor {
+  public occupancySensorService!: Service;
   public mqttClient!: mqtt.MqttClient;
   private sharedPollingInstance?: SharedPolling;
 
@@ -32,9 +32,7 @@ export class platformCarbonDioxide {
   public deviceFirmwareVersion: string = '';
   
   public urlStatus: string = '';
-  public paramNameCO2Detected: string = '';
-  public paramNameCO2Level: string = '';
-  public paramNameCO2PeakLevel: string = '';
+  public paramNameOccupancyDetected: string = '';
   public paramNameActive: string = '';
   public paramNameFault: string = '';
   public paramNameLowBattery: string = '';
@@ -46,9 +44,7 @@ export class platformCarbonDioxide {
   public mqttUsername: string = '';
   public mqttPassword: string = '';
 
-  public mqttCO2Detected: string = '';
-  public mqttCO2Level: string = '';
-  public mqttCO2PeakLevel: string = '';
+  public mqttOccupancyDetected: string = '';
   public mqttActive: string = '';
   public mqttFault: string = '';
   public mqttLowBattery: string = '';
@@ -61,20 +57,16 @@ export class platformCarbonDioxide {
   public discordAvatar: string = '';
   public discordMessage: string = '';
   
-  public CO2States = {
-    CarbonDioxideDetected: 0,     // Values: 0 (Inactive), 1 (Active). (On/Off)
-    CarbonDioxideLevel: 0,        // Read only / Values: 0 Inactive, 1 Idle, 2 Blowing Air
-    CarbonDioxidePeakLevel: 0,    // Values: 0 Manual, 1 Automatic
+  public OccupancyStates = {
+    OccupancyDetected: 0,     // Values: 0 (Inactive), 1 (Active). (On/Off)
     StatusActive: 0,              // Range:  0% to 100%.
     StatusFault: 0,		         // Values: 0 Clockwise, 1: Counterclockwise
     StatusLowBattery: 0,          // Values: 0 (Disabled), 1 (Enabled)
     StatusTampered: 0,            // Values: 0 (Disabled), 1 (Enabled)
   };
 
-  public CO2StatusRanges = {
-    CarbonDioxideDetected: [0, 1],        // Valid values: 0 (Normal), 1 (High Level Detected)
-    CarbonDioxideLevel: [0, 5000],        // Typical valid range for CO2 levels in ppm
-    CarbonDioxidePeakLevel: [0, 5000],    // Peak CO2 level, similar to CarbonDioxideLevel range
+  public OccupancyStatusRanges = {
+    OccupancyDetected: [0, 1],        // Valid values: 0 (Normal), 1 (High Level Detected)
     StatusActive: [0, 1],                 // Valid values: 0 (Inactive), 1 (Active)
     StatusFault: [0, 1],                  // Valid values: 0 (No Fault), 1 (Fault Detected)
     StatusLowBattery: [0, 1],             // Valid values: 0 (Battery OK), 1 (Low Battery)
@@ -98,9 +90,7 @@ export class platformCarbonDioxide {
     this.enableLogging = device.enableLogging;
 
     this.urlStatus = device.urlStatus;
-    this.paramNameCO2Detected = device.paramNameCO2Detected;
-    this.paramNameCO2Level = device.paramNameCO2Level;
-    this.paramNameCO2PeakLevel = device.paramNameCO2PeakLevel;
+    this.paramNameOccupancyDetected = device.paramNameOccupancyDetected;
     this.paramNameActive = device.paramNameActive;
     this.paramNameFault = device.paramNameFault;
     this.paramNameLowBattery = device.paramNameLowBattery;
@@ -114,9 +104,7 @@ export class platformCarbonDioxide {
     this.mqttUsername = device.mqttUsername;
     this.mqttPassword = device.mqttPassword;
 
-    this.mqttCO2Detected = device.mqttCO2Detected;
-    this.mqttCO2Level = device.mqttCO2Level;
-    this.mqttCO2PeakLevel = device.mqttCO2PeakLevel;
+    this.mqttOccupancyDetected = device.mqttOccupancyDetected;
     this.mqttActive = device.mqttActive;
     this.mqttFault = device.mqttFault;
     this.mqttLowBattery = device.mqttLowBattery;
@@ -144,20 +132,20 @@ export class platformCarbonDioxide {
       setInterval(() => {
         const data = sharedPollingInstance?.getData();
         if (data) {
-          this.updateCarbonDioxideStatusFromSharedData(data);
+          this.updateOccupancySensorStatusFromSharedData(data);
         }
       }, 10000); // Poll every 10 seconds
     } else if (this.urlStatus) {
       // Fallback to individual polling if shared polling is not enabled
-      this.getCO2State();
-      setInterval(this.getCO2State.bind(this), this.updateInterval);
+      this.getOccupancyState();
+      setInterval(this.getOccupancyState.bind(this), this.updateInterval);
     }
 
     if (!this.deviceType) {
       return;
     }
 
-    if ( this.deviceType === 'CarbonDioxide' && (this.urlStatus || this.mqttBroker)) {
+    if ( this.deviceType === 'OccupancySensor' && (this.urlStatus || this.mqttBroker)) {
 
       // Set accessory information
       this.accessory.getService(this.platform.Service.AccessoryInformation)!
@@ -168,19 +156,19 @@ export class platformCarbonDioxide {
 
       // If we are going with JSON over HTTP
       if ( this.urlStatus || this.mqttBroker ) {
-        // Get the Carbon Dioxide service if it exists, otherwise create a new Carbon Dioxide service
-        this.carbonDioxideService = this.accessory.getService(this.platform.Service.CarbonDioxideSensor) 
-        || this.accessory.addService(this.platform.Service.CarbonDioxideSensor);
+        // Get the Occupancy service if it exists, otherwise create a new Occupancy service
+        this.occupancySensorService = this.accessory.getService(this.platform.Service.OccupancySensor) 
+        || this.accessory.addService(this.platform.Service.OccupancySensor);
         
         // Set the service name, this is what is displayed as the default name on the Home app
-        this.carbonDioxideService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
+        this.occupancySensorService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
         
         if ( this.urlStatus ) {      
           // Register handlers for the characteristics
           this.getStateDefinition().forEach(({ state, param }) => {
             if ( param ) { // Ensure the parameter is valid
-              this.carbonDioxideService.getCharacteristic(this.platform.Characteristic[state]).on('get', (callback) => {
-                callback(null, this.CO2States[state]); // Correct state reference
+              this.occupancySensorService.getCharacteristic(this.platform.Characteristic[state]).on('get', (callback) => {
+                callback(null, this.OccupancyStates[state]); // Correct state reference
               });
             }
           });
@@ -201,9 +189,7 @@ export class platformCarbonDioxide {
  
   private getStateDefinition() {
     return [
-      { state: 'CarbonDioxideDetected' as const, param: this.paramNameCO2Detected, topic: this.mqttCO2Detected, webhook: true, control: 1 },
-      { state: 'CarbonDioxideLevel' as const, param: this.paramNameCO2Level, topic: this.mqttCO2Level, webhook: false, control: 0 },
-      { state: 'CarbonDioxidePeakLevel' as const, param: this.paramNameCO2PeakLevel, topic: this.mqttCO2PeakLevel, webhook: false, control: 0 },
+      { state: 'OccupancyDetected' as const, param: this.paramNameOccupancyDetected, topic: this.mqttOccupancyDetected, webhook: true, control: 1 },
       { state: 'StatusActive' as const, param: this.paramNameActive, topic: this.mqttActive, webhook: false, control: 0 },
       { state: 'StatusFault' as const, param: this.paramNameFault, topic: this.mqttFault, webhook: false, control: 0 },
       { state: 'StatusLowBattery' as const, param: this.paramNameLowBattery, topic: this.mqttLowBattery, webhook: true, control: 1 },
@@ -211,9 +197,9 @@ export class platformCarbonDioxide {
     ];
   }
 
-  private updateCarbonDioxideStatusFromSharedData(data?: Record<string, unknown>): void {
+  private updateOccupancySensorStatusFromSharedData(data?: Record<string, unknown>): void {
     if (!data) {
-      this.platform.log.warn(`${this.deviceName}: No data available for updating CO2 status.`);
+      this.platform.log.warn(`${this.deviceName}: No data available for updating Occupancy status.`);
       return;
     }
 
@@ -243,7 +229,7 @@ export class platformCarbonDioxide {
       }
 
       value = Number(value); // Ensure the value is a valid number
-      const range = this.CO2StatusRanges[state];
+      const range = this.OccupancyStatusRanges[state];
 
       // General range validation for all states
       if (
@@ -256,13 +242,13 @@ export class platformCarbonDioxide {
       ) {
 
         if (this.enableLogging) {
-          if( this.CO2States[state] !== value ) {
-            this.platform.log.info(`${this.deviceName}: ${state} - [${this.CO2States[state]}] SET to: ${value}`);
+          if( this.OccupancyStates[state] !== value ) {
+            this.platform.log.info(`${this.deviceName}: ${state} - [${this.OccupancyStates[state]}] SET to: ${value}`);
           }
         }
 
-        this.CO2States[state] = value; // Update the state
-        this.carbonDioxideService.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
+        this.OccupancyStates[state] = value; // Update the state
+        this.occupancySensorService.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
 
         // Trigger webhook if configured and value is 1
         if (webhook && value === 1) {
@@ -276,7 +262,7 @@ export class platformCarbonDioxide {
     });
   }
 
-  private async getCO2State(): Promise<void> {
+  private async getOccupancyState(): Promise<void> {
     if (!this.urlStatus) {
       this.platform.log.warn(this.deviceName, ': Ignoring request; No status URL defined.');
       return;
@@ -315,7 +301,7 @@ export class platformCarbonDioxide {
         }
 
         value = Number(value); // Ensure the value is a valid number
-        const range = this.CO2StatusRanges[state];
+        const range = this.OccupancyStatusRanges[state];
 
         // General range validation for all states
         if (
@@ -328,13 +314,13 @@ export class platformCarbonDioxide {
         ) {
 
           if (this.enableLogging) {
-            if( this.CO2States[state] !== value ) {
-              this.platform.log.info(`${this.deviceName}: ${state} - [${this.CO2States[state]}] SET to: ${value}`);
+            if( this.OccupancyStates[state] !== value ) {
+              this.platform.log.info(`${this.deviceName}: ${state} - [${this.OccupancyStates[state]}] SET to: ${value}`);
             }
           }
 
-          this.CO2States[state] = value; // Update the state
-          this.carbonDioxideService.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
+          this.OccupancyStates[state] = value; // Update the state
+          this.occupancySensorService.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
 
           // Trigger webhook if configured and value is 1
           if (webhook && value === 1) {
@@ -348,13 +334,13 @@ export class platformCarbonDioxide {
       });
 
       // Debugging state updates
-      this.platform.log.debug(`${this.deviceName}: CO2 states updated to:`, this.CO2States);
+      this.platform.log.debug(`${this.deviceName}: Occupancy states updated to:`, this.OccupancyStates);
     } catch (error) {
       const axiosError = error as AxiosError;
       if (axios.isAxiosError(axiosError)) {
-        this.platform.log.warn(`${this.deviceName}: Axios error while fetching CO2 state:`, axiosError.message);
+        this.platform.log.warn(`${this.deviceName}: Axios error while fetching Occupancy state:`, axiosError.message);
       } else {
-        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching CO2 state.`);
+        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching Occupancy state.`);
       }
     }
   }
@@ -411,16 +397,16 @@ export class platformCarbonDioxide {
           let newValue;
 
           // Handle binary and numeric ranges dynamically
-          const [min, max] = this.CO2StatusRanges[state];
+          const [min, max] = this.OccupancyStatusRanges[state];
           if (min === 0 && max === 1) {
             newValue = ['1', 'true'].includes(value) ? 1 : 0; // Binary range
           } else {
             newValue = Number(value); // Numeric range
           }
 
-          // Validate against CO2StatusRanges
+          // Validate against OccupancyStatusRanges
           if (newValue >= min && newValue <= max) {
-            this.CO2States[state] = newValue; // Update state value
+            this.OccupancyStates[state] = newValue; // Update state value
 
             if (this.enableLogging) {
               this.platform.log.info(`${this.deviceName}: ${state} set to: ${newValue}`);
@@ -428,7 +414,7 @@ export class platformCarbonDioxide {
 
             // Update Homebridge characteristic
             const characteristic = this.platform.Characteristic[state];
-            this.carbonDioxideService.updateCharacteristic(characteristic, newValue);
+            this.occupancySensorService.updateCharacteristic(characteristic, newValue);
 
             // Trigger webhook if `webhook` is true and `newValue === 1`
             if (webhook && newValue === 1) {
@@ -465,9 +451,9 @@ export class platformCarbonDioxide {
     });
   }
 
-  private initDiscordWebhooks(state: keyof typeof this.CO2States): void {
+  private initDiscordWebhooks(state: keyof typeof this.OccupancyStates): void {
     // Prepare a dynamic message including the passed state
-    const message = `${this.deviceName}: ${state} - ${this.discordMessage} ${this.getStatus(!!this.CO2States[state])}`;
+    const message = `${this.deviceName}: ${state} - ${this.discordMessage} ${this.getStatus(!!this.OccupancyStates[state])}`;
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
 
     discord.discordSimpleSend().then((result) => {

@@ -35,7 +35,9 @@
                 { "title": "Outlet", "enum": ["Outlet"] },
                 { "title": "Light Bulb", "enum": ["LightBulb"] },
                 { "title": "Fan", "enum": ["Fan"] },
-                { "title": "Carbon Dioxide", "enum": ["CarbonDioxide"] }
+                { "title": "Carbon Dioxide", "enum": ["CarbonDioxide"] },
+                { "title": "Smoke Sensor", "enum": ["SmokeSensor"] },
+                { "title": "Occupancy Sensor", "enum": ["OccupancySensor"] }
               ],
               "required": true,
               "default": "Switch",
@@ -258,6 +260,18 @@
               "type": "string",
               "required": false
             },
+            "paramNameSmokeDetected": {
+              "title": "Parameter Name for Smoke Detected",
+              "description": "JSON Parameter Name for Smoke Detected",
+              "type": "string",
+              "required": false
+            },
+            "paramNameOccupancyDetected": {
+              "title": "Parameter Name for Occupancy Detected",
+              "description": "JSON Parameter Name for Occupancy Detected",
+              "type": "string",
+              "required": false
+            },
             "paramNameCO2Level": {
               "title": "Parameter Name for CO2 Level",
               "description": "JSON Parameter Name for CO2 Level",
@@ -453,6 +467,18 @@
             "mqttCO2Detected": {
               "title": "MQTT Topic for CO2 Detected",
               "description": "MQTT Topic Name for CO2 Detected",
+              "type": "string",
+              "required": false
+            },
+            "mqttSmokeDetected": {
+              "title": "MQTT Topic for Smoke Detected",
+              "description": "MQTT Topic Name for Smoke Detected",
+              "type": "string",
+              "required": false
+            },
+            "mqttOccupancyDetected": {
+              "title": "MQTT Topic for Occupancy Detected",
+              "description": "MQTT Topic Name for Occupancy Detected",
               "type": "string",
               "required": false
             },
@@ -733,6 +759,136 @@
             "title": "Discord Webhook Carbon Dioxide Settings",
             "condition": {
                 "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxide';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Smoke Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'SmokeSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId"
+                ]
+              },
+              "devices[].urlStatus",
+              "devices[].updateInterval",
+              "devices[].paramNameSmokeDetected",
+              "devices[].paramNameActive",
+              "devices[].paramNameFault",
+              "devices[].paramNameLowBattery",
+              "devices[].paramNameTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Smoke Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'SmokeSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttSmokeDetected",
+              "devices[].mqttActive",
+              "devices[].mqttFault",
+              "devices[].mqttLowBattery",
+              "devices[].mqttTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Smoke Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'SmokeSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Occupancy Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'OccupancySensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId"
+                ]
+              },
+              "devices[].urlStatus",
+              "devices[].updateInterval",
+              "devices[].paramNameOccupancyDetected",
+              "devices[].paramNameActive",
+              "devices[].paramNameFault",
+              "devices[].paramNameLowBattery",
+              "devices[].paramNameTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Occupancy Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'OccupancySensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttOccupancyDetected",
+              "devices[].mqttActive",
+              "devices[].mqttFault",
+              "devices[].mqttLowBattery",
+              "devices[].mqttTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Occupancy Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'OccupancySensor';"
               },
             "expandable": true,
             "expanded": false,
