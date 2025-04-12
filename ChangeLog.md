@@ -36,3 +36,14 @@
     - Tampered Status
   - Added support for the `getNestedValue` function to process nested JSON data.
 
+  - **PlatformAirQualitySensor Class**:
+  - Added a new class `platformAirQuality` to support devices monitoring air quality levels.
+  - Integrated a new service for managing and reporting air quality data.
+  - Integrated support for `sharedPolling` to optimize data retrieval processes.
+  - Support Discord:
+    - Detect Air Quality (e.g., PM2.5, PM10, Ozone levels)
+    - Low Battery
+    - Tampered Status
+  - Added support for the `getNestedValue` function to process nested JSON data.
+
+

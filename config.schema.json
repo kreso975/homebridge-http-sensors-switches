@@ -35,6 +35,7 @@
                 { "title": "Outlet", "enum": ["Outlet"] },
                 { "title": "Light Bulb", "enum": ["LightBulb"] },
                 { "title": "Fan", "enum": ["Fan"] },
+                { "title": "Air Quality", "enum": ["AirQuality"] },
                 { "title": "Carbon Dioxide", "enum": ["CarbonDioxide"] },
                 { "title": "Smoke Sensor", "enum": ["SmokeSensor"] },
                 { "title": "Occupancy Sensor", "enum": ["OccupancySensor"] }
@@ -272,6 +273,48 @@
               "type": "string",
               "required": false
             },
+            "paramNameAirQuality": {
+              "title": "Parameter Name for Air Quality",
+              "description": "JSON Parameter Name for Air Quality",
+              "type": "string",
+              "required": false
+            },
+            "paramNamePM2_5Density": {
+              "title": "Parameter Name for PM2.5 Density",
+              "description": "JSON Parameter Name for PM2.5 Density",
+              "type": "string",
+              "required": false
+            },
+            "paramNamePM10Density": {
+              "title": "Parameter Name for PM10 Density",
+              "description": "JSON Parameter Name for PM10 Density",
+              "type": "string",
+              "required": false
+            },
+            "paramNameOzoneDensity": {
+              "title": "Parameter Name for Ozone Density",
+              "description": "JSON Parameter Name for Ozone Density",
+              "type": "string",
+              "required": false
+            },
+            "paramNameNitrogenDioxideDensity": {
+              "title": "Parameter Name for Nitrogen Dioxide Density",
+              "description": "JSON Parameter Name for Nitrogen Dioxide Density",
+              "type": "string",
+              "required": false
+            },
+            "paramNameSulphurDioxideDensity": {
+              "title": "Parameter Name for Sulphur Dioxide Density",
+              "description": "JSON Parameter Name for Sulphur Dioxide Density",
+              "type": "string",
+              "required": false
+            },
+            "paramNameCarbonMonoxideLevel": {
+              "title": "Parameter Name for Carbon Monoxide Level",
+              "description": "JSON Parameter Name for Carbon Monoxide Level",
+              "type": "string",
+              "required": false
+            },
             "paramNameCO2Level": {
               "title": "Parameter Name for CO2 Level",
               "description": "JSON Parameter Name for CO2 Level",
@@ -479,6 +522,48 @@
             "mqttOccupancyDetected": {
               "title": "MQTT Topic for Occupancy Detected",
               "description": "MQTT Topic Name for Occupancy Detected",
+              "type": "string",
+              "required": false
+            },
+            "mqttAirQuality": {
+              "title": "MQTT Topic for Air Quality",
+              "description": "MQTT Topic Name for Air Quality",
+              "type": "string",
+              "required": false
+            },
+            "mqttPM2_5Density": {
+              "title": "MQTT Topic for PM2.5 Density",
+              "description": "MQTT Topic Name for PM2.5 Density",
+              "type": "string",
+              "required": false
+            },
+            "mqttPM10Density": {
+              "title": "MQTT Topic for PM10 Density",
+              "description": "MQTT Topic Name for PM10 Density",
+              "type": "string",
+              "required": false
+            },
+            "mqttOzoneDensity": {
+              "title": "MQTT Topic for Ozone Density",
+              "description": "MQTT Topic Name for Ozone Density",
+              "type": "string",
+              "required": false
+            },
+            "mqttNitrogenDioxideDensity": {
+              "title": "MQTT Topic for Nitrogen Dioxide Density",
+              "description": "MQTT Topic Name for Nitrogen Dioxide Density",
+              "type": "string",
+              "required": false
+            },
+            "mqttSulphurDioxideDensity": {
+              "title": "MQTT Topic for Sulphur Dioxide Density",
+              "description": "MQTT Topic Name for Sulphur Dioxide Density",
+              "type": "string",
+              "required": false
+            },
+            "mqttCarbonMonoxideLevel": {
+              "title": "MQTT Topic for Carbon Monoxide Level",
+              "description": "MQTT Topic Name for Carbon Monoxide Level",
               "type": "string",
               "required": false
             },
@@ -824,6 +909,83 @@
             "title": "Discord Webhook Smoke Sensor Settings",
             "condition": {
                 "functionBody": "return model.devices[arrayIndices].deviceType === 'SmokeSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Air Quality Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQuality';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId"
+                ]
+              },
+              "devices[].urlStatus",
+              "devices[].updateInterval",
+              "devices[].paramNameAirQuality",
+              "devices[].paramNamePM2_5Density",
+              "devices[].paramNamePM10Density",
+              "devices[].paramNameOzoneDensity",
+              "devices[].paramNameNitrogenDioxideDensity",
+              "devices[].paramNameSulphurDioxideDensity",
+              "devices[].paramNameCarbonMonoxideLevel",
+              "devices[].paramNameActive",
+              "devices[].paramNameFault",
+              "devices[].paramNameLowBattery",
+              "devices[].paramNameTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Air Quality Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQuality';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttAirQuality",
+              "devices[].mqttPM2_5Density",
+              "devices[].mqttPM10Density",
+              "devices[].mqttOzoneDensity",
+              "devices[].mqttNitrogenDioxideDensity",
+              "devices[].mqttSulphurDioxideDensity",
+              "devices[].mqttCarbonMonoxideLevel",
+              "devices[].mqttActive",
+              "devices[].mqttFault",
+              "devices[].mqttLowBattery",
+              "devices[].mqttTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Air Quality Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQuality';"
               },
             "expandable": true,
             "expanded": false,

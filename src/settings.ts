@@ -21,4 +21,5 @@ export const listOfServices = [
   ['CarbonDioxide', './platformCarbonDioxideServices.js', 'platformCarbonDioxide'],
   ['SmokeSensor', './platformSmokeSensorServices.js', 'platformSmokeSensor'],
   ['OccupancySensor', './platformOccupancySensorServices.js', 'platformOccupancySensor'],
+  ['AirQuality', './platformAirQualityServices.js', 'platformAirQuality'],
 ];
