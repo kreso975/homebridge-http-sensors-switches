@@ -1,4 +1,4 @@
-import { PlatformAccessory, Service } from 'homebridge';
+import { PlatformAccessory, Service, Characteristic, WithUUID } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
@@ -6,7 +6,8 @@ import mqtt, { IClientOptions } from 'mqtt';
 
 import { SharedPolling } from './lib/SharedPolling.js';       // Include shared polling library
 import { discordWebHooks } from './lib/discordWebHooks.js';
-import { getNestedValue, sensorConfig  } from './lib/utilities.js';
+import { getNestedValue  } from './lib/utilities.js';
+import { sensorConfig } from './platformSensorGenericSettings.js';
 
 
 /**
@@ -78,22 +79,26 @@ export class platformOccupancySensor {
     this.mqttPassword = device.mqttPassword;
 
     // Check if configuration exists for the current deviceType
+    if (!this.deviceType) {
+      return;
+    }
     const config = sensorConfig[this.deviceType as keyof typeof sensorConfig];
     if (!config) {
-      throw new Error(`Unsupported device type: ${this.deviceType}`);
+      this.platform.log.warn(`Device type ${this.deviceType} is not supported.`);
+      return;
     }
 
     config.paramNames.forEach((paramNameKey) => {
       // Populate paramNames
       const deviceParamKey = `paramName${paramNameKey}`;
       const paramValue = device[deviceParamKey as keyof typeof device]?.toString() || '';
-      console.log(`Param Key: ${deviceParamKey}, Value: ${paramValue}`);
+      this.platform.log.debug(`Param Key: ${deviceParamKey}, Value: ${paramValue}`);
       this.paramNames[paramNameKey] = paramValue;
     
       // Populate mqttTopics dynamically (using "mqtt" prefix for keys)
       const deviceMqttKey = `mqtt${paramNameKey}`;
       const mqttValue = device[deviceMqttKey as keyof typeof device]?.toString() || '';
-      console.log(`MQTT Key: ${deviceMqttKey}, Value: ${mqttValue}`);
+      this.platform.log.debug(`MQTT Key: ${deviceMqttKey}, Value: ${mqttValue}`);
       this.mqttTopics[paramNameKey] = mqttValue;
     });
 
@@ -134,11 +139,7 @@ export class platformOccupancySensor {
       setInterval(this.getSensorState.bind(this), this.updateInterval);
     }
 
-    if (!this.deviceType) {
-      return;
-    }
-
-    if ( this.deviceType === 'OccupancySensor' && (this.urlStatus || this.mqttBroker)) {
+    if ( this.urlStatus || this.mqttBroker ) {
 
       // Set accessory information
       this.accessory.getService(this.platform.Service.AccessoryInformation)!
@@ -147,31 +148,48 @@ export class platformOccupancySensor {
         .setCharacteristic(this.platform.Characteristic.FirmwareRevision, this.deviceFirmwareVersion)
         .setCharacteristic(this.platform.Characteristic.SerialNumber, this.deviceSerialNumber);
 
-      // If we are going with JSON over HTTP
-      if ( this.urlStatus || this.mqttBroker ) {
-        // Get the Occupancy service if it exists, otherwise create a new Occupancy service
-        this.sensorService = this.accessory.getService(this.platform.Service.OccupancySensor) 
-        || this.accessory.addService(this.platform.Service.OccupancySensor);
-        
-        // Set the service name, this is what is displayed as the default name on the Home app
-        this.sensorService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
-        
-        if ( this.urlStatus ) {      
-          // Register handlers for the characteristics
-          this.getStateDefinition().forEach(({ state, param }) => {
-            if ( param ) { // Ensure the parameter is valid
-              this.sensorService.getCharacteristic(this.platform.Characteristic[state]).on('get', (callback) => {
-                callback(null, this.SensorStates[state]); // Correct state reference
-              });
-            }
-          });
-        }
+      // Define a mapping between device types and their corresponding services
+      const serviceMappings: Record<string, WithUUID<typeof Service>> = {
+        OccupancySensor: this.platform.Service.OccupancySensor,
+        MotionSensor: this.platform.Service.MotionSensor,
+        ContactSensor: this.platform.Service.ContactSensor,
+        SmokeSensor: this.platform.Service.SmokeSensor,
+        // Add more sensors as needed
+      };
 
-        // We can now use MQTT
-        if ( this.mqttBroker ) {
-          this.initMQTT();
-        }
+      const serviceConstructor = serviceMappings[this.deviceType];
+      if (!serviceConstructor) {
+        throw new Error(`Unsupported device type: ${this.deviceType}`);
       }
+      
+      // Dynamically create or retrieve the service instance
+      this.sensorService = this.accessory.getService(serviceConstructor)
+        || this.accessory.addService(new serviceConstructor(this.deviceName, this.accessory.UUID));      
+
+  
+      // Set the service name, this is what is displayed as the default name on the Home app
+      this.sensorService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
+        
+      if (this.urlStatus) {
+        this.getStateDefinition().forEach(({ state, param }) => {
+          if (param) {
+           
+            const characteristic = this.platform.Characteristic[state as
+                            keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+            this.sensorService
+              .getCharacteristic(characteristic)
+              .on('get', (callback) => {
+                callback(null, this.SensorStates[state]); // Use correct state reference
+              });
+          }
+        });
+      }
+      
+      // We can now use MQTT
+      if ( this.mqttBroker ) {
+        this.initMQTT();
+      }
+      
     } 
   }
 
@@ -181,16 +199,20 @@ export class platformOccupancySensor {
   }
  
   private getStateDefinition() {
-    return [
-      { state: 'OccupancyDetected' as const, param: this.paramNames.OccupancyDetected, topic: this.mqttTopics.OccupancyDetected, webhook: true, control: 1 },
-      { state: 'StatusActive' as const, param: this.paramNames.Active, topic: this.mqttTopics.Active, webhook: false, control: 0 },
-      { state: 'StatusFault' as const, param: this.paramNames.Fault, topic: this.mqttTopics.Fault, webhook: false, control: 0 },
-      { state: 'StatusLowBattery' as const, param: this.paramNames.LowBattery, topic: this.mqttTopics.LowBattery, webhook: true, control: 1 },
-      { state: 'StatusTampered' as const, param: this.paramNames.Tampered, topic: this.mqttTopics.Tampered, webhook: false, control: 0 },
-    ];
-  }
+    const config = sensorConfig[this.deviceType as keyof typeof sensorConfig]?.states;
+    if (!config) {
+      throw new Error(`No configuration found for device type: ${this.deviceType}`);
+    }
   
-
+    return Object.entries(config).map(([state, stateConfig]) => ({
+      state,
+      param: this.paramNames[stateConfig.param],
+      topic: this.mqttTopics[stateConfig.topic],
+      webhook: stateConfig.webhook,
+      control: stateConfig.control,
+    }));
+  }  
+  
   private processSensorState( data: Record<string, unknown> | undefined, isSharedData: boolean ): void {
     if (!data) {
       this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching Occupancy state'}.`);
@@ -237,7 +259,9 @@ export class platformOccupancySensor {
         }
   
         this.SensorStates[state] = value;
-        this.sensorService.updateCharacteristic( this.platform.Characteristic[state], value );
+        const characteristic = this.platform.Characteristic[state as
+          keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+        this.sensorService.updateCharacteristic( characteristic, value );
   
         if (webhook && value === 1) {
           this.initDiscordWebhooks(state);
@@ -344,7 +368,8 @@ export class platformOccupancySensor {
             }
 
             // Update Homebridge characteristic
-            const characteristic = this.platform.Characteristic[state];
+            const characteristic = this.platform.Characteristic[state as
+              keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
             this.sensorService.updateCharacteristic(characteristic, newValue);
 
             // Trigger webhook if `webhook` is true and `newValue === 1`

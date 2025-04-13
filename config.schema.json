@@ -255,7 +255,7 @@
               "type": "string",
               "required": false
             },
-            "paramNameCO2Detected": {
+            "paramNameCarbonDioxideDetected": {
               "title": "Parameter Name for CO2 Detected",
               "description": "JSON Parameter Name for CO2 Detected",
               "type": "string",
@@ -315,13 +315,13 @@
               "type": "string",
               "required": false
             },
-            "paramNameCO2Level": {
+            "paramNameCarbonDioxideLevel": {
               "title": "Parameter Name for CO2 Level",
               "description": "JSON Parameter Name for CO2 Level",
               "type": "string",
               "required": false
             },
-            "paramNameCO2PeakLevel": {
+            "paramNameCarbonDioxidePeakLevel": {
               "title": "Parameter Name for CO2 Peak Level",
               "description": "JSON Parameter Name for CO2 Peak Level",
               "type": "string",
@@ -805,9 +805,9 @@
               },
               "devices[].urlStatus",
               "devices[].updateInterval",
-              "devices[].paramNameCO2Detected",
-              "devices[].paramNameCO2Level",
-              "devices[].paramNameCO2PeakLevel",
+              "devices[].paramNameCarbonDioxideDetected",
+              "devices[].paramNameCarbonDioxideLevel",
+              "devices[].paramNameCarbonDioxidePeakLevel",
               "devices[].paramNameActive",
               "devices[].paramNameFault",
               "devices[].paramNameLowBattery",

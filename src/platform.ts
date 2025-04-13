@@ -12,7 +12,7 @@ const importedServices = await Promise.all(
   }),
 );
 
-const serviceMap = Object.assign({}, ...importedServices.map(({ deviceType, service }) => ({ [deviceType]: service })));
+export const serviceMap = Object.assign({}, ...importedServices.map(({ deviceType, service }) => ({ [deviceType]: service })));
 
 /**
  * HomebridgePlatform

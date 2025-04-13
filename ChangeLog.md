@@ -46,4 +46,10 @@
     - Tampered Status
   - Added support for the `getNestedValue` function to process nested JSON data.
 
+  
+  - **SensorGenericServices Class**:
+  - It will replace single file handlers
+  - settings in platformSensorGenerisSettings.ts
+  - ADDED support: platformCarbonDioxide, platformOccupancy
+
 

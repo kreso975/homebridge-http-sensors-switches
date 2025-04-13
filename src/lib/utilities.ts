@@ -42,24 +42,3 @@ export function getNestedValue(
     throw new Error(`Invalid return type: ${returnType}`);
   }
 }
-
-export const sensorConfig = {
-  OccupancySensor: {
-    paramNames: [
-      'OccupancyDetected',
-      'Active',
-      'Fault',
-      'LowBattery',
-      'Tampered',
-    ],
-    sensors: {
-      OccupancyDetected: { defaultValue: 0, range: [0, 1] as [number, number] },
-      StatusActive: { defaultValue: 0, range: [0, 1] as [number, number] },
-      StatusFault: { defaultValue: 0, range: [0, 1] as [number, number] },
-      StatusLowBattery: { defaultValue: 0, range: [0, 1] as [number, number] },
-      StatusTampered: { defaultValue: 0, range: [0, 1] as [number, number] },
-    },
-  },
-  // Add more sensor types here if needed
-};
-
