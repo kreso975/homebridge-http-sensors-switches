@@ -18,8 +18,8 @@ export const listOfServices = [
   ['Outlet', './platformOutletServices.js', 'platformOutlet'],
   ['LightBulb', './platformLightBulbServices.js', 'platformLightBulb'],
   ['Fan', './platformFanServices.js', 'platformFan'],
-  ['CarbonDioxide', './platformCarbonDioxideServices.js', 'platformCarbonDioxide'],
+  ['CarbonDioxideSensor', './platformCarbonDioxideServices.js', 'platformCarbonDioxide'],
   ['SmokeSensor', './platformSmokeSensorServices.js', 'platformSmokeSensor'],
   ['OccupancySensor', './platformOccupancySensorServices.js', 'platformOccupancySensor'],
-  ['AirQuality', './platformAirQualityServices.js', 'platformAirQuality'],
+  ['AirQuality', './platformSensorGenericServices.js', 'platformSensorGeneric'],
 ];

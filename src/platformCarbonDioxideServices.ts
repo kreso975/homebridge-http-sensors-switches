@@ -14,7 +14,7 @@ import { getNestedValue } from './lib/utilities.js';
  * Each accessory may expose multiple services of different service types.
  */
 export class platformCarbonDioxide {
-  public carbonDioxideService!: Service;
+  public sensorService!: Service;
   public mqttClient!: mqtt.MqttClient;
   private sharedPollingInstance?: SharedPolling;
 
@@ -61,7 +61,7 @@ export class platformCarbonDioxide {
   public discordAvatar: string = '';
   public discordMessage: string = '';
   
-  public CO2States = {
+  public SensorStates = {
     CarbonDioxideDetected: 0,     // Values: 0 (Inactive), 1 (Active). (On/Off)
     CarbonDioxideLevel: 0,        // Read only / Values: 0 Inactive, 1 Idle, 2 Blowing Air
     CarbonDioxidePeakLevel: 0,    // Values: 0 Manual, 1 Automatic
@@ -71,7 +71,7 @@ export class platformCarbonDioxide {
     StatusTampered: 0,            // Values: 0 (Disabled), 1 (Enabled)
   };
 
-  public CO2StatusRanges = {
+  public SensorStatusRanges = {
     CarbonDioxideDetected: [0, 1],        // Valid values: 0 (Normal), 1 (High Level Detected)
     CarbonDioxideLevel: [0, 5000],        // Typical valid range for CO2 levels in ppm
     CarbonDioxidePeakLevel: [0, 5000],    // Peak CO2 level, similar to CarbonDioxideLevel range
@@ -144,20 +144,20 @@ export class platformCarbonDioxide {
       setInterval(() => {
         const data = sharedPollingInstance?.getData();
         if (data) {
-          this.updateCarbonDioxideStatusFromSharedData(data);
+          this.updateSensorStatusFromSharedData(data);
         }
       }, 10000); // Poll every 10 seconds
     } else if (this.urlStatus) {
       // Fallback to individual polling if shared polling is not enabled
-      this.getCO2State();
-      setInterval(this.getCO2State.bind(this), this.updateInterval);
+      this.getSensorState();
+      setInterval(this.getSensorState.bind(this), this.updateInterval);
     }
 
     if (!this.deviceType) {
       return;
     }
 
-    if ( this.deviceType === 'CarbonDioxide' && (this.urlStatus || this.mqttBroker)) {
+    if ( this.deviceType === 'CarbonDioxideSensor' && (this.urlStatus || this.mqttBroker)) {
 
       // Set accessory information
       this.accessory.getService(this.platform.Service.AccessoryInformation)!
@@ -169,18 +169,18 @@ export class platformCarbonDioxide {
       // If we are going with JSON over HTTP
       if ( this.urlStatus || this.mqttBroker ) {
         // Get the Carbon Dioxide service if it exists, otherwise create a new Carbon Dioxide service
-        this.carbonDioxideService = this.accessory.getService(this.platform.Service.CarbonDioxideSensor) 
+        this.sensorService = this.accessory.getService(this.platform.Service.CarbonDioxideSensor) 
         || this.accessory.addService(this.platform.Service.CarbonDioxideSensor);
         
         // Set the service name, this is what is displayed as the default name on the Home app
-        this.carbonDioxideService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
+        this.sensorService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
         
         if ( this.urlStatus ) {      
           // Register handlers for the characteristics
           this.getStateDefinition().forEach(({ state, param }) => {
             if ( param ) { // Ensure the parameter is valid
-              this.carbonDioxideService.getCharacteristic(this.platform.Characteristic[state]).on('get', (callback) => {
-                callback(null, this.CO2States[state]); // Correct state reference
+              this.sensorService.getCharacteristic(this.platform.Characteristic[state]).on('get', (callback) => {
+                callback(null, this.SensorStates[state]); // Correct state reference
               });
             }
           });
@@ -211,150 +211,87 @@ export class platformCarbonDioxide {
     ];
   }
 
-  private updateCarbonDioxideStatusFromSharedData(data?: Record<string, unknown>): void {
+  private processSensorState( data: Record<string, unknown> | undefined, isSharedData: boolean ): void {
     if (!data) {
-      this.platform.log.warn(`${this.deviceName}: No data available for updating CO2 status.`);
+      this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching Occupancy state'}.`);
       return;
     }
-
-    this.getStateDefinition().forEach(({ state, param, webhook }) => {
-      // Check if 'param' is defined in the config
-      if (!param) {
-        if (this.enableLogging) {
+  
+    this.getStateDefinition().forEach(({ state, param, webhook }): void => {
+      if ( !param ) {
+        if ( this.enableLogging ) { 
           this.platform.log.debug(`${this.deviceName}: Parameter for ${state} is not configured. Skipping.`);
         }
-        return; // Skip processing this state
+        return;
       }
-
-      //let value = data[param];
-      let value = getNestedValue(data, param, 'number');
-
-      // Check if 'data[param]' exists in the JSON
+  
+      const rawValue = getNestedValue(data, param, 'number');
+      let value: number | undefined;
+  
+      if (typeof rawValue === 'number') {
+        value = rawValue;
+      } else if (typeof rawValue === 'boolean') {
+        value = rawValue ? 1 : 0; // Convert boolean to number
+      } else {
+        value = undefined; // Treat invalid types as undefined
+      }
+  
       if (value === undefined) {
         if (this.enableLogging) {
           this.platform.log.warn(`${this.deviceName}: Parameter '${param}' not found in JSON for state ${state}.`);
         }
-        return; // Skip processing this state
+        return;
       }
-
-      // Type validation and normalization
-      if (typeof value === 'boolean') {
-        value = value ? 1 : 0; // Convert boolean to 1 or 0
-      }
-
-      value = Number(value); // Ensure the value is a valid number
-      const range = this.CO2StatusRanges[state];
-
-      // General range validation for all states
+  
+      const range = this.SensorStatusRanges[state];
+  
       if (
-        Array.isArray(range) &&
-             range.length === 2 &&
-             typeof range[0] === 'number' &&
-             typeof range[1] === 'number' &&
-             value >= range[0] &&
-             value <= range[1]
+        Array.isArray(range) && range.length === 2 && 
+        typeof range[0] === 'number' && typeof range[1] === 'number' &&
+        value >= range[0] && value <= range[1]
       ) {
-
         if (this.enableLogging) {
-          if( this.CO2States[state] !== value ) {
-            this.platform.log.info(`${this.deviceName}: ${state} - [${this.CO2States[state]}] SET to: ${value}`);
+          if (this.SensorStates[state] !== value) {
+            this.platform.log.info(`${this.deviceName}: ${state} - [${this.SensorStates[state]}] SET to: ${value}`);
           }
         }
-
-        this.CO2States[state] = value; // Update the state
-        this.carbonDioxideService.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
-
-        // Trigger webhook if configured and value is 1
+  
+        this.SensorStates[state] = value;
+        this.sensorService.updateCharacteristic( this.platform.Characteristic[state], value );
+  
         if (webhook && value === 1) {
           this.initDiscordWebhooks(state);
         }
       } else if (this.enableLogging) {
-        this.platform.log.warn(
-          `${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`,
-        );
+        this.platform.log.warn(`${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`);
       }
     });
   }
-
-  private async getCO2State(): Promise<void> {
+  
+  private updateSensorStatusFromSharedData( data?: Record<string, unknown> ): void {
+    this.processSensorState(data, true);
+  }
+  
+  private async getSensorState(): Promise<void> {
     if (!this.urlStatus) {
-      this.platform.log.warn(this.deviceName, ': Ignoring request; No status URL defined.');
+      this.platform.log.warn(`${this.deviceName}: Ignoring request; No status URL defined.`);
       return;
     }
-
+  
     try {
       const response = await axios.get(this.urlStatus, { timeout: 8000 });
       const data = response.data;
-
-      // Log fetched data for debugging
+  
       this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
-
-      this.getStateDefinition().forEach(({ state, param, webhook }) => {
-        // Check if 'param' is defined in the config
-        if (!param) {
-          if (this.enableLogging) {
-            this.platform.log.debug(`${this.deviceName}: Parameter for ${state} is not configured. Skipping.`);
-          }
-          return; // Skip processing this state
-        }
-
-        // Check if 'data[param]' exists in the JSON
-        if (data[param] === undefined) {
-          if (this.enableLogging) {
-            this.platform.log.warn(`${this.deviceName}: Parameter '${param}' not found in JSON for state ${state}.`);
-          }
-          return; // Skip processing this state
-        }
-
-        //let value = data[param];
-        let value = getNestedValue(data, param, 'number');
-
-        // Type validation and normalization
-        if (typeof value === 'boolean') {
-          value = value ? 1 : 0; // Convert boolean to 1 or 0
-        }
-
-        value = Number(value); // Ensure the value is a valid number
-        const range = this.CO2StatusRanges[state];
-
-        // General range validation for all states
-        if (
-          Array.isArray(range) &&
-               range.length === 2 &&
-               typeof range[0] === 'number' &&
-               typeof range[1] === 'number' &&
-               value >= range[0] &&
-               value <= range[1]
-        ) {
-
-          if (this.enableLogging) {
-            if( this.CO2States[state] !== value ) {
-              this.platform.log.info(`${this.deviceName}: ${state} - [${this.CO2States[state]}] SET to: ${value}`);
-            }
-          }
-
-          this.CO2States[state] = value; // Update the state
-          this.carbonDioxideService.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
-
-          // Trigger webhook if configured and value is 1
-          if (webhook && value === 1) {
-            this.initDiscordWebhooks(state);
-          }
-        } else if (this.enableLogging) {
-          this.platform.log.warn(
-            `${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`,
-          );
-        }
-      });
-
-      // Debugging state updates
-      this.platform.log.debug(`${this.deviceName}: CO2 states updated to:`, this.CO2States);
+      this.processSensorState(data, false);
+  
+      this.platform.log.debug(`${this.deviceName}: Occupancy states updated to:`, this.SensorStates);
     } catch (error) {
       const axiosError = error as AxiosError;
       if (axios.isAxiosError(axiosError)) {
-        this.platform.log.warn(`${this.deviceName}: Axios error while fetching CO2 state:`, axiosError.message);
+        this.platform.log.warn(`${this.deviceName}: Axios error while fetching Occupancy state:`, axiosError.message);
       } else {
-        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching CO2 state.`);
+        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching Occupancy state.`);
       }
     }
   }
@@ -411,16 +348,16 @@ export class platformCarbonDioxide {
           let newValue;
 
           // Handle binary and numeric ranges dynamically
-          const [min, max] = this.CO2StatusRanges[state];
+          const [min, max] = this.SensorStatusRanges[state];
           if (min === 0 && max === 1) {
             newValue = ['1', 'true'].includes(value) ? 1 : 0; // Binary range
           } else {
             newValue = Number(value); // Numeric range
           }
 
-          // Validate against CO2StatusRanges
+          // Validate against SensorStatusRanges
           if (newValue >= min && newValue <= max) {
-            this.CO2States[state] = newValue; // Update state value
+            this.SensorStates[state] = newValue; // Update state value
 
             if (this.enableLogging) {
               this.platform.log.info(`${this.deviceName}: ${state} set to: ${newValue}`);
@@ -428,7 +365,7 @@ export class platformCarbonDioxide {
 
             // Update Homebridge characteristic
             const characteristic = this.platform.Characteristic[state];
-            this.carbonDioxideService.updateCharacteristic(characteristic, newValue);
+            this.sensorService.updateCharacteristic(characteristic, newValue);
 
             // Trigger webhook if `webhook` is true and `newValue === 1`
             if (webhook && newValue === 1) {
@@ -465,9 +402,9 @@ export class platformCarbonDioxide {
     });
   }
 
-  private initDiscordWebhooks(state: keyof typeof this.CO2States): void {
+  private initDiscordWebhooks(state: keyof typeof this.SensorStates): void {
     // Prepare a dynamic message including the passed state
-    const message = `${this.deviceName}: ${state} - ${this.discordMessage} ${this.getStatus(!!this.CO2States[state])}`;
+    const message = `${this.deviceName}: ${state} - ${this.discordMessage} ${this.getStatus(!!this.SensorStates[state])}`;
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
 
     discord.discordSimpleSend().then((result) => {

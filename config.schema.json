@@ -36,7 +36,7 @@
                 { "title": "Light Bulb", "enum": ["LightBulb"] },
                 { "title": "Fan", "enum": ["Fan"] },
                 { "title": "Air Quality", "enum": ["AirQuality"] },
-                { "title": "Carbon Dioxide", "enum": ["CarbonDioxide"] },
+                { "title": "Carbon Dioxide", "enum": ["CarbonDioxideSensor"] },
                 { "title": "Smoke Sensor", "enum": ["SmokeSensor"] },
                 { "title": "Occupancy Sensor", "enum": ["OccupancySensor"] }
               ],
@@ -790,7 +790,7 @@
             "type": "fieldset",
             "title": "HTTP Carbon Dioxide Settings",
             "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxide';"
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxideSensor';"
               },
             "expandable": true,
             "expanded": false,
@@ -819,7 +819,7 @@
             "type": "fieldset",
             "title": "MQTT Carbon Dioxide Settings",
             "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxide';"
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxideSensor';"
               },
             "expandable": true,
             "expanded": false,
@@ -843,7 +843,7 @@
             "type": "fieldset",
             "title": "Discord Webhook Carbon Dioxide Settings",
             "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxide';"
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxideSensor';"
               },
             "expandable": true,
             "expanded": false,
