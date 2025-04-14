@@ -29,7 +29,7 @@
               "title": "Device Type",
               "oneOf":
               [
-                { "title": "Sensor", "enum": ["Sensor"] },
+                { "title": "Temperature & Humidity Sensor", "enum": ["Sensor"] },
                 { "title": "Motion Sensor", "enum": ["MotionSensor"] },
                 { "title": "Switch", "enum": ["Switch"] },
                 { "title": "Outlet", "enum": ["Outlet"] },
@@ -330,6 +330,12 @@
             "paramNameStatusFault": {
               "title": "Parameter Name for Fault",
               "description": "JSON Parameter Name Device Fault",
+              "type": "string",
+              "required": false
+            },
+            "paramNameBatteryLevel": {
+              "title": "Parameter Name for Battery Level",
+              "description": "JSON Parameter Name for Battery Level",
               "type": "string",
               "required": false
             },
