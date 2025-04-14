@@ -153,8 +153,6 @@ export class platformSensorGeneric {
       // Define a mapping between device types and their corresponding services
       const serviceMappings: Record<string, WithUUID<typeof Service>> = {
         OccupancySensor: this.platform.Service.OccupancySensor,
-        MotionSensor: this.platform.Service.MotionSensor,
-        ContactSensor: this.platform.Service.ContactSensor,
         SmokeSensor: this.platform.Service.SmokeSensor,
         CarbonDioxideSensor: this.platform.Service.CarbonDioxideSensor,
         AirQualitySensor: this.platform.Service.AirQualitySensor,
