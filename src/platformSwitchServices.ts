@@ -101,6 +101,7 @@ export class platformSwitch {
         this.updateSwitchStatusFromSharedData(data);
       });
     } else if (this.urlStatus) {
+      this.startIndividualPolling();
       setInterval(this.startIndividualPolling.bind(this), 5000);
     }    
     
@@ -195,33 +196,56 @@ export class platformSwitch {
     }
   }
   
+  private async startIndividualPolling() {
+    try {
+      const response = await axios({
+        url: this.urlStatus,
+        method: 'get',
+        timeout: 8000,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = response.data;
+
+      // Check if provided KEY EXIST in JSON
+      if (this.statusStateParam in data) {
+        const value = data[this.statusStateParam];
+        const valueType = typeof value;
+
+        // Convert statusOnCheck and statusOffCheck to the appropriate type
+        let statusOnCheck: boolean | number | string;
+        let statusOffCheck: boolean | number | string;
+
+        if (valueType === 'boolean') {
+          statusOnCheck = true;
+          statusOffCheck = false;
+        } else if (valueType === 'number') {
+          statusOnCheck = parseFloat(this.statusOnCheck);
+          statusOffCheck = parseFloat(this.statusOffCheck);
+        } else {
+          statusOnCheck = this.statusOnCheck;
+          statusOffCheck = this.statusOffCheck;
+        }
+
   
-  private startIndividualPolling(urlStatus: string): void {
-    const fetchStatus = async () => {
-      if (this.enableLogging) {
-        this.platform.log.info(`Started polling for URL: ${this.url}`);
-      }
-      try {
-        const response = await axios.get(urlStatus, { timeout: 8000 });
-        const data = response.data;
-  
-        const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
-  
-        if (value === this.statusOnCheck) {
+        // Check and update switch state
+        if (value === statusOnCheck) {
           this.updateSwitchState(true, this.deviceName);
-        } else if (value === this.statusOffCheck) {
+        } else if (value === statusOffCheck) {
           this.updateSwitchState(false, this.deviceName);
         } else {
-          this.platform.log.warn(`${this.deviceName}: Unexpected value for ${this.statusStateParam}`);
+          this.platform.log.warn(this.deviceName, `: The value of ${this.statusStateParam} does not match statusOnCheck or statusOffCheck.`);
         }
-      } catch (error) {
-        const errorMessage = (error as AxiosError).message;
-        this.platform.log.error(`${this.deviceName}: Error fetching status - ${errorMessage}`);
+      } else {
+        this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.statusStateParam, 'in JSON');
       }
-    };
-  
-    // Perform initial status check and set up polling
-    this.individualPollingInterval = setInterval(fetchStatus, 5000);
+    } catch (e) {
+      const error = e as AxiosError;
+      if (axios.isAxiosError(error)) {
+        this.platform.log.warn(this.deviceName, ': Error: URL Status check:', error.message);
+      }
+    }
   }  
 
   private updateSwitchState(isOn: boolean, deviceName: string): void {

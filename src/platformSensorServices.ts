@@ -98,6 +98,7 @@ export class platformSensors {
         this.updateSensorStatusFromSharedData(data);
       });
     } else if (this.sensorUrl) {
+      this.getSensorData();
       setInterval(this.getSensorData.bind(this), this.updateInterval);
     }  
 
