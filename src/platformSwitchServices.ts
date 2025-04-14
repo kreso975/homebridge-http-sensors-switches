@@ -1,7 +1,7 @@
 import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
-import { SharedPolling } from './lib/SharedPolling.js';       // Include shared polling library
+import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
 import { getNestedValue } from './lib/utilities.js';          // Include utility function for nested value retrieval
 import { discordWebHooks } from './lib/discordWebHooks.js';   // Include Discord webhook library
 
@@ -18,6 +18,7 @@ export class platformSwitch {
   // Ensure backward compatibility for shared polling
   public sharedPolling = false; // Default to false
   public sharedPollingId = ''; // Default to empty
+  public sharedPollingInterval = 5000;
 
   public deviceId = '';
   public deviceType = '';
@@ -85,26 +86,23 @@ export class platformSwitch {
     // Ensure backward compatibility for shared polling
     this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
     this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
+    this.sharedPollingInterval = device.sharedPollingInterval ?? 5000; // Set the polling interval to 5 sec or from config value
 
     if (this.sharedPolling && this.sharedPollingId) {
-      // Register the shared polling instance for the group
       const sharedPollingInstance = SharedPolling.registerPolling(
         this.sharedPollingId,
-        this.urlStatus, // URL shared by multiple devices
-        this.platform, // Pass the entire platform instance
+        this.urlStatus,
+        this.platform,
+        this.sharedPollingInterval, // Set the polling interval to 5 sec or from config value
       );
     
-      // Periodically fetch shared data and update device state
-      setInterval(() => {
-        const data = sharedPollingInstance?.getData();
-        if (data) {
-          this.updateSwitchStatusFromSharedData(data);
-        }
-      }, 5000); // Poll every 5 seconds
+      // Subscribe to data updates
+      sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
+        this.updateSwitchStatusFromSharedData(data);
+      });
     } else if (this.urlStatus) {
-      // Fallback to individual polling if shared polling is not enabled
-      this.startIndividualPolling(this.urlStatus);
-    }
+      setInterval(this.startIndividualPolling.bind(this), 5000);
+    }    
     
     // Initialize the device accessory with HomeKit services and characteristics
     this.initializeAccessory();

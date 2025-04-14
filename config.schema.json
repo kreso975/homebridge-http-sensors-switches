@@ -35,7 +35,7 @@
                 { "title": "Outlet", "enum": ["Outlet"] },
                 { "title": "Light Bulb", "enum": ["LightBulb"] },
                 { "title": "Fan", "enum": ["Fan"] },
-                { "title": "Air Quality", "enum": ["AirQuality"] },
+                { "title": "Air Quality", "enum": ["AirQualitySensor"] },
                 { "title": "Carbon Dioxide", "enum": ["CarbonDioxideSensor"] },
                 { "title": "Smoke Sensor", "enum": ["SmokeSensor"] },
                 { "title": "Occupancy Sensor", "enum": ["OccupancySensor"] }
@@ -219,7 +219,7 @@
               "type": "string",
               "required": false
             },
-            "paramNameActive": {
+            "paramNameStatusActive": {
               "title": "Parameter Name for Active",
               "description": "JSON Parameter Name for Active (on/off)",
               "type": "string",
@@ -255,7 +255,7 @@
               "type": "string",
               "required": false
             },
-            "paramNameCarbonDioxideDetected": {
+            "paramNameCO2Detected": {
               "title": "Parameter Name for CO2 Detected",
               "description": "JSON Parameter Name for CO2 Detected",
               "type": "string",
@@ -315,31 +315,31 @@
               "type": "string",
               "required": false
             },
-            "paramNameCarbonDioxideLevel": {
+            "paramNameCO2Level": {
               "title": "Parameter Name for CO2 Level",
               "description": "JSON Parameter Name for CO2 Level",
               "type": "string",
               "required": false
             },
-            "paramNameCarbonDioxidePeakLevel": {
+            "paramNameCO2PeakLevel": {
               "title": "Parameter Name for CO2 Peak Level",
               "description": "JSON Parameter Name for CO2 Peak Level",
               "type": "string",
               "required": false
             },
-            "paramNameFault": {
+            "paramNameStatusFault": {
               "title": "Parameter Name for Fault",
               "description": "JSON Parameter Name Device Fault",
               "type": "string",
               "required": false
             },
-            "paramNameLowBattery": {
+            "paramNameStatusLowBattery": {
               "title": "Parameter Name for Low Battery",
               "description": "JSON Parameter Name for Low Battery",
               "type": "string",
               "required": false
             },
-            "paramNameTampered": {
+            "paramNameStatusTampered": {
               "title": "Parameter Name for Tampered",
               "description": "JSON Parameter Name Device is Tampered",
               "type": "string",
@@ -384,6 +384,12 @@
             "updateInterval": {
               "title": "Update interval",
               "description": "update interval for reading Sensors, default is 60000 = 60 seconds = 1 minute",
+              "type": "integer",
+              "required": false
+            },
+            "sharedPollingInterval": {
+              "title": "Update Interval",
+              "description": "Update interval, default is 60000 miliseconds",
               "type": "integer",
               "required": false
             },
@@ -664,7 +670,8 @@
                 "flex-flow": "row wrap",
                 "items": [
                   "devices[].sharedPolling",
-                  "devices[].sharedPollingId"
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
                 ]
               },
               "devices[].urlStatus",
@@ -724,7 +731,8 @@
                 "flex-flow": "row wrap",
                 "items": [
                   "devices[].sharedPolling",
-                  "devices[].sharedPollingId"
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
                 ]
               },
               "devices[].sensorUrl",
@@ -800,18 +808,19 @@
                 "flex-flow": "row wrap",
                 "items": [
                   "devices[].sharedPolling",
-                  "devices[].sharedPollingId"
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
                 ]
               },
               "devices[].urlStatus",
               "devices[].updateInterval",
-              "devices[].paramNameCarbonDioxideDetected",
-              "devices[].paramNameCarbonDioxideLevel",
-              "devices[].paramNameCarbonDioxidePeakLevel",
-              "devices[].paramNameActive",
-              "devices[].paramNameFault",
-              "devices[].paramNameLowBattery",
-              "devices[].paramNameTampered"
+              "devices[].paramNameCO2Detected",
+              "devices[].paramNameCO2Level",
+              "devices[].paramNameCO2PeakLevel",
+              "devices[].paramNameStatusActive",
+              "devices[].paramNameStatusFault",
+              "devices[].paramNameStatusLowBattery",
+              "devices[].paramNameStatusTampered"
             ]
           },
           {
@@ -869,16 +878,17 @@
                 "flex-flow": "row wrap",
                 "items": [
                   "devices[].sharedPolling",
-                  "devices[].sharedPollingId"
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
                 ]
               },
               "devices[].urlStatus",
               "devices[].updateInterval",
               "devices[].paramNameSmokeDetected",
-              "devices[].paramNameActive",
-              "devices[].paramNameFault",
-              "devices[].paramNameLowBattery",
-              "devices[].paramNameTampered"
+              "devices[].paramNameStatusActive",
+              "devices[].paramNameStatusFault",
+              "devices[].paramNameStatusLowBattery",
+              "devices[].paramNameStatusTampered"
             ]
           },
           {
@@ -924,7 +934,7 @@
             "type": "fieldset",
             "title": "HTTP Air Quality Settings",
             "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQuality';"
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQualitySensor';"
               },
             "expandable": true,
             "expanded": false,
@@ -934,7 +944,8 @@
                 "flex-flow": "row wrap",
                 "items": [
                   "devices[].sharedPolling",
-                  "devices[].sharedPollingId"
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
                 ]
               },
               "devices[].urlStatus",
@@ -946,10 +957,10 @@
               "devices[].paramNameNitrogenDioxideDensity",
               "devices[].paramNameSulphurDioxideDensity",
               "devices[].paramNameCarbonMonoxideLevel",
-              "devices[].paramNameActive",
-              "devices[].paramNameFault",
-              "devices[].paramNameLowBattery",
-              "devices[].paramNameTampered"
+              "devices[].paramNameStatusActive",
+              "devices[].paramNameStatusFault",
+              "devices[].paramNameStatusLowBattery",
+              "devices[].paramNameStatusTampered"
             ]
           },
           {
@@ -957,7 +968,7 @@
             "type": "fieldset",
             "title": "MQTT Air Quality Settings",
             "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQuality';"
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQualitySensor';"
               },
             "expandable": true,
             "expanded": false,
@@ -985,7 +996,7 @@
             "type": "fieldset",
             "title": "Discord Webhook Air Quality Settings",
             "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQuality';"
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQualitySensor';"
               },
             "expandable": true,
             "expanded": false,
@@ -1011,16 +1022,17 @@
                 "flex-flow": "row wrap",
                 "items": [
                   "devices[].sharedPolling",
-                  "devices[].sharedPollingId"
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
                 ]
               },
               "devices[].urlStatus",
               "devices[].updateInterval",
               "devices[].paramNameOccupancyDetected",
-              "devices[].paramNameActive",
-              "devices[].paramNameFault",
-              "devices[].paramNameLowBattery",
-              "devices[].paramNameTampered"
+              "devices[].paramNameStatusActive",
+              "devices[].paramNameStatusFault",
+              "devices[].paramNameStatusLowBattery",
+              "devices[].paramNameStatusTampered"
             ]
           },
           {
@@ -1241,7 +1253,7 @@
               "devices[].methodUpdate",
               "devices[].urlStatus",
               "devices[].urlFanControl",
-              "devices[].paramNameActive",
+              "devices[].paramNameStatusActive",
               "devices[].paramNameRotationSpeed",
               "devices[].paramNameRotationDirection",
               "devices[].paramNameSwingMode",

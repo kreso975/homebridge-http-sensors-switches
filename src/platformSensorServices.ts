@@ -4,7 +4,7 @@ import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions }  from 'mqtt';
 
-import { SharedPolling } from './lib/SharedPolling.js';       // Include shared polling library
+import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
 import { getNestedValue } from './lib/utilities.js';
 
 
@@ -23,6 +23,7 @@ export class platformSensors {
   // Ensure backward compatibility for shared polling
   public sharedPolling = false; // Default to false
   public sharedPollingId = ''; // Default to empty
+  public sharedPollingInterval = 60000; // Default to 60 seconds
 
   public deviceId: string = '';
   public deviceType: string = '';
@@ -82,27 +83,23 @@ export class platformSensors {
     // Ensure backward compatibility for shared polling
     this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
     this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
+    this.sharedPollingInterval = device.sharedPollingInterval ?? 60000; // Set the polling interval to 60 sec or from config value
 
     if (this.sharedPolling && this.sharedPollingId) {
-      // Register the shared polling instance for the group
       const sharedPollingInstance = SharedPolling.registerPolling(
         this.sharedPollingId,
-        this.sensorUrl, // URL shared by multiple devices
-        this.platform, // Pass the entire platform instance
+        this.sensorUrl,
+        this.platform,
+        this.sharedPollingInterval, // Set the polling interval to 60 sec or from config value
       );
     
-      // Periodically fetch shared data and update device state
-      setInterval(() => {
-        const data = sharedPollingInstance?.getData();
-        if (data) {
-          this.updateSensorStatusFromSharedData(data);
-        }
-      }, 5000); // Poll every N seconds
+      // Subscribe to data updates
+      sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
+        this.updateSensorStatusFromSharedData(data);
+      });
     } else if (this.sensorUrl) {
-      // Fallback to individual polling if shared polling is not enabled
-      this.getSensorData();
       setInterval(this.getSensorData.bind(this), this.updateInterval);
-    }
+    }  
 
     if ( !this.deviceType ) {
       return;

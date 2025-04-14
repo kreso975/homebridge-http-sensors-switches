@@ -4,7 +4,7 @@ import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
 
-import { SharedPolling } from './lib/SharedPolling.js';       // Include shared polling library
+import { SharedPolling, SharedData  } from './lib/SharedPolling.js';       // Include shared polling library
 import { discordWebHooks } from './lib/discordWebHooks.js';
 import { getNestedValue } from './lib/utilities.js';
 import { sensorConfig } from './platformSensorGenericSettings.js';
@@ -23,6 +23,7 @@ export class platformSensorGeneric {
   // Ensure backward compatibility for shared polling
   public sharedPolling = false; // Default to false
   public sharedPollingId = ''; // Default to empty
+  public sharedPollingInterval = 60000;
 
   public deviceId: string = '';
   public deviceType: string = '';
@@ -77,7 +78,7 @@ export class platformSensorGeneric {
     this.mqttUsername = device.mqttUsername;
     this.mqttPassword = device.mqttPassword;
 
-    // Check if configuration exists for the current deviceType
+    // Check if deviceType is set and if configuration exists for the current deviceType
     if (!this.deviceType) {
       return;
     }
@@ -88,14 +89,19 @@ export class platformSensorGeneric {
     }
 
     config.paramNames.forEach((paramNameKey) => {
-      // Populate paramNames
-      const deviceParamKey = `paramName${paramNameKey}`;
-      const paramValue = device[deviceParamKey as keyof typeof device]?.toString() || '';
-      this.platform.log.debug(`Param Key: ${deviceParamKey}, Value: ${paramValue}`);
+      // Explicitly cast paramNameKey to a valid key of config.states
+      const paramKey = `paramName${config.states[paramNameKey as keyof typeof config.states]?.param}`; // Add "paramName" prefix
+      if (!paramKey) {
+        this.platform.log.warn(`Param not found for ${paramNameKey} in states.`);
+        return;
+      }
+    
+      const paramValue = device[paramKey as keyof typeof device]?.toString() || '';
+      this.platform.log.debug(`Param Key: ${paramKey}, Value: ${paramValue}`);
       this.paramNames[paramNameKey] = paramValue;
     
       // Populate mqttTopics dynamically (using "mqtt" prefix for keys)
-      const deviceMqttKey = `mqtt${paramNameKey}`;
+      const deviceMqttKey = `mqtt${config.states[paramNameKey as keyof typeof config.states]?.topic}`; // Add "paramName" prefix
       const mqttValue = device[deviceMqttKey as keyof typeof device]?.toString() || '';
       this.platform.log.debug(`MQTT Key: ${deviceMqttKey}, Value: ${mqttValue}`);
       this.mqttTopics[paramNameKey] = mqttValue;
@@ -116,27 +122,24 @@ export class platformSensorGeneric {
     // Ensure backward compatibility for shared polling
     this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
     this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
+    this.sharedPollingInterval = device.sharedPollingInterval ?? 60000; // Set the polling interval to 60 sec or from config value
 
     if (this.sharedPolling && this.sharedPollingId) {
-      // Register the shared polling instance for the group
       const sharedPollingInstance = SharedPolling.registerPolling(
         this.sharedPollingId,
-        this.urlStatus, // URL shared by multiple devices
-        this.platform, // Pass the entire platform instance
+        this.urlStatus,
+        this.platform,
+        this.sharedPollingInterval, // Set the polling interval to 60 sec or from config value
       );
     
-      // Periodically fetch shared data and update device state
-      setInterval(() => {
-        const data = sharedPollingInstance?.getData();
-        if (data) {
-          this.updateSensorStatusFromSharedData(data);
-        }
-      }, 10000); // Poll every 10 seconds
+      // Subscribe to data updates
+      sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
+        this.updateSensorStatusFromSharedData(data);
+      });
     } else if (this.urlStatus) {
-      // Fallback to individual polling if shared polling is not enabled
       this.getSensorState();
       setInterval(this.getSensorState.bind(this), this.updateInterval);
-    }
+    }    
 
     if ( this.urlStatus || this.mqttBroker ) {
 
@@ -154,6 +157,7 @@ export class platformSensorGeneric {
         ContactSensor: this.platform.Service.ContactSensor,
         SmokeSensor: this.platform.Service.SmokeSensor,
         CarbonDioxideSensor: this.platform.Service.CarbonDioxideSensor,
+        AirQualitySensor: this.platform.Service.AirQualitySensor,
         // Add more sensors as needed
       };
 
@@ -206,8 +210,8 @@ export class platformSensorGeneric {
   
     return Object.entries(config).map(([state, stateConfig]) => ({
       state,
-      param: this.paramNames[stateConfig.param],
-      topic: this.mqttTopics[stateConfig.topic],
+      param: this.paramNames[state],
+      topic: this.mqttTopics[state],
       webhook: stateConfig.webhook,
       control: stateConfig.control,
     }));

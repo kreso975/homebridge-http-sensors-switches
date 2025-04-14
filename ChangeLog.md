@@ -1,6 +1,13 @@
 ## Changelog
 ### [v2.0.0] - 10.4.2025 - In Development
 - **Feature Added**: Introduced `sharedPolling` to support efficient polling for devices sharing the same data source.
+  - **Shared Polling:** Groups devices under a common polling instance for efficient data retrieval.
+    - **Dynamic Grouping:** Dynamically adds or removes devices from a polling group.
+    - **Centralized Data Management:** Maintains the latest fetched data for easy access by devices.
+    - **Customizable Polling Intervals:** Allows the polling interval to be set dynamically when registering a shared polling instance.
+    - **Event-Based Updates:** Notifies devices in the group about data updates using an event-driven architecture.
+    - **Error Handling:** Logs errors encountered during polling and ensures graceful failure recovery.
+
 - **PlatformSwitch Enhancements**:
   - Upgraded to fully integrate with `sharedPolling`.
   - Added support for the `getNestedValue` function to process nested JSON data.
@@ -51,5 +58,6 @@
   - It will replace single file handlers
   - settings in platformSensorGenerisSettings.ts
   - ADDED support: platformCarbonDioxide, platformOccupancy
+  - paramNames: 'CarbonDioxideDetected','CarbonDioxideLevel','CarbonDioxidePeakLevel' change name in config.schema - users must update config values
 
 
