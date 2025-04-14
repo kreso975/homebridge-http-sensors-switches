@@ -211,7 +211,6 @@ export class platformSensorGeneric {
       param: this.paramNames[state],
       topic: this.mqttTopics[state],
       webhook: stateConfig.webhook,
-      control: stateConfig.control,
     }));
   }  
   
