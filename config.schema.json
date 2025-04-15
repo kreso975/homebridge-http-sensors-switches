@@ -1444,6 +1444,15 @@
             "expandable": true,
             "expanded": false,
             "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
+                ]
+              },
               "devices[].methodUpdate",
               "devices[].urlStatus",
               "devices[].urlFanControl",

@@ -1,5 +1,10 @@
 ## Changelog
 ### [v2.0.0] - 10.4.2025 - In Development
+
+- **TODO**:
+  - FanServices - Upgrade(sharedPolling, getNestedValue) - ++ - testing
+  - Light Bulb - Upgrade(sharedPolling, getNestedValue)
+
 - **IMPORTANT**:
   - **Motion Sensor:** Config updated. Users must update Accessory.
 
@@ -79,9 +84,8 @@
 
   
 - **SensorGenericServices Class**:
-  - It will replace single file handlers
+  - Replace all single file handlers except Temerature and Humidity (Practical reasons)
   - settings in platformSensorGenerisSettings.ts
-  - ADDED support: platformCarbonDioxide, platformOccupancy
-  - paramNames: 'CarbonDioxideDetected','CarbonDioxideLevel','CarbonDioxidePeakLevel' change name in config.schema - users must update config values
+  
 
 

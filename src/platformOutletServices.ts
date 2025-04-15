@@ -136,11 +136,6 @@ export class platformOutlet {
            this.service = this.accessory.getService(this.platform.Service.Outlet) || this.accessory.addService(this.platform.Service.Outlet);
            this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
 
-           if (this.urlStatus) {
-             this.getOn();
-             setInterval(this.getOn.bind(this), 5000);
-           }
-
            if (this.urlON) {
              this.service.getCharacteristic(this.platform.Characteristic.On)
                .on('set', this.setOn.bind(this))

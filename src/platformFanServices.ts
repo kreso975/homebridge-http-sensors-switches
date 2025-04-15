@@ -1,9 +1,12 @@
 import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
+import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
+import { getNestedValue } from './lib/utilities.js';                      // Include utility function for nested value retrieval
+import { discordWebHooks } from './lib/discordWebHooks.js';               // Include Discord webhook library
+
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
-import { discordWebHooks } from './lib/discordWebHooks.js';
 
 /**
  * Platform Accessory
@@ -13,8 +16,15 @@ import { discordWebHooks } from './lib/discordWebHooks.js';
 export class platformFan {
   public service!: Service;
   public mqttClient!: mqtt.MqttClient;
+  private sharedPollingInstance?: SharedPolling;
 
+  // Device and configuration properties
   public enableLogging: boolean = true;
+  // Ensure backward compatibility for shared polling
+  public sharedPolling = false; // Default to false
+  public sharedPollingId = ''; // Default to empty
+  public sharedPollingInterval = 5000;
+
   public deviceId: string = '';
   public deviceType: string = '';
   public deviceName: string = '';
@@ -73,44 +83,66 @@ export class platformFan {
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
   ) {
+    const device = this.accessory.context.device;
 
-    this.deviceType = this.accessory.context.device.deviceType;
-    this.deviceName = this.accessory.context.device.deviceName || 'NoName';
-    this.deviceManufacturer = this.accessory.context.device.deviceManufacturer || 'Stergo';
-    this.deviceModel = this.accessory.context.device.deviceModel || 'Fan';
-    this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
-    this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
+    this.deviceType = device.deviceType;
+    this.deviceName = device.deviceName || 'NoName';
+    this.deviceManufacturer = device.deviceManufacturer || 'Stergo';
+    this.deviceModel = device.deviceModel || 'Fan';
+    this.deviceSerialNumber = device.deviceSerialNumber || accessory.UUID;
+    this.deviceFirmwareVersion = device.deviceFirmwareVersion || '0.0';
 
     // From Config
-    this.enableLogging = this.accessory.context.device.enableLogging;
-    this.urlStatus = this.accessory.context.device.urlStatus;
-    this.urlFanControl = this.accessory.context.device.urlFanControl;
-    this.methodUpdate = this.accessory.context.device.methodUpdate;
-    this.paramNameActive = this.accessory.context.device.paramNameActive;
-    this.paramNameRotationSpeed = this.accessory.context.device.paramNameRotationSpeed;
-    this.paramNameRotationDirection = this.accessory.context.device.paramNameRotationDirection;
-    this.paramNameSwingMode = this.accessory.context.device.paramNameSwingMode;
-    this.paramNameCurrentFanState = this.accessory.context.device.paramNameCurrentFanState;
-    this.paramNameTargetFanState = this.accessory.context.device.paramNameTargetFanState;
+    this.enableLogging = device.enableLogging;
+    this.urlStatus = device.urlStatus;
+    this.urlFanControl = device.urlFanControl;
+    this.methodUpdate = device.methodUpdate;
+    this.paramNameActive = device.paramNameStatusActive;
+    this.paramNameRotationSpeed = device.paramNameRotationSpeed;
+    this.paramNameRotationDirection = device.paramNameRotationDirection;
+    this.paramNameSwingMode = device.paramNameSwingMode;
+    this.paramNameCurrentFanState = device.paramNameCurrentFanState;
+    this.paramNameTargetFanState = device.paramNameTargetFanState;
     
-    this.mqttReconnectInterval = this.accessory.context.device.mqttReconnectInterval || 60; // 60 sec default
-    this.mqttBroker = this.accessory.context.device.mqttBroker;
-    this.mqttPort = this.accessory.context.device.mqttPort;
-    this.mqttSwitch = this.accessory.context.device.mqttSwitch;
-    this.mqttUsername = this.accessory.context.device.mqttUsername;
-    this.mqttPassword = this.accessory.context.device.mqttPassword;
+    this.mqttReconnectInterval = device.mqttReconnectInterval || 60; // 60 sec default
+    this.mqttBroker = device.mqttBroker;
+    this.mqttPort = device.mqttPort;
+    this.mqttSwitch = device.mqttSwitch;
+    this.mqttUsername = device.mqttUsername;
+    this.mqttPassword = device.mqttPassword;
 
-    this.mqttRotationSpeed = this.accessory.context.device.mqttRotationSpeed;
-    this.mqttRotationDirection = this.accessory.context.device.mqttRotationDirection;
-    this.mqttSwingMode = this.accessory.context.device.mqttSwingMode;
-    this.mqttCurrentFanState = this.accessory.context.device.mqttCurrentFanState;
-    this.mqttTargetFanState = this.accessory.context.device.mqttTargetFanState;
+    this.mqttRotationSpeed = device.mqttRotationSpeed;
+    this.mqttRotationDirection = device.mqttRotationDirection;
+    this.mqttSwingMode = device.mqttSwingMode;
+    this.mqttCurrentFanState = device.mqttCurrentFanState;
+    this.mqttTargetFanState = device.mqttTargetFanState;
 
-    this.discordWebhook = this.accessory.context.device.discordWebhook;
-    this.discordUsername = this.accessory.context.device.discordUsername || 'StergoSmart';
-    this.discordAvatar = this.accessory.context.device.discordAvatar
-      || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
-    this.discordMessage = this.accessory.context.device.discordMessage;
+    this.discordWebhook = device.discordWebhook;
+    this.discordUsername = device.discordUsername || 'StergoSmart';
+    this.discordAvatar = device.discordAvatar || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
+    this.discordMessage = device.discordMessage;
+
+    // Ensure backward compatibility for shared polling
+    this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
+    this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
+    this.sharedPollingInterval = device.sharedPollingInterval ?? 5000; // Set the polling interval to 5 sec or from config value
+
+    if (this.sharedPolling && this.sharedPollingId) {
+      const sharedPollingInstance = SharedPolling.registerPolling(
+        this.sharedPollingId,
+        this.urlStatus,
+        this.platform,
+        this.sharedPollingInterval, // Set the polling interval to 5 sec or from config value
+      );
+    
+      // Subscribe to data updates
+      sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
+        this.updateFanStatusFromSharedData(data);
+      });
+    } else if (this.urlStatus) {
+      this.getFanState();
+      setInterval(this.getFanState.bind(this), 5000);
+    }  
 
     if (!this.deviceType) {
       this.platform.log.warn(this.deviceName, ': Ignoring accessory; No deviceType defined.');
@@ -132,12 +164,6 @@ export class platformFan {
        
         // Set the service name, this is what is displayed as the default name on the Home app
         this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
-       
-        // Try to fetch the initial power status of the device and check the status every 5 seconds
-        if (this.urlStatus) {
-          this.getFanState();
-          setInterval(this.getFanState.bind(this), 5000);
-        }
         
         if ( this.urlFanControl || this.urlStatus ) {
           // Register handlers for the characteristics
@@ -187,11 +213,150 @@ export class platformFan {
     return isOn ? 'ON' : 'OFF';
   }
 
-  private async setFanState(
-    what: keyof typeof this.fanStates,
-    value: CharacteristicValue,
-    callback: CharacteristicSetCallback,
-  ): Promise<void> {
+  private updateFanStatusFromSharedData(data?: Record<string, unknown>): void {
+    if (!data) {
+      this.platform.log.warn(`${this.deviceName}: No data available for updating Fan status.`);
+      return;
+    }
+
+    // Log fetched data for debugging
+    this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
+
+    this.getStateDefinition().forEach(({ state, param }) => {
+      // Check if 'param' is defined in the config
+      if (!param) {
+        if (this.enableLogging) {
+          this.platform.log.debug(`${this.deviceName}: Parameter for ${state} is not configured. Skipping.`);
+        }
+        return; // Skip processing this state
+      }
+      
+      const rawValue = getNestedValue(data, param, 'number');
+      let value: number | undefined;
+  
+      if (typeof rawValue === 'number') {
+        value = rawValue;
+      } else if (typeof rawValue === 'boolean') {
+        value = rawValue ? 1 : 0; // Convert boolean to number
+      } else {
+        value = undefined; // Treat invalid types as undefined
+      }
+  
+      if (value === undefined) {
+        if (this.enableLogging) {
+          this.platform.log.warn(`${this.deviceName}: Parameter '${param}' not found in JSON for state ${state}.`);
+        }
+        return;
+      }
+      
+      value = Number(value); // Ensure the value is a valid number
+      const range = this.fanStatusRanges[state];
+      
+      // General range validation for all states
+      if (
+        Array.isArray(range) && range.length === 2 && 
+          typeof range[0] === 'number' && typeof range[1] === 'number' && 
+          value >= range[0] && value <= range[1]
+      ) {
+        this.fanStates[state] = value; // Update the state
+        this.service.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
+      
+        if (this.enableLogging) {
+          this.platform.log.info(`${this.deviceName}: ${state} SET to: ${value}`);
+        }
+      } else if (this.enableLogging) {
+        this.platform.log.warn(
+          `${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`,
+        );
+      }
+    });      
+
+    // Debugging state updates
+    this.platform.log.debug(`${this.deviceName}: Fan states updated to:`, this.fanStates);
+  }
+
+  private async getFanState(): Promise<void> {
+    if (!this.urlStatus) {
+      this.platform.log.warn(this.deviceName, ': Ignoring request; No status URL defined.');
+      return;
+    }
+
+    try {
+      const response = await axios({
+        url: this.urlStatus,
+        method: 'get',
+        timeout: 8000, // Set timeout for response
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = response.data;
+
+      // Log fetched data for debugging
+      this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
+
+      this.getStateDefinition().forEach(({ state, param }) => {
+        // Check if 'param' is defined in the config
+        if (!param) {
+          if (this.enableLogging) {
+            this.platform.log.debug(`${this.deviceName}: Parameter for ${state} is not configured. Skipping.`);
+          }
+          return; // Skip processing this state
+        }
+
+        const rawValue = getNestedValue(data, param, 'number');
+        let value: number | undefined;
+  
+        if (typeof rawValue === 'number') {
+          value = rawValue;
+        } else if (typeof rawValue === 'boolean') {
+          value = rawValue ? 1 : 0; // Convert boolean to number
+        } else {
+          value = undefined; // Treat invalid types as undefined
+        }
+  
+        if (value === undefined) {
+          if (this.enableLogging) {
+            this.platform.log.warn(`${this.deviceName}: Parameter '${param}' not found in JSON for state ${state}.`);
+          }
+          return;
+        }
+      
+        value = Number(value); // Ensure the value is a valid number
+        const range = this.fanStatusRanges[state];
+      
+        // General range validation for all states
+        if (
+          Array.isArray(range) && range.length === 2 && 
+          typeof range[0] === 'number' && typeof range[1] === 'number' &&
+          value >= range[0] && value <= range[1]
+        ) {
+          if (this.enableLogging && this.fanStates[state] !== value) {
+            this.platform.log.info(`${this.deviceName}: ${state} SET to: ${value}`);
+          }
+          this.fanStates[state] = value; // Update the state
+          this.service.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
+        } else if (this.enableLogging) {
+          this.platform.log.warn(`${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`);
+        }
+      });      
+
+      // Debugging state updates
+      this.platform.log.debug(`${this.deviceName}: Fan states updated to:`, this.fanStates);
+
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      if (axios.isAxiosError(axiosError)) {
+        this.platform.log.warn(`${this.deviceName}: Axios error while fetching fan state:`, axiosError.message);
+      } else {
+        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching fan state.`);
+      }
+    }
+  }
+
+  private async setFanState( what: keyof typeof this.fanStates, value: CharacteristicValue, callback: CharacteristicSetCallback ): Promise<void> {
+    
     const previousValue = this.fanStates[what]; // Save the current state value
     this.fanStates[what] = value as number; // Update the state dynamically
   
@@ -278,86 +443,6 @@ export class platformFan {
       callback(error as Error); // Notify failure
     }
   }  
-
-  private async getFanState(): Promise<void> {
-    if (!this.urlStatus) {
-      this.platform.log.warn(this.deviceName, ': Ignoring request; No status URL defined.');
-      return;
-    }
-
-    try {
-      const response = await axios({
-        url: this.urlStatus,
-        method: 'get',
-        timeout: 8000, // Set timeout for response
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = response.data;
-
-      // Log fetched data for debugging
-      this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
-
-      this.getStateDefinition().forEach(({ state, param }) => {
-        // Check if 'param' is defined in the config
-        if (!param) {
-          if (this.enableLogging) {
-            this.platform.log.debug(`${this.deviceName}: Parameter for ${state} is not configured. Skipping.`);
-          }
-          return; // Skip processing this state
-        }
-      
-        // Check if 'data[param]' exists in the JSON
-        if (data[param] === undefined) {
-          if (this.enableLogging) {
-            this.platform.log.warn(`${this.deviceName}: Parameter '${param}' not found in JSON for state ${state}.`);
-          }
-          return; // Skip processing this state
-        }
-      
-        let value = data[param];
-      
-        // Type validation and normalization
-        if (typeof value === 'boolean') {
-          value = value ? 1 : 0; // Convert boolean to 1 or 0
-        }
-      
-        value = Number(value); // Ensure the value is a valid number
-        const range = this.fanStatusRanges[state];
-      
-        // General range validation for all states
-        if (
-          Array.isArray(range) && range.length === 2 && 
-          typeof range[0] === 'number' && typeof range[1] === 'number' &&
-          value >= range[0] && value <= range[1]
-        ) {
-          this.fanStates[state] = value; // Update the state
-          this.service.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
-      
-          if (this.enableLogging) {
-            this.platform.log.info(`${this.deviceName}: ${state} SET to: ${value}`);
-          }
-        } else if (this.enableLogging) {
-          this.platform.log.warn(
-            `${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`,
-          );
-        }
-      });      
-
-      // Debugging state updates
-      this.platform.log.debug(`${this.deviceName}: Fan states updated to:`, this.fanStates);
-
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      if (axios.isAxiosError(axiosError)) {
-        this.platform.log.warn(`${this.deviceName}: Axios error while fetching fan state:`, axiosError.message);
-      } else {
-        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching fan state.`);
-      }
-    }
-  }
 
   private initMQTT() {
     // Define an empty array to hold the subscribed topics
