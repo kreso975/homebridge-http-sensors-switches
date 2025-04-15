@@ -1,9 +1,12 @@
 import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
+import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
+import { getNestedValue } from './lib/utilities.js';                      // Include utility function for nested value retrieval
+import { discordWebHooks } from './lib/discordWebHooks.js';               // Include Discord webhook library
+
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
-import { discordWebHooks } from './lib/discordWebHooks.js';
 
 /**
  * Platform Accessory
@@ -13,8 +16,15 @@ import { discordWebHooks } from './lib/discordWebHooks.js';
 export class platformLightBulb {
   public service!: Service;
   public mqttClient!: mqtt.MqttClient;
+  private sharedPollingInstance?: SharedPolling;
 
+  // Device and configuration properties
   public enableLogging: boolean = true;
+  // Ensure backward compatibility for shared polling
+  public sharedPolling = false; // Default to false
+  public sharedPollingId = ''; // Default to empty
+  public sharedPollingInterval = 5000;
+
   public deviceId: string = '';
   public deviceType: string = '';
   public deviceName: string = '';
@@ -79,46 +89,73 @@ export class platformLightBulb {
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
   ) {
+    const device = this.accessory.context.device;
 
-    this.deviceType = this.accessory.context.device.deviceType;
-    this.deviceName = this.accessory.context.device.deviceName || 'NoName';
-    this.deviceManufacturer = this.accessory.context.device.deviceManufacturer || 'Stergo';
-    this.deviceModel = this.accessory.context.device.deviceModel || 'LightBulb';
-    this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
-    this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
+    this.deviceType = device.deviceType;
+    this.deviceName = device.deviceName || 'NoName';
+    this.deviceManufacturer = device.deviceManufacturer || 'Stergo';
+    this.deviceModel = device.deviceModel || 'LightBulb';
+    this.deviceSerialNumber = device.deviceSerialNumber || accessory.UUID;
+    this.deviceFirmwareVersion = device.deviceFirmwareVersion || '0.0';
 
     // From Config
-    this.enableLogging = this.accessory.context.device.enableLogging;
+    this.enableLogging = device.enableLogging;
 
-    this.urlStatus = this.accessory.context.device.urlStatus;
-    this.statusStateParam = this.accessory.context.device.stateName;
-    this.statusOnCheck = this.accessory.context.device.onStatusValue;
-    this.statusOffCheck = this.accessory.context.device.offStatusValue;
-    this.urlON = this.accessory.context.device.urlON;
-    this.urlOFF = this.accessory.context.device.urlOFF;
+    this.urlStatus = device.urlStatus;
+    this.statusStateParam = device.stateName;
+    this.statusOnCheck = device.onStatusValue;
+    this.statusOffCheck = device.offStatusValue;
+    this.urlON = device.urlON;
+    this.urlOFF = device.urlOFF;
 
-    this.useRGB = this.accessory.context.device.useRGB;
-    this.useBrightness255 = this.accessory.context.device.useBrightness255;
-    this.useColorTKelvin = this.accessory.context.device.useColorTKelvin;
-    this.rgbParamName = this.accessory.context.device.rgbParamName;
-    this.urlLightBulbControl = this.accessory.context.device.urlLightBulbControl;
-    this.brightnessParamName = this.accessory.context.device.brightnessParamName;
-    this.saturationParamName = this.accessory.context.device.saturationParamName;
-    this.hueParamName = this.accessory.context.device.hueParamName;
-    this.colorTemperatureParamName = this.accessory.context.device.colorTemperatureParamName;
+    this.useRGB = device.useRGB;
+    this.useBrightness255 = device.useBrightness255;
+    this.useColorTKelvin = device.useColorTKelvin;
+    this.rgbParamName = device.rgbParamName;
+    this.urlLightBulbControl = device.urlLightBulbControl;
+    this.brightnessParamName = device.brightnessParamName;
+    this.saturationParamName = device.saturationParamName;
+    this.hueParamName = device.hueParamName;
+    this.colorTemperatureParamName = device.colorTemperatureParamName;
 
-    this.mqttReconnectInterval = this.accessory.context.device.mqttReconnectInterval || 60; // 60 sec default
-    this.mqttBroker = this.accessory.context.device.mqttBroker;
-    this.mqttPort = this.accessory.context.device.mqttPort;
-    this.mqttUsername = this.accessory.context.device.mqttUsername;
-    this.mqttPassword = this.accessory.context.device.mqttPassword;
-    this.mqttSwitch = this.accessory.context.device.mqttSwitch;
-    this.mqttRGB = this.accessory.context.device.mqttRGB;
-    this.mqttBrightness = this.accessory.context.device.mqttBrightness;
-    this.mqttHue = this.accessory.context.device.mqttHue;
-    this.mqttSaturation = this.accessory.context.device.mqttSaturation;
-    this.mqttColorTemperature = this.accessory.context.device.mqttColorTemperature;
+    this.mqttReconnectInterval = device.mqttReconnectInterval || 60; // 60 sec default
+    this.mqttBroker = device.mqttBroker;
+    this.mqttPort = device.mqttPort;
+    this.mqttUsername = device.mqttUsername;
+    this.mqttPassword = device.mqttPassword;
+    this.mqttSwitch = device.mqttSwitch;
+    this.mqttRGB = device.mqttRGB;
+    this.mqttBrightness = device.mqttBrightness;
+    this.mqttHue = device.mqttHue;
+    this.mqttSaturation = device.mqttSaturation;
+    this.mqttColorTemperature = device.mqttColorTemperature;
 
+    this.discordWebhook = device.discordWebhook;
+    this.discordUsername = device.discordUsername || 'StergoSmart';
+    this.discordAvatar = device.discordAvatar || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
+    this.discordMessage = device.discordMessage;
+
+    // Ensure backward compatibility for shared polling
+    this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
+    this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
+    this.sharedPollingInterval = device.sharedPollingInterval ?? 5000; // Set the polling interval to 5 sec or from config value
+
+    if (this.sharedPolling && this.sharedPollingId) {
+      const sharedPollingInstance = SharedPolling.registerPolling(
+        this.sharedPollingId,
+        this.urlStatus,
+        this.platform,
+        this.sharedPollingInterval, // Set the polling interval to 60 sec or from config value
+      );
+
+      // Subscribe to data updates
+      sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
+        this.updateLightBulbStatusFromSharedData(data);
+      });
+    } else if (this.urlStatus) {
+      this.getData();
+      setInterval(this.getData.bind(this), 5000);
+    }  
 
     if (!this.deviceType) {
       this.platform.log.warn(this.deviceName, ': Ignoring accessory; No deviceType defined.');
@@ -141,12 +178,6 @@ export class platformLightBulb {
         
         // set the service name, this is what is displayed as the default name on the Home app
         this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
-        
-        // Try to fetch initial Status of the device and check the status every 5 seconds
-        if (this.urlStatus) {
-          this.getData();
-          setInterval(this.getData.bind(this), 5000);
-        }
         
         if (this.urlON) {
           // register handlers for the On/Off Characteristic
@@ -248,6 +279,12 @@ export class platformLightBulb {
     return isOn ? 'ON' : 'OFF';
   }
 
+  private updateLightBulbStatusFromSharedData(data?: Record<string, unknown>): void {
+    if (!data) {
+      this.platform.log.warn(`${this.deviceName}: No data available for updating switch status.`);
+      return;
+    }
+  }
   /**
    * Handle "SET" requests from HomeKit
    * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
@@ -982,19 +1019,6 @@ export class platformLightBulb {
   
     callback(null);
   }  
-  
-  private initDiscordWebhooks() {
-    // Prepare message just to send On Off status
-    const message = this.deviceName + ': ' + this.discordMessage + this.getStatus(this.lightBulbStates.On);
-    const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
-
-    discord.discordSimpleSend().then((result) => {
-      if ( this.enableLogging) {
-        this.platform.log.info(this.deviceName, ': ', result);
-      }
-    });
-
-  }
 
   // Helper function to convert RGB to HSV and update lightBulbStates
   private convertToHSV(): void {
@@ -1178,6 +1202,19 @@ export class platformLightBulb {
       return Math.round(1000000 / value);
     }
     return 4000; // Random number - just to have something to return
+  }
+
+  private initDiscordWebhooks() {
+    // Prepare message just to send On Off status
+    const message = this.deviceName + ': ' + this.discordMessage + this.getStatus(this.lightBulbStates.On);
+    const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
+
+    discord.discordSimpleSend().then((result) => {
+      if ( this.enableLogging) {
+        this.platform.log.info(this.deviceName, ': ', result);
+      }
+    });
+
   }
   
 }

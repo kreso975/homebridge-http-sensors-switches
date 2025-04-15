@@ -165,7 +165,7 @@ Sensor JSON file example
 > Select HTTP Method - GET / POST  
 > 
 > MQTT  
-> param for ACIVE is mqttSwitch  
+> param for ACTIVE is mqttSwitch  
 >   
 > Parameters for SERVICES you do NOT NEED, leave BLANK  
 >  

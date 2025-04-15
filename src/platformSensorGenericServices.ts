@@ -174,7 +174,7 @@ export class platformSensorGeneric {
       
       // Dynamically create or retrieve the service instance
       this.sensorService = this.accessory.getService(serviceConstructor)
-        || this.accessory.addService(new serviceConstructor(this.deviceName, this.accessory.UUID));      
+        || this.accessory.addService(new serviceConstructor(this.deviceName, this.deviceSerialNumber));      
 
   
       // Set the service name, this is what is displayed as the default name on the Home app
