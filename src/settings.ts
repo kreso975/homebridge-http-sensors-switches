@@ -14,10 +14,12 @@ export const PLUGIN_NAME = 'homebridge-http-sensors-switches';
 export const listOfServices = [
   ['Switch', './platformSwitchServices.js', 'platformSwitch'],
   ['Sensor', './platformSensorServices.js', 'platformSensors'],
-  ['MotionSensor', './platformMotionSensorServices.js', 'platformMotionSensor'],
   ['Outlet', './platformOutletServices.js', 'platformOutlet'],
   ['LightBulb', './platformLightBulbServices.js', 'platformLightBulb'],
   ['Fan', './platformFanServices.js', 'platformFan'],
+  ['MotionSensor', './platformSensorGenericServices.js', 'platformSensorGeneric'],
+  ['ContactSensor', './platformSensorGenericServices.js', 'platformSensorGeneric'],
+  ['LightSensor', './platformSensorGenericServices.js', 'platformSensorGeneric'],
   ['CarbonDioxideSensor', './platformSensorGenericServices.js', 'platformSensorGeneric'],
   ['SmokeSensor', './platformSensorGenericServices.js', 'platformSensorGeneric'],
   ['OccupancySensor', './platformSensorGenericServices.js', 'platformSensorGeneric'],

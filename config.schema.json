@@ -30,11 +30,13 @@
               "oneOf":
               [
                 { "title": "Temperature & Humidity Sensor", "enum": ["Sensor"] },
-                { "title": "Motion Sensor", "enum": ["MotionSensor"] },
                 { "title": "Switch", "enum": ["Switch"] },
                 { "title": "Outlet", "enum": ["Outlet"] },
                 { "title": "Light Bulb", "enum": ["LightBulb"] },
                 { "title": "Fan", "enum": ["Fan"] },
+                { "title": "Motion Sensor", "enum": ["MotionSensor"] },
+                { "title": "Contact Sensor", "enum": ["ContactSensor"] },
+                { "title": "Light Sensor", "enum": ["LightSensor"] },
                 { "title": "Air Quality", "enum": ["AirQualitySensor"] },
                 { "title": "Carbon Dioxide", "enum": ["CarbonDioxideSensor"] },
                 { "title": "Smoke Sensor", "enum": ["SmokeSensor"] },
@@ -255,6 +257,18 @@
               "type": "string",
               "required": false
             },
+            "paramNameContactSensorState": {
+              "title": "Parameter Name for Contact Sensor State",
+              "description": "JSON Parameter Name for Contact Sensor State",
+              "type": "string",
+              "required": false
+            },
+            "CurrentAmbientLightLevel": {
+              "title": "Parameter Name for Current Ambient Light Level",
+              "description": "JSON Parameter Name for Current Ambient Light Level",
+              "type": "string",
+              "required": false
+            },
             "paramNameCO2Detected": {
               "title": "Parameter Name for CO2 Detected",
               "description": "JSON Parameter Name for CO2 Detected",
@@ -270,6 +284,12 @@
             "paramNameOccupancyDetected": {
               "title": "Parameter Name for Occupancy Detected",
               "description": "JSON Parameter Name for Occupancy Detected",
+              "type": "string",
+              "required": false
+            },
+            "paramNameMotionyDetected": {
+              "title": "Parameter Name for Motion Detected",
+              "description": "JSON Parameter Name for Motion Detected",
               "type": "string",
               "required": false
             },
@@ -369,24 +389,6 @@
               "type": "string",
               "required": false
             },
-            "motionSensorName": {
-              "title": "Parameter Name for Motion Sensor",
-              "description": "JSON param name for Motion Sensor reading",
-              "type": "string",
-              "required": false
-            },
-            "motionSensorUrl": {
-              "title": "Motion Sensor URL",
-              "description": "JSON file containing Motion Sensor readings",
-              "type": "string",
-              "required": false
-            },
-            "updateIntervalMotionSensor": {
-              "title": "Update interval Motion Sensor",
-              "description": "update interval for reading Motion Sensor, default is 60000 = 60 seconds = 1 minute",
-              "type": "integer",
-              "required": false
-            },
             "updateInterval": {
               "title": "Update interval",
               "description": "update interval for reading Sensors, default is 60000 = 60 seconds = 1 minute",
@@ -483,12 +485,6 @@
               "type": "number",
               "required": false
             },
-            "mqttMotionSensor": {
-              "title": "MQTT Topic Motion Sensor",
-              "description": "MQTT Topic Motion Sensor",
-              "type": "string",
-              "required": false
-            },
             "mqttRotationSpeed": {
               "title": "Parameter Name for Rotation Speed",
               "description": "MQTT Topic Name for Rotation Speed",
@@ -516,6 +512,24 @@
             "mqttTargetFanState": {
               "title": "MQTT Topic for Target Fan State",
               "description": "MQTT Topic Name for Target Fan State",
+              "type": "string",
+              "required": false
+            },
+            "mqttMotionDetected": {
+              "title": "MQTT Topic Motion Detected",
+              "description": "MQTT Topic Motion Detected",
+              "type": "string",
+              "required": false
+            },
+            "mqttContactSensorState": {
+              "title": "MQTT Topic Contact Sensor State",
+              "description": "MQTT Topic Contact Sensor State",
+              "type": "string",
+              "required": false
+            },
+            "mqttCurrentAmbientLightLevel": {
+              "title": "MQTT Topic Current Ambient Light Level",
+              "description": "MQTT Topic Current Ambient Light Level",
               "type": "string",
               "required": false
             },
@@ -769,39 +783,6 @@
           {
             "key": "devices[]",
             "type": "fieldset",
-            "title": "HTTP Motion Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].motionSensorUrl",
-              "devices[].motionSensorName",
-              "devices[].updateIntervalMotionSensor"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Motion Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttMotionSensor"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
             "title": "HTTP Carbon Dioxide Settings",
             "condition": {
                 "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxideSensor';"
@@ -859,6 +840,204 @@
             "title": "Discord Webhook Carbon Dioxide Settings",
             "condition": {
                 "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxideSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Motion Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
+                ]
+              },
+              "devices[].urlStatus",
+              "devices[].updateInterval",
+              "devices[].paramNameMotionDetected",
+              "devices[].paramNameStatusActive",
+              "devices[].paramNameStatusFault",
+              "devices[].paramNameStatusLowBattery",
+              "devices[].paramNameStatusTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Motion Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttMotionDetected",
+              "devices[].mqttActive",
+              "devices[].mqttFault",
+              "devices[].mqttLowBattery",
+              "devices[].mqttTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Motion Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Motion Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'ContactSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
+                ]
+              },
+              "devices[].urlStatus",
+              "devices[].updateInterval",
+              "devices[].paramNameContactSensorState",
+              "devices[].paramNameStatusActive",
+              "devices[].paramNameStatusFault",
+              "devices[].paramNameStatusLowBattery",
+              "devices[].paramNameStatusTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Motion Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'ContactSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttContactSensorState",
+              "devices[].mqttActive",
+              "devices[].mqttFault",
+              "devices[].mqttLowBattery",
+              "devices[].mqttTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Motion Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'ContactSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Light Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'LightSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
+                ]
+              },
+              "devices[].urlStatus",
+              "devices[].updateInterval",
+              "devices[].paramNameCurrentAmbientLightLevel",
+              "devices[].paramNameStatusActive",
+              "devices[].paramNameStatusFault",
+              "devices[].paramNameStatusLowBattery",
+              "devices[].paramNameStatusTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Light Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'LightSensor';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttCurrentAmbientLightLevel",
+              "devices[].mqttActive",
+              "devices[].mqttFault",
+              "devices[].mqttLowBattery",
+              "devices[].mqttTampered"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Light Sensor Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'LightSensor';"
               },
             "expandable": true,
             "expanded": false,

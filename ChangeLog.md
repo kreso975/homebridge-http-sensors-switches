@@ -1,5 +1,9 @@
 ## Changelog
 ### [v2.0.0] - 10.4.2025 - In Development
+- **IMPORTANT**:
+  - **Motion Sensor:** Config updated. Users must update Accessory.
+
+
 - **Feature Added**: Introduced `sharedPolling` to support efficient polling for devices sharing the same data source.
   - **Shared Polling:** Groups devices under a common polling instance for efficient data retrieval.
     - **Dynamic Grouping:** Dynamically adds or removes devices from a polling group.
@@ -23,7 +27,7 @@
     - Low Battery
   - Added support for the `getNestedValue` function to process nested JSON data.
 
-- **PlatformSmokeSensor Class**:
+- **Smoke Sensor**:
   - Added a new class `platformSmoke` to support devices monitoring smoke detection.
   - Integrated a new service for managing and reporting smoke detection data.
   - Integrated support for `sharedPolling` to optimize data retrieval processes.
@@ -33,7 +37,7 @@
     - Tampered Status
   - Added support for the `getNestedValue` function to process nested JSON data.  
   
-- **PlatformOccupancySensor Class**:
+- **Occupancy Sensor**:
   - Added a new class `platformOccupancy` to support devices monitoring occupancy detection.
   - Integrated a new service for managing and reporting occupancy detection data.
   - Integrated support for `sharedPolling` to optimize data retrieval processes.
@@ -42,8 +46,27 @@
     - Low Battery
     - Tampered Status
   - Added support for the `getNestedValue` function to process nested JSON data.  
+
+- **Contact Sensor**:
+  - Added a new sensor `Contact sensor` to support devices monitoring Sensor state.
+  - Integrated a new service for managing and reporting Contact state data.
+  - Integrated support for `sharedPolling` to optimize data retrieval processes.
+  - Support Discord:
+    - Contact State
+    - Low Battery
+    - Tampered Status
+  - Added support for the `getNestedValue` function to process nested JSON data.  
+
+- **Light Sensor**:
+  - Added a new sensor `Light sensor` to support devices represents the current ambient light level detected by the sensor..
+  - Integrated a new service for managing and reporting current ambient light level data.
+  - Integrated support for `sharedPolling` to optimize data retrieval processes.
+  - Support Discord:
+    - Low Battery
+    - Tampered Status
+  - Added support for the `getNestedValue` function to process nested JSON data.  
   
-- **PlatformAirQualitySensor Class**:
+- **Air Quality Sensor**:
   - Added a new class `platformAirQuality` to support devices monitoring air quality levels.
   - Integrated a new service for managing and reporting air quality data.
   - Integrated support for `sharedPolling` to optimize data retrieval processes.

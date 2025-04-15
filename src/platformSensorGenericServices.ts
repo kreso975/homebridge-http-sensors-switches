@@ -80,6 +80,7 @@ export class platformSensorGeneric {
 
     // Check if deviceType is set and if configuration exists for the current deviceType
     if (!this.deviceType) {
+      this.platform.log.warn('Device type is NOT SET.');
       return;
     }
     const config = sensorConfig[this.deviceType as keyof typeof sensorConfig];
@@ -87,7 +88,9 @@ export class platformSensorGeneric {
       this.platform.log.warn(`Device type ${this.deviceType} is not supported.`);
       return;
     }
+    // --------------------------------------------------------------------------------
 
+    // Initialize paramNames and mqttTopics dynamically
     config.paramNames.forEach((paramNameKey) => {
       // Explicitly cast paramNameKey to a valid key of config.states
       const paramKey = `paramName${config.states[paramNameKey as keyof typeof config.states]?.param}`; // Add "paramName" prefix
@@ -112,6 +115,8 @@ export class platformSensorGeneric {
       this.SensorStates[sensorKey] = sensorConfig.defaultValue;
       this.SensorStatusRanges[sensorKey] = sensorConfig.range;
     });
+    // ---------------------------------------------------------------------------------
+
     
     this.discordWebhook = device.discordWebhook;
     this.discordUsername = device.discordUsername || 'StergoSmart';
@@ -156,6 +161,9 @@ export class platformSensorGeneric {
         SmokeSensor: this.platform.Service.SmokeSensor,
         CarbonDioxideSensor: this.platform.Service.CarbonDioxideSensor,
         AirQualitySensor: this.platform.Service.AirQualitySensor,
+        MotionSensor: this.platform.Service.MotionSensor,
+        ContactSensor: this.platform.Service.ContactSensor,
+        LightSensor: this.platform.Service.LightSensor,
         // Add more sensors as needed
       };
 
@@ -174,10 +182,9 @@ export class platformSensorGeneric {
         
       if (this.urlStatus) {
         this.getStateDefinition().forEach(({ state, param }) => {
-          if (param) {
-           
+          if ( param ) {
             const characteristic = this.platform.Characteristic[state as
-                            keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+              keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
             this.sensorService
               .getCharacteristic(characteristic)
               .on('get', (callback) => {
@@ -203,7 +210,7 @@ export class platformSensorGeneric {
   private getStateDefinition() {
     const config = sensorConfig[this.deviceType as keyof typeof sensorConfig]?.states;
     if (!config) {
-      throw new Error(`No configuration found for device type: ${this.deviceType}`);
+      this.platform.log.warn(`${this.deviceName}: No configuration found for device type: ${this.deviceType}`);
     }
   
     return Object.entries(config).map(([state, stateConfig]) => ({
@@ -290,13 +297,13 @@ export class platformSensorGeneric {
       this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
       this.processSensorState(data, false);
   
-      this.platform.log.debug(`${this.deviceName}: Occupancy states updated to:`, this.SensorStates);
+      this.platform.log.debug(`${this.deviceName}: updated to:`, this.SensorStates);
     } catch (error) {
       const axiosError = error as AxiosError;
       if (axios.isAxiosError(axiosError)) {
-        this.platform.log.warn(`${this.deviceName}: Axios error while fetching Occupancy state:`, axiosError.message);
+        this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
       } else {
-        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching Occupancy state.`);
+        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON.`);
       }
     }
   }

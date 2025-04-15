@@ -128,7 +128,9 @@ export class platformSensors {
         //this.service = this.service.addCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity);
         // register handlers for the CurrentTemperature Characteristic
         this.temperatureService.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
-          .on('get', this.getTemperature.bind(this));
+          .on('get', (callback) => {
+            callback(null, this.currentTemperature);
+          });
       }
 
       // If we have Config setup for Humidity
@@ -141,7 +143,9 @@ export class platformSensors {
 
         // register handlers for the CurrentRelativeHumidity Characteristic
         this.humidityService.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
-          .on('get', this.getHumidity.bind(this));
+          .on('get', (callback) => {
+            callback(null, this.currentHumidity);
+          });
       }
 
       // If we have Config setup for Air Pressure
@@ -238,12 +242,7 @@ export class platformSensors {
               this.currentTemperature,
             );
           } else {
-            this.platform.log.warn(
-              this.deviceName,
-              ': Error: Cannot find or convert: ',
-              this.temperatureName,
-              ' in JSON',
-            );
+            this.platform.log.warn( this.deviceName, ': Error: Cannot find or convert: ',this.temperatureName,' in JSON' );
           }
         } else {
           this.platform.log.warn(this.deviceName, ': Error: Temperature name is not defined');
@@ -262,12 +261,7 @@ export class platformSensors {
               this.currentHumidity,
             );
           } else {
-            this.platform.log.warn(
-              this.deviceName,
-              ': Error: Cannot find or convert: ',
-              this.humidityName,
-              ' in JSON',
-            );
+            this.platform.log.warn( this.deviceName, ': Error: Cannot find or convert: ',this.temperatureName,' in JSON' );
           }
         } else {
           this.platform.log.warn(this.deviceName, ': Error: Humidity name is not defined');
@@ -292,15 +286,6 @@ export class platformSensors {
       }
     }
   }
-  
-  private async getTemperature(callback: (arg0: null, arg1: number) => void) {
-    callback(null, this.currentTemperature);
-  }
-
-  private async getHumidity(callback: (arg0: null, arg1: number) => void) {
-    callback(null, this.currentHumidity);
-  }
-  
   
   //
   // Connect to MQTT and update Temperature and Humidity

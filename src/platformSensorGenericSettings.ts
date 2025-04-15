@@ -24,6 +24,75 @@ export const sensorConfig = {
       StatusTampered: { param: 'StatusTampered', topic: 'StatusTampered', webhook: false },
     },
   },
+  MotionSensor: {
+    paramNames: [
+      'MotionDetected',
+      'StatusActive',
+      'StatusFault',
+      'StatusLowBattery',
+      'StatusTampered',
+    ],
+    sensors: {
+      MotionDetected: { defaultValue: 0, range: [0, 1] as [number, number] },
+      StatusActive: { defaultValue: 0, range: [0, 1] as [number, number] },
+      StatusFault: { defaultValue: 0, range: [0, 1] as [number, number] },
+      StatusLowBattery: { defaultValue: 0, range: [0, 1] as [number, number] },
+      StatusTampered: { defaultValue: 0, range: [0, 1] as [number, number] },
+    },
+    states: {
+      MotionDetected: { param: 'MotionDetected', topic: 'MotionDetected', webhook: true },
+      StatusActive: { param: 'StatusActive', topic: 'StatusActive', webhook: false },
+      StatusFault: { param: 'StatusFault', topic: 'StatusFault', webhook: false },
+      StatusLowBattery: { param: 'StatusLowBattery', topic: 'StatusLowBattery', webhook: true },
+      StatusTampered: { param: 'StatusTampered', topic: 'StatusTampered', webhook: false },
+    },
+  },
+  ContactSensor: {
+    paramNames: [
+      'ContactSensorState',
+      'StatusActive',
+      'StatusFault',
+      'StatusLowBattery',
+      'StatusTampered',
+    ],
+    sensors: {
+      ContactSensorState: { defaultValue: 0, range: [0, 1] as [number, number] }, // 0: Contact detected (closed), 1: Contact not detected (open)
+      StatusActive: { defaultValue: 0, range: [0, 1] as [number, number] },
+      StatusFault: { defaultValue: 0, range: [0, 1] as [number, number] },
+      StatusLowBattery: { defaultValue: 0, range: [0, 1] as [number, number] },
+      StatusTampered: { defaultValue: 0, range: [0, 1] as [number, number] },
+    },
+    states: {
+      ContactSensorState: { param: 'ContactSensorState', topic: 'ContactSensorState', webhook: true },
+      StatusActive: { param: 'StatusActive', topic: 'StatusActive', webhook: false },
+      StatusFault: { param: 'StatusFault', topic: 'StatusFault', webhook: false },
+      StatusLowBattery: { param: 'StatusLowBattery', topic: 'StatusLowBattery', webhook: true },
+      StatusTampered: { param: 'StatusTampered', topic: 'StatusTampered', webhook: false },
+    },
+  },
+  LightSensor: {
+    paramNames: [
+      'CurrentAmbientLightLevel',
+      'StatusActive',
+      'StatusFault',
+      'StatusLowBattery',
+      'StatusTampered',
+    ],
+    sensors: {
+      CurrentAmbientLightLevel: { defaultValue: 0, range: [0.0001, 100000] as [number, number] }, // Valid values: 0.0001 to 100000 lux
+      StatusActive: { defaultValue: 0, range: [0, 1] as [number, number] },
+      StatusFault: { defaultValue: 0, range: [0, 1] as [number, number] },
+      StatusLowBattery: { defaultValue: 0, range: [0, 1] as [number, number] },
+      StatusTampered: { defaultValue: 0, range: [0, 1] as [number, number] },
+    },
+    states: {
+      CurrentAmbientLightLevel: { param: 'CurrentAmbientLightLevel', topic: 'CurrentAmbientLightLevel', webhook: false },
+      StatusActive: { param: 'StatusActive', topic: 'StatusActive', webhook: false },
+      StatusFault: { param: 'StatusFault', topic: 'StatusFault', webhook: false },
+      StatusLowBattery: { param: 'StatusLowBattery', topic: 'StatusLowBattery', webhook: true },
+      StatusTampered: { param: 'StatusTampered', topic: 'StatusTampered', webhook: false },
+    },
+  },
   CarbonDioxideSensor: {
     paramNames: [
       'CarbonDioxideDetected',
