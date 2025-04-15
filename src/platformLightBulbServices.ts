@@ -2,7 +2,7 @@ import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Serv
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
-import { getNestedValue } from './lib/utilities.js';                      // Include utility function for nested value retrieval
+//import { getNestedValue } from './lib/utilities.js';                      // Include utility function for nested value retrieval
 import { discordWebHooks } from './lib/discordWebHooks.js';               // Include Discord webhook library
 
 import axios, { AxiosError } from 'axios';
