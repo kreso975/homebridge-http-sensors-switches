@@ -1,15 +1,25 @@
 import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
+import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
+import { getNestedValue } from './lib/utilities.js';                      // Include utility function for nested value retrieval
+import { discordWebHooks } from './lib/discordWebHooks.js';               // Include Discord webhook library
+
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
-import { discordWebHooks } from './lib/discordWebHooks.js';
 
 export class platformOutlet {
   public service!: Service;
   public mqttClient!: mqtt.MqttClient;
+  private sharedPollingInstance?: SharedPolling;
 
+  // Device and configuration properties
   public enableLogging: boolean = true;
+  // Ensure backward compatibility for shared polling
+  public sharedPolling = false; // Default to false
+  public sharedPollingId = ''; // Default to empty
+  public sharedPollingInterval = 5000;
+
   public deviceId: string = '';
   public deviceType: string = '';
   public deviceName: string = '';
@@ -47,46 +57,68 @@ export class platformOutlet {
     On: false,
     OutletInUse: false,
   };
+  private individualPollingInterval?: NodeJS.Timeout; // Individual polling interval
 
   constructor(
       public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
       public readonly accessory: PlatformAccessory,
   ) {
+    const device = this.accessory.context.device;
 
-    this.deviceType = this.accessory.context.device.deviceType;
-    this.deviceName = this.accessory.context.device.deviceName || 'NoName';
-    this.deviceManufacturer = this.accessory.context.device.deviceManufacturer || 'Stergo';
-    this.deviceModel = this.accessory.context.device.deviceModel || 'Outlet';
-    this.deviceSerialNumber = this.accessory.context.device.deviceSerialNumber || accessory.UUID;
-    this.deviceFirmwareVersion = this.accessory.context.device.deviceFirmwareVersion || '0.0';
+    this.deviceType = device.deviceType;
+    this.deviceName = device.deviceName || 'NoName';
+    this.deviceManufacturer = device.deviceManufacturer || 'Stergo';
+    this.deviceModel = device.deviceModel || 'Outlet';
+    this.deviceSerialNumber = device.deviceSerialNumber || accessory.UUID;
+    this.deviceFirmwareVersion = device.deviceFirmwareVersion || '0.0';
 
-    // Fro9m config
-    this.enableLogging = this.accessory.context.device.enableLogging;
+    // From config
+    this.enableLogging = device.enableLogging;
 
-    this.urlStatus = this.accessory.context.device.urlStatus;
-    this.statusStateParam = this.accessory.context.device.stateName;
-    this.statusOnCheck = this.accessory.context.device.onStatusValue;
-    this.statusOffCheck = this.accessory.context.device.offStatusValue;
-    this.urlON = this.accessory.context.device.urlON;
-    this.urlOFF = this.accessory.context.device.urlOFF;
-    this.inUseStateParam = this.accessory.context.device.inUseStateName;
-    this.inUseOnCheck = this.accessory.context.device.inUseOnStatusValue;
-    this.inUseOffCheck = this.accessory.context.device.inUseOffStatusValue;
+    this.urlStatus = device.urlStatus;
+    this.statusStateParam = device.stateName;
+    this.statusOnCheck = device.onStatusValue;
+    this.statusOffCheck = device.offStatusValue;
+    this.urlON = device.urlON;
+    this.urlOFF = device.urlOFF;
+    this.inUseStateParam = device.inUseStateName;
+    this.inUseOnCheck = device.inUseOnStatusValue;
+    this.inUseOffCheck = device.inUseOffStatusValue;
 
-    this.mqttReconnectInterval = this.accessory.context.device.mqttReconnectInterval || 60; // 60 sec default
-    this.mqttBroker = this.accessory.context.device.mqttBroker;
-    this.mqttPort = this.accessory.context.device.mqttPort;
-    this.mqttSwitch = this.accessory.context.device.mqttSwitch;
-    this.mqttInUse = this.accessory.context.device.mqttInUse;
-    this.mqttUsername = this.accessory.context.device.mqttUsername;
-    this.mqttPassword = this.accessory.context.device.mqttPassword;
+    this.mqttReconnectInterval = device.mqttReconnectInterval || 60; // 60 sec default
+    this.mqttBroker = device.mqttBroker;
+    this.mqttPort = device.mqttPort;
+    this.mqttSwitch = device.mqttSwitch;
+    this.mqttInUse = device.mqttInUse;
+    this.mqttUsername = device.mqttUsername;
+    this.mqttPassword = device.mqttPassword;
 
-    this.discordWebhook = this.accessory.context.device.discordWebhook;
-    this.discordUsername = this.accessory.context.device.discordUsername || 'StergoSmart';
-    this.discordAvatar = this.accessory.context.device.discordAvatar
-         || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
-    this.discordMessage = this.accessory.context.device.discordMessage;
+    this.discordWebhook = device.discordWebhook;
+    this.discordUsername = device.discordUsername || 'StergoSmart';
+    this.discordAvatar = device.discordAvatar || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
+    this.discordMessage = device.discordMessage;
 
+    // Ensure backward compatibility for shared polling
+    this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
+    this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
+    this.sharedPollingInterval = device.sharedPollingInterval ?? 5000; // Set the polling interval to 5 sec or from config value
+
+    if (this.sharedPolling && this.sharedPollingId) {
+      const sharedPollingInstance = SharedPolling.registerPolling(
+        this.sharedPollingId,
+        this.urlStatus,
+        this.platform,
+        this.sharedPollingInterval, // Set the polling interval to 60 sec or from config value
+      );
+    
+      // Subscribe to data updates
+      sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
+        this.updateOutletStatusFromSharedData(data);
+      });
+    } else if (this.urlStatus) {
+      this.getOn();
+      setInterval(this.getOn.bind(this), 5000);
+    }  
 
     if (!this.deviceType) {
       this.platform.log.warn(this.deviceName, ': Ignoring accessory; No deviceType defined.');
@@ -139,6 +171,37 @@ export class platformOutlet {
     return isOn ? 'ON' : 'OFF';
   }
 
+  private updateOutletStatusFromSharedData(data?: Record<string, unknown>): void {
+    if (!data) {
+      this.platform.log.warn(`${this.deviceName}: No data available for updating switch status.`);
+      return;
+    }
+  
+    // Proceed with processing the data
+    const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
+
+    if (value === this.statusOnCheck) {
+      this.updateOutletState(true, this.deviceName);
+    } else if (value === this.statusOffCheck) {
+      this.updateOutletState(false, this.deviceName);
+    } else {
+      this.platform.log.warn(`${this.deviceName}: Unexpected value for ${this.statusStateParam}`);
+    }
+
+    if (this.inUseStateParam) {
+      const inUseValue = getNestedValue(data, this.inUseStateParam, 'string'); // Adjust returnType as needed
+
+      if (inUseValue === this.inUseOnCheck) {
+        this.outletStates.OutletInUse = true;
+      } else if (inUseValue === this.inUseOffCheck) {
+        this.outletStates.OutletInUse = false;
+      } else {
+        this.platform.log.warn(`${this.deviceName}: Unexpected value for ${this.inUseStateParam}`);
+      }
+    }
+    this.service.updateCharacteristic(this.platform.Characteristic.OutletInUse, this.outletStates.OutletInUse);
+  }
+  
   private async getOn() {
     if (!this.urlStatus) {
       this.platform.log.warn(this.deviceName, ': Ignoring request; No status url defined.');
@@ -155,9 +218,9 @@ export class platformOutlet {
         },
       });
       const data = response.data;
+      const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
  
-      if (this.statusStateParam in data) {
-        const value = data[this.statusStateParam];
+      if ( value ) {
         const valueType = typeof value;
       
         let statusOnCheck: boolean | number | string;
@@ -174,32 +237,27 @@ export class platformOutlet {
           statusOffCheck = this.statusOffCheck;
         }
       
-        if (value === statusOnCheck) {
+        if ( value === statusOnCheck ) {
           this.updateOutletState(true, this.deviceName);
-          if ( this.enableLogging) {
-            this.platform.log.info(this.deviceName, ': State set to: ', this.getStatus(true));
-          }
         } else if (value === statusOffCheck) {
           this.updateOutletState(false, this.deviceName);
-          if ( this.enableLogging) {
-            this.platform.log.info(this.deviceName, ': State set to: ', this.getStatus(false));
-          }
         } else {
           this.platform.log.warn(this.deviceName, `: The value of ${this.statusStateParam} does not match statusOnCheck or statusOffCheck.`);
         }
       }
       
-      if ( this.inUseStateParam && this.inUseStateParam in data) {
-        const value = data[this.inUseStateParam];
-        const valueType = typeof value;
+      const value2 = getNestedValue(data, this.inUseStateParam, 'string'); // Adjust returnType as needed
+
+      if ( value2 ) {
+        const valueType2 = typeof value2;
       
         let inUseOnCheck: boolean | number | string;
         let inUseOffCheck: boolean | number | string;
       
-        if (valueType === 'boolean') {
+        if (valueType2 === 'boolean') {
           inUseOnCheck = true;
           inUseOffCheck = false;
-        } else if (valueType === 'number') {
+        } else if (valueType2 === 'number') {
           inUseOnCheck = parseFloat(this.inUseOnCheck);
           inUseOffCheck = parseFloat(this.inUseOffCheck);
         } else {
@@ -208,16 +266,16 @@ export class platformOutlet {
         }
       
         // Update OutletInUse characteristic
-        if (value === inUseOnCheck) {
-          this.outletStates.OutletInUse = true;
-          if ( this.enableLogging) {
+        if ( value2 === inUseOnCheck ) {
+          if ( this.enableLogging && this.outletStates.OutletInUse !== true ) {
             this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(true));
           }
-        } else if (value === inUseOffCheck) {
-          this.outletStates.OutletInUse = false;
-          if ( this.enableLogging) {
+          this.outletStates.OutletInUse = true;
+        } else if ( value2 === inUseOffCheck ) {
+          if ( this.enableLogging && this.outletStates.OutletInUse !== false ) {
             this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(false));
           }
+          this.outletStates.OutletInUse = false;
         } else {
           this.platform.log.warn(this.deviceName, `: The value of ${this.inUseStateParam} does not match inUseOnCheck or inUseOffCheck.`);
         }
@@ -278,11 +336,10 @@ export class platformOutlet {
     callback(null);
   }
 
-
   private updateOutletState(isOn: boolean, deviceName: string) {
     if (this.outletStates.On !== isOn) {
       this.outletStates.On = isOn;
-      if ( this.enableLogging) {
+      if ( this.enableLogging ) {
         this.platform.log.info(deviceName, `: Outlet is ${isOn ? 'ON' : 'OFF'}`);
       }
       this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);

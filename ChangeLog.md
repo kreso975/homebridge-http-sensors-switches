@@ -12,9 +12,10 @@
     - **Event-Based Updates:** Notifies devices in the group about data updates using an event-driven architecture.
     - **Error Handling:** Logs errors encountered during polling and ensures graceful failure recovery.
 
-- **PlatformSwitch Enhancements**:
-  - Upgraded to fully integrate with `sharedPolling`.
-  - Added support for the `getNestedValue` function to process nested JSON data.
+- **Switch & Outlet Enhancements**:
+  - Upgraded to fully integrate with `sharedPolling`.  
+  - Added support for the `getNestedValue` function to process nested JSON data.  
+
 - **PlatformSensor Enhancements**:
   - Upgraded to fully integrate with `sharedPolling`.
 

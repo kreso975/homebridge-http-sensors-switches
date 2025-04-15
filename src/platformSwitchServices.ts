@@ -14,40 +14,40 @@ export class platformSwitch {
   private sharedPollingInstance?: SharedPolling;
 
   // Device and configuration properties
-  public enableLogging = true;
+  public enableLogging: boolean = true;
   // Ensure backward compatibility for shared polling
   public sharedPolling = false; // Default to false
   public sharedPollingId = ''; // Default to empty
   public sharedPollingInterval = 5000;
 
-  public deviceId = '';
-  public deviceType = '';
-  public deviceName = '';
-  public deviceManufacturer = '';
-  public deviceModel = '';
-  public deviceSerialNumber = '';
-  public deviceFirmwareVersion = '';
+  public deviceId: string = '';
+  public deviceType: string = '';
+  public deviceName: string = '';
+  public deviceManufacturer: string = '';
+  public deviceModel: string = '';
+  public deviceSerialNumber: string = '';
+  public deviceFirmwareVersion: string = '';
 
-  public url: string = '';
-  public urlON = '';
-  public urlOFF = '';
-  public urlStatus = '';
-  public statusStateParam = '';
-  public statusOnCheck = '';
-  public statusOffCheck = '';
+  public urlON: string = '';
+  public urlOFF: string = '';
+  public url = '';
 
-  public mqttReconnectInterval = '';
-  public mqttBroker = '';
-  public mqttPort = '';
-  public mqttUsername = '';
-  public mqttPassword = '';
+  public urlStatus: string = '';
+  public statusStateParam: string = '';
+  public statusOnCheck: string = '';
+  public statusOffCheck: string = '';
 
-  public mqttSwitch = '';
+  public mqttReconnectInterval: string = '';
+  public mqttBroker: string = '';
+  public mqttPort: string = '';
+  public mqttSwitch: string = '';
+  public mqttUsername: string = '';
+  public mqttPassword: string = '';
 
-  public discordWebhook = '';
-  public discordUsername = '';
-  public discordAvatar = '';
-  public discordMessage = '';
+  public discordWebhook: string = '';
+  public discordUsername: string = '';
+  public discordAvatar: string = '';
+  public discordMessage: string = '';
 
   public switchStates = { On: false };
   private individualPollingInterval?: NodeJS.Timeout; // Individual polling interval
@@ -207,10 +207,11 @@ export class platformSwitch {
         },
       });
       const data = response.data;
+      // Proceed with processing the data
+      const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
 
       // Check if provided KEY EXIST in JSON
-      if (this.statusStateParam in data) {
-        const value = data[this.statusStateParam];
+      if ( value ) {
         const valueType = typeof value;
 
         // Convert statusOnCheck and statusOffCheck to the appropriate type
@@ -251,7 +252,7 @@ export class platformSwitch {
   private updateSwitchState(isOn: boolean, deviceName: string): void {
     if (this.switchStates.On !== isOn) {
       this.switchStates.On = isOn;
-      if (this.enableLogging) {
+      if ( this.enableLogging ) {
         this.platform.log.info(`${deviceName}: Switch is ${isOn ? 'ON' : 'OFF'}`);
       }
       this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);

@@ -100,9 +100,9 @@ export class SharedPolling extends EventEmitter {
 
     if ( instance ) {
       instance.deviceCount += 1;
-      instance.platform.log.debug( `${uniqueId}: Device added to existing SharedPolling group. Total devices: ${instance.deviceCount}` );
+      instance.platform.log.info( `${uniqueId}: Device added to existing SharedPolling group. Total devices: ${instance.deviceCount}` );
     } else {
-      platform.log.debug( `${uniqueId}: Registering new SharedPolling instance for group.` );
+      platform.log.info( `${uniqueId}: Registering new SharedPolling instance for group: ${uniqueId}` );
       instance = new SharedPolling(url, platform, interval);
       instance.deviceCount = 1;
       SharedPolling.pollingInstances.set(uniqueId, instance);
