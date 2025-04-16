@@ -212,10 +212,36 @@ export class platformFan {
   private getStatus(isOn: boolean): string {
     return isOn ? 'ON' : 'OFF';
   }
+  private updateFanStatusFromSharedData( data?: Record<string, unknown> ): void {
+    this.processGetFanStatusData(data, true);
+  }
 
-  private updateFanStatusFromSharedData(data?: Record<string, unknown>): void {
+  private async getFanState(): Promise<void> {
+    if (!this.urlStatus) {
+      this.platform.log.warn(this.deviceName, ': Ignoring request; No status URL defined.');
+      return;
+    }
+
+    try {
+      const response = await axios.get(this.urlStatus, { timeout: 8000 });
+      const data = response.data;
+  
+      this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
+      this.processGetFanStatusData(data, false);
+  
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      if (axios.isAxiosError(axiosError)) {
+        this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
+      } else {
+        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON.`);
+      }
+    }
+  }
+
+  private processGetFanStatusData(data: Record<string, unknown> | undefined, isSharedData: boolean): void {
     if (!data) {
-      this.platform.log.warn(`${this.deviceName}: No data available for updating Fan status.`);
+      this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching Switch state'}.`);
       return;
     }
 
@@ -258,12 +284,11 @@ export class platformFan {
           typeof range[0] === 'number' && typeof range[1] === 'number' && 
           value >= range[0] && value <= range[1]
       ) {
-        this.fanStates[state] = value; // Update the state
-        this.service.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
-      
-        if (this.enableLogging) {
+        if (this.enableLogging && this.fanStates[state] !== value) {
           this.platform.log.info(`${this.deviceName}: ${state} SET to: ${value}`);
         }
+        this.fanStates[state] = value; // Update the state
+        this.service.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
       } else if (this.enableLogging) {
         this.platform.log.warn(
           `${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`,
@@ -273,86 +298,6 @@ export class platformFan {
 
     // Debugging state updates
     this.platform.log.debug(`${this.deviceName}: Fan states updated to:`, this.fanStates);
-  }
-
-  private async getFanState(): Promise<void> {
-    if (!this.urlStatus) {
-      this.platform.log.warn(this.deviceName, ': Ignoring request; No status URL defined.');
-      return;
-    }
-
-    try {
-      const response = await axios({
-        url: this.urlStatus,
-        method: 'get',
-        timeout: 8000, // Set timeout for response
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = response.data;
-
-      // Log fetched data for debugging
-      this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
-
-      this.getStateDefinition().forEach(({ state, param }) => {
-        // Check if 'param' is defined in the config
-        if (!param) {
-          if (this.enableLogging) {
-            this.platform.log.debug(`${this.deviceName}: Parameter for ${state} is not configured. Skipping.`);
-          }
-          return; // Skip processing this state
-        }
-
-        const rawValue = getNestedValue(data, param, 'number');
-        let value: number | undefined;
-  
-        if (typeof rawValue === 'number') {
-          value = rawValue;
-        } else if (typeof rawValue === 'boolean') {
-          value = rawValue ? 1 : 0; // Convert boolean to number
-        } else {
-          value = undefined; // Treat invalid types as undefined
-        }
-  
-        if (value === undefined) {
-          if (this.enableLogging) {
-            this.platform.log.warn(`${this.deviceName}: Parameter '${param}' not found in JSON for state ${state}.`);
-          }
-          return;
-        }
-      
-        value = Number(value); // Ensure the value is a valid number
-        const range = this.fanStatusRanges[state];
-      
-        // General range validation for all states
-        if (
-          Array.isArray(range) && range.length === 2 && 
-          typeof range[0] === 'number' && typeof range[1] === 'number' &&
-          value >= range[0] && value <= range[1]
-        ) {
-          if (this.enableLogging && this.fanStates[state] !== value) {
-            this.platform.log.info(`${this.deviceName}: ${state} SET to: ${value}`);
-          }
-          this.fanStates[state] = value; // Update the state
-          this.service.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
-        } else if (this.enableLogging) {
-          this.platform.log.warn(`${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`);
-        }
-      });      
-
-      // Debugging state updates
-      this.platform.log.debug(`${this.deviceName}: Fan states updated to:`, this.fanStates);
-
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      if (axios.isAxiosError(axiosError)) {
-        this.platform.log.warn(`${this.deviceName}: Axios error while fetching fan state:`, axiosError.message);
-      } else {
-        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching fan state.`);
-      }
-    }
   }
 
   private async setFanState( what: keyof typeof this.fanStates, value: CharacteristicValue, callback: CharacteristicSetCallback ): Promise<void> {

@@ -223,7 +223,7 @@ export class platformSensorGeneric {
   
   private processSensorState( data: Record<string, unknown> | undefined, isSharedData: boolean ): void {
     if (!data) {
-      this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching Occupancy state'}.`);
+      this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching JSON state'}.`);
       return;
     }
     
@@ -265,8 +265,12 @@ export class platformSensorGeneric {
             this.platform.log.info(`${this.deviceName}: ${state} - [${this.SensorStates[state]}] SET to: ${value}`);
           }
         }
+        if (this.enableLogging && this.SensorStates[state] !== value) {
+          this.platform.log.info(`${this.deviceName}: ${state} SET to: ${value}`);
+        }
   
         this.SensorStates[state] = value;
+       
         const characteristic = this.platform.Characteristic[state as
           keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
         this.sensorService.updateCharacteristic( characteristic, value );
@@ -294,10 +298,7 @@ export class platformSensorGeneric {
       const response = await axios.get(this.urlStatus, { timeout: 8000 });
       const data = response.data;
   
-      this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
       this.processSensorState(data, false);
-  
-      this.platform.log.debug(`${this.deviceName}: updated to:`, this.SensorStates);
     } catch (error) {
       const axiosError = error as AxiosError;
       if (axios.isAxiosError(axiosError)) {

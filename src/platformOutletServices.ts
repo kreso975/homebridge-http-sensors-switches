@@ -166,125 +166,114 @@ export class platformOutlet {
     return isOn ? 'ON' : 'OFF';
   }
 
-  private updateOutletStatusFromSharedData(data?: Record<string, unknown>): void {
-    if (!data) {
-      this.platform.log.warn(`${this.deviceName}: No data available for updating switch status.`);
-      return;
-    }
-  
-    // Proceed with processing the data
-    const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
-
-    if (value === this.statusOnCheck) {
-      this.updateOutletState(true, this.deviceName);
-    } else if (value === this.statusOffCheck) {
-      this.updateOutletState(false, this.deviceName);
-    } else {
-      this.platform.log.warn(`${this.deviceName}: Unexpected value for ${this.statusStateParam}`);
-    }
-
-    if (this.inUseStateParam) {
-      const inUseValue = getNestedValue(data, this.inUseStateParam, 'string'); // Adjust returnType as needed
-
-      if (inUseValue === this.inUseOnCheck) {
-        this.outletStates.OutletInUse = true;
-      } else if (inUseValue === this.inUseOffCheck) {
-        this.outletStates.OutletInUse = false;
-      } else {
-        this.platform.log.warn(`${this.deviceName}: Unexpected value for ${this.inUseStateParam}`);
+  private updateOutletState(isOn: boolean, deviceName: string) {
+    if (this.outletStates.On !== isOn) {
+      this.outletStates.On = isOn;
+      if ( this.enableLogging ) {
+        this.platform.log.info(deviceName, `: Outlet is ${isOn ? 'ON' : 'OFF'}`);
       }
+      this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);
     }
-    this.service.updateCharacteristic(this.platform.Characteristic.OutletInUse, this.outletStates.OutletInUse);
   }
-  
+
+  private updateOutletStatusFromSharedData( data?: Record<string, unknown> ): void {
+    this.processOutletGetData(data, true);
+  }
+
   private async getOn() {
     if (!this.urlStatus) {
       this.platform.log.warn(this.deviceName, ': Ignoring request; No status url defined.');
       return;
     }
- 
-    try {
-      const response = await axios({
-        url: this.urlStatus,
-        method: 'get',
-        timeout: 8000,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      const data = response.data;
-      const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
- 
-      if ( value ) {
-        const valueType = typeof value;
-      
-        let statusOnCheck: boolean | number | string;
-        let statusOffCheck: boolean | number | string;
-      
-        if (valueType === 'boolean') {
-          statusOnCheck = true;
-          statusOffCheck = false;
-        } else if (valueType === 'number') {
-          statusOnCheck = parseFloat(this.statusOnCheck);
-          statusOffCheck = parseFloat(this.statusOffCheck);
-        } else {
-          statusOnCheck = this.statusOnCheck;
-          statusOffCheck = this.statusOffCheck;
-        }
-      
-        if ( value === statusOnCheck ) {
-          this.updateOutletState(true, this.deviceName);
-        } else if (value === statusOffCheck) {
-          this.updateOutletState(false, this.deviceName);
-        } else {
-          this.platform.log.warn(this.deviceName, `: The value of ${this.statusStateParam} does not match statusOnCheck or statusOffCheck.`);
-        }
-      }
-      
-      const value2 = getNestedValue(data, this.inUseStateParam, 'string'); // Adjust returnType as needed
 
-      if ( value2 ) {
-        const valueType2 = typeof value2;
-      
-        let inUseOnCheck: boolean | number | string;
-        let inUseOffCheck: boolean | number | string;
-      
-        if (valueType2 === 'boolean') {
-          inUseOnCheck = true;
-          inUseOffCheck = false;
-        } else if (valueType2 === 'number') {
-          inUseOnCheck = parseFloat(this.inUseOnCheck);
-          inUseOffCheck = parseFloat(this.inUseOffCheck);
-        } else {
-          inUseOnCheck = this.inUseOnCheck;
-          inUseOffCheck = this.inUseOffCheck;
-        }
-      
-        // Update OutletInUse characteristic
-        if ( value2 === inUseOnCheck ) {
-          if ( this.enableLogging && this.outletStates.OutletInUse !== true ) {
-            this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(true));
-          }
-          this.outletStates.OutletInUse = true;
-        } else if ( value2 === inUseOffCheck ) {
-          if ( this.enableLogging && this.outletStates.OutletInUse !== false ) {
-            this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(false));
-          }
-          this.outletStates.OutletInUse = false;
-        } else {
-          this.platform.log.warn(this.deviceName, `: The value of ${this.inUseStateParam} does not match inUseOnCheck or inUseOffCheck.`);
-        }
-        this.service.updateCharacteristic(this.platform.Characteristic.OutletInUse, this.outletStates.OutletInUse);
- 
+    try {
+      const response = await axios.get(this.urlStatus, { timeout: 8000 });
+      const data = response.data;
+  
+      this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
+      this.processOutletGetData(data, false);
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      if (axios.isAxiosError(axiosError)) {
+        this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
       } else {
-        if ( this.inUseStateParam ) {
-          this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.statusStateParam, 'in JSON');
-        }
+        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON.`);
       }
-    } catch (e) {
-      const error = e as AxiosError;
-      if (axios.isAxiosError(error)) {
-        this.platform.log.warn(this.deviceName, ': Error: URL Status check:', error.message);
+    }
+  }
+
+  private processOutletGetData(data: Record<string, unknown> | undefined, isSharedData: boolean): void {
+    if (!data) {
+      this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching Outlet state'}.`);
+      return;
+    }
+
+    const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
+ 
+    if ( value ) {
+      const valueType = typeof value;
+      
+      let statusOnCheck: boolean | number | string;
+      let statusOffCheck: boolean | number | string;
+      
+      if (valueType === 'boolean') {
+        statusOnCheck = true;
+        statusOffCheck = false;
+      } else if (valueType === 'number') {
+        statusOnCheck = parseFloat(this.statusOnCheck);
+        statusOffCheck = parseFloat(this.statusOffCheck);
+      } else {
+        statusOnCheck = this.statusOnCheck;
+        statusOffCheck = this.statusOffCheck;
+      }
+      
+      if ( value === statusOnCheck ) {
+        this.updateOutletState(true, this.deviceName);
+      } else if (value === statusOffCheck) {
+        this.updateOutletState(false, this.deviceName);
+      } else {
+        this.platform.log.warn(this.deviceName, `: The value of ${this.statusStateParam} does not match statusOnCheck or statusOffCheck.`);
+      }
+    }
+      
+    const value2 = getNestedValue(data, this.inUseStateParam, 'string'); // Adjust returnType as needed
+
+    if ( value2 ) {
+      const valueType2 = typeof value2;
+      
+      let inUseOnCheck: boolean | number | string;
+      let inUseOffCheck: boolean | number | string;
+      
+      if (valueType2 === 'boolean') {
+        inUseOnCheck = true;
+        inUseOffCheck = false;
+      } else if (valueType2 === 'number') {
+        inUseOnCheck = parseFloat(this.inUseOnCheck);
+        inUseOffCheck = parseFloat(this.inUseOffCheck);
+      } else {
+        inUseOnCheck = this.inUseOnCheck;
+        inUseOffCheck = this.inUseOffCheck;
+      }
+      
+      // Update OutletInUse characteristic
+      if ( value2 === inUseOnCheck ) {
+        if ( this.enableLogging && this.outletStates.OutletInUse !== true ) {
+          this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(true));
+        }
+        this.outletStates.OutletInUse = true;
+      } else if ( value2 === inUseOffCheck ) {
+        if ( this.enableLogging && this.outletStates.OutletInUse !== false ) {
+          this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(false));
+        }
+        this.outletStates.OutletInUse = false;
+      } else {
+        this.platform.log.warn(this.deviceName, `: The value of ${this.inUseStateParam} does not match inUseOnCheck or inUseOffCheck.`);
+      }
+      this.service.updateCharacteristic(this.platform.Characteristic.OutletInUse, this.outletStates.OutletInUse);
+ 
+    } else {
+      if ( this.inUseStateParam ) {
+        this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.statusStateParam, 'in JSON');
       }
     }
   }
@@ -329,16 +318,6 @@ export class platformOutlet {
     }
 
     callback(null);
-  }
-
-  private updateOutletState(isOn: boolean, deviceName: string) {
-    if (this.outletStates.On !== isOn) {
-      this.outletStates.On = isOn;
-      if ( this.enableLogging ) {
-        this.platform.log.info(deviceName, `: Outlet is ${isOn ? 'ON' : 'OFF'}`);
-      }
-      this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);
-    }
   }
 
   //
@@ -451,7 +430,6 @@ export class platformOutlet {
 
     callback(null);
   }
-
 
   private initDiscordWebhooks() {
     // Prepare message just to send On Off status

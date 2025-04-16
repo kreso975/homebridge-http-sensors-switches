@@ -2,7 +2,7 @@ import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Serv
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
-//import { getNestedValue } from './lib/utilities.js';                      // Include utility function for nested value retrieval
+import { getNestedValue, hasNestedKey } from './lib/utilities.js';                      // Include utility function for nested value retrieval
 import { discordWebHooks } from './lib/discordWebHooks.js';               // Include Discord webhook library
 
 import axios, { AxiosError } from 'axios';
@@ -279,12 +279,181 @@ export class platformLightBulb {
     return isOn ? 'ON' : 'OFF';
   }
 
-  private updateLightBulbStatusFromSharedData(data?: Record<string, unknown>): void {
-    if (!data) {
-      this.platform.log.warn(`${this.deviceName}: No data available for updating switch status.`);
-      return;
+  private updateSwitchState(isOn: boolean, deviceName: string) {
+    if (this.lightBulbStates.On !== isOn) {
+      this.lightBulbStates.On = isOn;
+      
+      if ( this.enableLogging) {
+        this.platform.log.info(deviceName, `: Light is ${isOn ? 'ON' : 'OFF'}`);
+      }
+      
+      this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);
     }
   }
+
+  private updateLightBulbStatusFromSharedData(data?: Record<string, unknown>): void {
+    this.processLightBulbStatusData(data, true);
+  }
+
+  private async getData() {
+    // Check if we have Status URL setup
+    if (!this.urlStatus) {
+      this.platform.log.warn(this.deviceName, ': Ignoring request; No status url defined.');
+      return;
+    }
+    try {
+      const response = await axios.get(this.urlStatus, { timeout: 8000 });
+      const data = response.data;
+  
+      //this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
+      this.processLightBulbStatusData(data, false);
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      if (axios.isAxiosError(axiosError)) {
+        this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
+      } else {
+        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON.`);
+      }
+    }
+  }
+
+  private processLightBulbStatusData(data: Record<string, unknown> | undefined, isSharedData: boolean): void {
+    if (!data) {
+      this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching Light Bulb state'}.`);
+      return;
+    }
+
+    // Check if provided For On/Off KEY EXIST in JSON
+    if ( this.statusStateParam && hasNestedKey(data, this.statusStateParam) ) {
+      const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
+      const valueType = typeof value;
+
+      // Convert statusOnCheck and statusOffCheck to the appropriate type
+      let statusOnCheck: boolean | number | string;
+      let statusOffCheck: boolean | number | string;
+
+      if (valueType === 'boolean') {
+        statusOnCheck = true;
+        statusOffCheck = false;
+      } else if (valueType === 'number') {
+        statusOnCheck = parseFloat(this.statusOnCheck);
+        statusOffCheck = parseFloat(this.statusOffCheck);
+      } else {
+        statusOnCheck = this.statusOnCheck;
+        statusOffCheck = this.statusOffCheck;
+      }
+
+      // Check and update switch state
+      if (value === statusOnCheck) {
+        this.updateSwitchState(true, this.deviceName);
+      } else if (value === statusOffCheck) {
+        this.updateSwitchState(false, this.deviceName);
+      } else {
+        this.platform.log.warn(this.deviceName, `: The value of ${this.statusStateParam} does not match statusOnCheck or statusOffCheck.`);
+      }
+    } else if (this.statusStateParam && !hasNestedKey(data, this.statusStateParam)) {
+      this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.statusStateParam, 'in JSON');
+    }  
+    
+    if ( this.useRGB && this.rgbParamName && hasNestedKey(data, this.rgbParamName)) {
+      // Update RGB and remove # if present
+      let value = getNestedValue(data, this.rgbParamName, 'string'); // Adjust returnType as needed
+      if (typeof value === 'string' && value.startsWith('#')) {
+        value = value.slice(1);
+      }
+      this.lightBulbStates.RGB = value as string;
+      //this.platform.log.debug(this.deviceName, ': RGB: ', value);
+      this.convertToHSV();
+    
+      // Update all needed characteristics
+      if (!this.brightnessParamName) {
+        this.service.updateCharacteristic(this.platform.Characteristic.Brightness, this.lightBulbStates.Brightness);
+      }
+      this.service.updateCharacteristic(this.platform.Characteristic.Hue, this.lightBulbStates.Hue);
+      this.service.updateCharacteristic(this.platform.Characteristic.Saturation, this.lightBulbStates.Saturation);
+    } else if (this.rgbParamName && !hasNestedKey(data, this.rgbParamName)) {
+      this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.rgbParamName, 'in JSON');
+    }  
+    
+    if (this.brightnessParamName && hasNestedKey(data, this.brightnessParamName) ) {
+      // Update Brightness
+      let value = getNestedValue(data, this.brightnessParamName, 'string'); // Adjust returnType as needed
+      if (this.useBrightness255) {
+        const convertedValue = this.convertBrightness(Number(value), 1); // convert back to 0-100
+        if (convertedValue !== undefined) {
+          value = convertedValue;
+        } else {
+          this.platform.log.warn(this.deviceName, ': Error: Invalid brightness value');
+        }
+      }
+      
+      const fixedBrightnessValue = this.checkAndFixValue('brightness', Number(value));
+    
+      if (this.lightBulbStates.Brightness !== fixedBrightnessValue) {
+        this.lightBulbStates.Brightness = fixedBrightnessValue;
+        this.service.updateCharacteristic(this.platform.Characteristic.Brightness, fixedBrightnessValue);
+        if ( this.enableLogging) {
+          this.platform.log.info(this.deviceName, `: Brightness SET to: ${fixedBrightnessValue}`);
+        }
+      }
+    } else if (this.brightnessParamName && !hasNestedKey(data, this.brightnessParamName)) {
+      this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.brightnessParamName, 'in JSON');
+    }
+    
+    if(!this.useRGB && this.saturationParamName && hasNestedKey(data, this.saturationParamName)) {
+      // Update Saturation
+      const value = getNestedValue(data, this.saturationParamName, 'string'); // Adjust returnType as needed
+      const fixedSaturationValue = this.checkAndFixValue('saturation', Number(value));
+      
+      if (this.lightBulbStates.Saturation !== fixedSaturationValue) {
+        this.lightBulbStates.Saturation = fixedSaturationValue;
+        this.service.updateCharacteristic(this.platform.Characteristic.Saturation, fixedSaturationValue);
+        if ( this.enableLogging) {
+          this.platform.log.info(this.deviceName, `: Saturation SET to: ${fixedSaturationValue}`);
+        }
+      }
+    } else if (this.saturationParamName && !hasNestedKey(data, this.saturationParamName)) {
+      this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.saturationParamName, 'in JSON');
+    }
+    
+    if(!this.useRGB && this.hueParamName && hasNestedKey(data, this.hueParamName)) {
+      // Update Hue
+      const value = getNestedValue(data, this.hueParamName, 'string'); // Adjust returnType as needed
+      const fixedHueValue = this.checkAndFixValue('hue', Number(value));
+      
+      if (this.lightBulbStates.Hue !== fixedHueValue) {
+        this.lightBulbStates.Hue = fixedHueValue;
+        this.service.updateCharacteristic(this.platform.Characteristic.Hue, fixedHueValue);
+        if ( this.enableLogging) {
+          this.platform.log.info(this.deviceName, `: Hue SET to: ${fixedHueValue}`);
+        }
+      }
+    } else if (this.hueParamName && !hasNestedKey(data, this.hueParamName)) {
+      this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.hueParamName, 'in JSON');
+    }
+    
+    if (this.colorTemperatureParamName && hasNestedKey(data, this.colorTemperatureParamName)) {
+      // Update Color Temperature
+      let value = getNestedValue(data, this.colorTemperatureParamName, 'string'); // Adjust returnType as needed
+      
+      if (this.useColorTKelvin) {
+        value = this.convertColorTemperature(Number(value), 0); // Convert from Kelvin to mired
+      }
+      
+      const fixedColorTemperatureValue = this.checkAndFixValue('colorTemperature', Number(value));
+    
+      if (this.lightBulbStates.ColorTemperature !== fixedColorTemperatureValue) {
+        this.lightBulbStates.ColorTemperature = fixedColorTemperatureValue;
+        this.service.updateCharacteristic(this.platform.Characteristic.ColorTemperature, fixedColorTemperatureValue);
+        if ( this.enableLogging) {
+          this.platform.log.info(this.deviceName, `: Light Color Temperature SET to: ${fixedColorTemperatureValue}`);
+        }
+      }
+    } else if (this.colorTemperatureParamName && !hasNestedKey(data, this.colorTemperatureParamName)) {
+      this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.colorTemperatureParamName, 'in JSON');
+    }
+  }
+
   /**
    * Handle "SET" requests from HomeKit
    * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
@@ -337,172 +506,6 @@ export class platformLightBulb {
       this.platform.log.info('Success: Switch ', this.deviceName, ' is: ', this.getStatus(this.lightBulbStates.On));
     }
     
-  }
-
-  private updateSwitchState(isOn: boolean, deviceName: string) {
-    if (this.lightBulbStates.On !== isOn) {
-      this.lightBulbStates.On = isOn;
-      
-      if ( this.enableLogging) {
-        this.platform.log.info(deviceName, `: Light is ${isOn ? 'ON' : 'OFF'}`);
-      }
-      
-      this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);
-    }
-  }
-
-  private async getData() {
-    // Check if we have Status URL setup
-    if (!this.urlStatus) {
-      this.platform.log.warn(this.deviceName, ': Ignoring request; No status url defined.');
-      return;
-    }
-
-    try {
-      const response = await axios({
-        url: this.urlStatus,
-        method: 'get',
-        timeout: 8000,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      const data = response.data;
-
-      // Check if provided For On/Off KEY EXIST in JSON
-      if (this.statusStateParam && this.statusStateParam in data) {
-        const value = data[this.statusStateParam];
-        const valueType = typeof value;
-
-        // Convert statusOnCheck and statusOffCheck to the appropriate type
-        let statusOnCheck: boolean | number | string;
-        let statusOffCheck: boolean | number | string;
-
-        if (valueType === 'boolean') {
-          statusOnCheck = true;
-          statusOffCheck = false;
-        } else if (valueType === 'number') {
-          statusOnCheck = parseFloat(this.statusOnCheck);
-          statusOffCheck = parseFloat(this.statusOffCheck);
-        } else {
-          statusOnCheck = this.statusOnCheck;
-          statusOffCheck = this.statusOffCheck;
-        }
-
-        // Check and update switch state
-        if (value === statusOnCheck) {
-          this.updateSwitchState(true, this.deviceName);
-        } else if (value === statusOffCheck) {
-          this.updateSwitchState(false, this.deviceName);
-        } else {
-          this.platform.log.warn(this.deviceName, `: The value of ${this.statusStateParam} does not match statusOnCheck or statusOffCheck.`);
-        }
-      } else if (this.statusStateParam && !(this.statusStateParam in data)) {
-        this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.statusStateParam, 'in JSON');
-      }  
-      
-      if (this.useRGB && this.rgbParamName && this.rgbParamName in data) {
-        // Update RGB and remove # if present
-        let value = data[this.rgbParamName];
-        if (value.startsWith('#')) {
-          value = value.slice(1);
-        }
-        this.lightBulbStates.RGB = value as string;
-        this.convertToHSV();
-      
-        // Update all needed characteristics
-        if (!this.brightnessParamName) {
-          this.service.updateCharacteristic(this.platform.Characteristic.Brightness, this.lightBulbStates.Brightness);
-        }
-        this.service.updateCharacteristic(this.platform.Characteristic.Hue, this.lightBulbStates.Hue);
-        this.service.updateCharacteristic(this.platform.Characteristic.Saturation, this.lightBulbStates.Saturation);
-      } else if (this.rgbParamName && !(this.rgbParamName in data)) {
-        this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.rgbParamName, 'in JSON');
-      }  
-      
-      if (this.brightnessParamName && this.brightnessParamName in data) {
-        // Update Brightness
-        let value = data[this.brightnessParamName];
-        if (this.useBrightness255) {
-          const convertedValue = this.convertBrightness(Number(value), 1); // convert back to 0-100
-          if (convertedValue !== undefined) {
-            value = convertedValue;
-          } else {
-            this.platform.log.warn(this.deviceName, ': Error: Invalid brightness value');
-          }
-        }
-        
-        const fixedBrightnessValue = this.checkAndFixValue('brightness', Number(value));
-      
-        if (this.lightBulbStates.Brightness !== fixedBrightnessValue) {
-          this.lightBulbStates.Brightness = fixedBrightnessValue;
-          this.service.updateCharacteristic(this.platform.Characteristic.Brightness, fixedBrightnessValue);
-          if ( this.enableLogging) {
-            this.platform.log.info(this.deviceName, `: Brightness SET to: ${fixedBrightnessValue}`);
-          }
-        }
-      } else if (this.brightnessParamName && !(this.brightnessParamName in data)) {
-        this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.brightnessParamName, 'in JSON');
-      }
-      
-      if(!this.useRGB && this.saturationParamName && this.saturationParamName in data) {
-        // Update Saturation
-        const value = data[this.saturationParamName];
-        const fixedSaturationValue = this.checkAndFixValue('saturation', Number(value));
-        
-        if (this.lightBulbStates.Saturation !== fixedSaturationValue) {
-          this.lightBulbStates.Saturation = fixedSaturationValue;
-          this.service.updateCharacteristic(this.platform.Characteristic.Saturation, fixedSaturationValue);
-          if ( this.enableLogging) {
-            this.platform.log.info(this.deviceName, `: Saturation SET to: ${fixedSaturationValue}`);
-          }
-        }
-      } else if (this.saturationParamName && !(this.saturationParamName in data)) {
-        this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.saturationParamName, 'in JSON');
-      }
-      
-      if(!this.useRGB && this.hueParamName && this.hueParamName in data) {
-        // Update Hue
-        const value = data[this.hueParamName];
-        const fixedHueValue = this.checkAndFixValue('hue', Number(value));
-        
-        if (this.lightBulbStates.Hue !== fixedHueValue) {
-          this.lightBulbStates.Hue = fixedHueValue;
-          this.service.updateCharacteristic(this.platform.Characteristic.Hue, fixedHueValue);
-          if ( this.enableLogging) {
-            this.platform.log.info(this.deviceName, `: Hue SET to: ${fixedHueValue}`);
-          }
-        }
-      } else if (this.hueParamName && !(this.hueParamName in data)) {
-        this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.hueParamName, 'in JSON');
-      }
-      
-      if (this.colorTemperatureParamName && this.colorTemperatureParamName in data) {
-        // Update Color Temperature
-        let value = data[this.colorTemperatureParamName];
-        
-        if (this.useColorTKelvin) {
-          value = this.convertColorTemperature(Number(value), 0); // Convert from Kelvin to mired
-        }
-        
-        const fixedColorTemperatureValue = this.checkAndFixValue('colorTemperature', Number(value));
-      
-        if (this.lightBulbStates.ColorTemperature !== fixedColorTemperatureValue) {
-          this.lightBulbStates.ColorTemperature = fixedColorTemperatureValue;
-          this.service.updateCharacteristic(this.platform.Characteristic.ColorTemperature, fixedColorTemperatureValue);
-          if ( this.enableLogging) {
-            this.platform.log.info(this.deviceName, `: Light Color Temperature SET to: ${fixedColorTemperatureValue}`);
-          }
-        }
-      } else if (this.colorTemperatureParamName && !(this.colorTemperatureParamName in data)) {
-        this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.colorTemperatureParamName, 'in JSON');
-      }
-    } catch (e) {
-      const error = e as AxiosError;
-      if (axios.isAxiosError(error)) {
-        this.platform.log.warn(this.deviceName, ': Error: URL Status check:', error.message);
-      }
-    }
   }
   
   private async setBrightness(value: CharacteristicValue, callback: CharacteristicSetCallback) {

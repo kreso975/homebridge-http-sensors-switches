@@ -98,6 +98,7 @@ export class platformSwitch {
     
       // Subscribe to data updates
       sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
+        //this.platform.log.debug(`${this.deviceName}: Data updated event triggered with data:`, data);
         this.updateSwitchStatusFromSharedData(data);
       });
     } else if (this.urlStatus) {
@@ -153,22 +154,83 @@ export class platformSwitch {
     }
   }
   
-  private updateSwitchStatusFromSharedData(data?: Record<string, unknown>): void {
-    if (!data) {
-      this.platform.log.warn(`${this.deviceName}: No data available for updating switch status.`);
+  private updateSwitchState(isOn: boolean, deviceName: string): void {
+    if (this.switchStates.On !== isOn) {
+      this.switchStates.On = isOn;
+      if ( this.enableLogging ) {
+        this.platform.log.info(`${deviceName}: Switch is ${isOn ? 'ON' : 'OFF'}`);
+      }
+      this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);
+    }
+  }
+
+  private updateSwitchStatusFromSharedData( data?: Record<string, unknown> ): void {
+    this.processSwitchGetData(data, true);
+  }
+
+  private async startIndividualPolling() {
+    if (!this.urlStatus) {
+      this.platform.log.warn(`${this.deviceName}: Ignoring request; No status URL defined.`);
       return;
     }
   
+    try {
+      const response = await axios.get(this.urlStatus, { timeout: 8000 });
+      const data = response.data;
+  
+      this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
+      this.processSwitchGetData(data, false);
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      if (axios.isAxiosError(axiosError)) {
+        this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
+      } else {
+        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON.`);
+      }
+    }
+  }  
+  
+  private processSwitchGetData( data: Record<string, unknown> | undefined, isSharedData: boolean ): void {
+    if (!data) {
+      this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching Switch state'}.`);
+      return;
+    }
+
     // Proceed with processing the data
     const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
 
-    if (value === this.statusOnCheck) {
-      this.updateSwitchState(true, this.deviceName);
-    } else if (value === this.statusOffCheck) {
-      this.updateSwitchState(false, this.deviceName);
+    // Check if we have value
+    if ( value ) {
+      const valueType = typeof value;
+
+      // Convert statusOnCheck and statusOffCheck to the appropriate type
+      let statusOnCheck: boolean | number | string;
+      let statusOffCheck: boolean | number | string;
+
+      if (valueType === 'boolean') {
+        statusOnCheck = true;
+        statusOffCheck = false;
+      } else if (valueType === 'number') {
+        statusOnCheck = parseFloat(this.statusOnCheck);
+        statusOffCheck = parseFloat(this.statusOffCheck);
+      } else {
+        statusOnCheck = this.statusOnCheck;
+        statusOffCheck = this.statusOffCheck;
+      }
+
+
+      // Check and update switch state
+      if (value === statusOnCheck) {
+        this.updateSwitchState(true, this.deviceName);
+      } else if (value === statusOffCheck) {
+        this.updateSwitchState(false, this.deviceName);
+      } else {
+        this.platform.log.warn(this.deviceName, `: The value of ${this.statusStateParam} does not match statusOnCheck or statusOffCheck.`);
+      }
     } else {
-      this.platform.log.warn(`${this.deviceName}: Unexpected value for ${this.statusStateParam}`);
+      this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.statusStateParam, 'in JSON');
     }
+
   }
 
   private cleanup(): void {
@@ -193,69 +255,6 @@ export class platformSwitch {
       if (this.enableLogging) {
         this.platform.log.info(`${device.deviceName}: Stopped individual polling.`);
       }
-    }
-  }
-  
-  private async startIndividualPolling() {
-    try {
-      const response = await axios({
-        url: this.urlStatus,
-        method: 'get',
-        timeout: 8000,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      const data = response.data;
-      // Proceed with processing the data
-      const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
-
-      // Check if provided KEY EXIST in JSON
-      if ( value ) {
-        const valueType = typeof value;
-
-        // Convert statusOnCheck and statusOffCheck to the appropriate type
-        let statusOnCheck: boolean | number | string;
-        let statusOffCheck: boolean | number | string;
-
-        if (valueType === 'boolean') {
-          statusOnCheck = true;
-          statusOffCheck = false;
-        } else if (valueType === 'number') {
-          statusOnCheck = parseFloat(this.statusOnCheck);
-          statusOffCheck = parseFloat(this.statusOffCheck);
-        } else {
-          statusOnCheck = this.statusOnCheck;
-          statusOffCheck = this.statusOffCheck;
-        }
-
-  
-        // Check and update switch state
-        if (value === statusOnCheck) {
-          this.updateSwitchState(true, this.deviceName);
-        } else if (value === statusOffCheck) {
-          this.updateSwitchState(false, this.deviceName);
-        } else {
-          this.platform.log.warn(this.deviceName, `: The value of ${this.statusStateParam} does not match statusOnCheck or statusOffCheck.`);
-        }
-      } else {
-        this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.statusStateParam, 'in JSON');
-      }
-    } catch (e) {
-      const error = e as AxiosError;
-      if (axios.isAxiosError(error)) {
-        this.platform.log.warn(this.deviceName, ': Error: URL Status check:', error.message);
-      }
-    }
-  }  
-
-  private updateSwitchState(isOn: boolean, deviceName: string): void {
-    if (this.switchStates.On !== isOn) {
-      this.switchStates.On = isOn;
-      if ( this.enableLogging ) {
-        this.platform.log.info(`${deviceName}: Switch is ${isOn ? 'ON' : 'OFF'}`);
-      }
-      this.service.updateCharacteristic(this.platform.Characteristic.On, isOn);
     }
   }
 

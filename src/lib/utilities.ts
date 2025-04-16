@@ -42,3 +42,22 @@ export function getNestedValue(
     throw new Error(`Invalid return type: ${returnType}`);
   }
 }
+
+export function hasNestedKey(
+  obj: Record<string, unknown>,
+  key: string,
+): boolean {
+  const keys = key.split('.');
+  let value: unknown = obj;
+
+  for (const part of keys) {
+    if (value && typeof value === 'object' && part in value) {
+      value = (value as Record<string, unknown>)[part];
+    } else {
+      return false; // Key is missing
+    }
+  }
+
+  return true; // Key exists
+}
+

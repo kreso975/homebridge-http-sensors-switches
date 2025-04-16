@@ -1,10 +1,6 @@
 ## Changelog
 ### [v2.0.0] - 10.4.2025 - In Development
 
-- **TODO**:
-  - FanServices - Upgrade(sharedPolling, getNestedValue) - ++ - testing
-  - Light Bulb - Upgrade(sharedPolling, getNestedValue)
-
 - **IMPORTANT**:
   - **Motion Sensor:** Config updated. Users must update Accessory.
 
@@ -17,7 +13,7 @@
     - **Event-Based Updates:** Notifies devices in the group about data updates using an event-driven architecture.
     - **Error Handling:** Logs errors encountered during polling and ensures graceful failure recovery.
 
-- **Switch & Outlet Enhancements**:
+- **Switch & Outlet & Light Bulb & Fan Enhancements**:
   - Upgraded to fully integrate with `sharedPolling`.  
   - Added support for the `getNestedValue` function to process nested JSON data.  
 

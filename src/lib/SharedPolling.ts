@@ -151,7 +151,7 @@ export class SharedPolling extends EventEmitter {
   // Fetch data
   private async fetchData(): Promise<void> {
     try {
-      const response = await axios.get(this.url);
+      const response = await axios.get(this.url, { timeout: 8000 });
       this.data = response.data as SharedData;
 
       // Emit an event to notify data update

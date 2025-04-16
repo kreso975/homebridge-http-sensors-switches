@@ -164,9 +164,33 @@ export class platformSensors {
     } 
   }
 
-  private updateSensorStatusFromSharedData(data?: Record<string, unknown>): void {
+  private updateSensorStatusFromSharedData( data?: Record<string, unknown> ): void {
+    this.processGetSensorStatus(data, true);
+  }
+
+  private async getSensorData() {
+    if (!this.sensorUrl) {
+      this.platform.log.warn(`${this.deviceName}: Ignoring request; No status URL defined.`);
+      return;
+    }
+    try {
+      const response = await axios.get(this.sensorUrl, { timeout: 8000 });
+      const data = response.data;
+
+      this.processGetSensorStatus(data, false);  
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      if (axios.isAxiosError(axiosError)) {
+        this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
+      } else {
+        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON.`);
+      }
+    }
+  }
+
+  private processGetSensorStatus(data: Record<string, unknown> | undefined, isSharedData: boolean ): void {
     if (!data) {
-      this.platform.log.warn(`${this.deviceName}: No data available for updating switch status.`);
+      this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching Switch state'}.`);
       return;
     }
   
@@ -220,70 +244,8 @@ export class platformSensors {
       }
     }
 
-    if ( this.enableLogging) {
-      this.platform.log.info(this.deviceName,': ',JSON.stringify(data));
-    }
-  }
-  
-  private async getSensorData() {
-    try {
-      const response = await axios.get(this.sensorUrl);
-      const data = response.data;
-
-      // If Temperature Service is available
-      if (this.temperatureService) {
-        if (this.temperatureName) {
-          const tmpTemperature = getNestedValue(data, this.temperatureName, 'number');
-          
-          if (typeof tmpTemperature === 'number') {
-            this.currentTemperature = tmpTemperature;
-            this.temperatureService.updateCharacteristic(
-              this.platform.Characteristic.CurrentTemperature,
-              this.currentTemperature,
-            );
-          } else {
-            this.platform.log.warn( this.deviceName, ': Error: Cannot find or convert: ',this.temperatureName,' in JSON' );
-          }
-        } else {
-          this.platform.log.warn(this.deviceName, ': Error: Temperature name is not defined');
-        }
-      }
-
-      // If Humidity Service is available
-      if (this.humidityService) {
-        if (this.humidityName) {
-          const tmpHumidity = getNestedValue(data, this.humidityName, 'number');
-      
-          if (typeof tmpHumidity === 'number') {
-            this.currentHumidity = tmpHumidity;
-            this.humidityService.updateCharacteristic(
-              this.platform.Characteristic.CurrentRelativeHumidity,
-              this.currentHumidity,
-            );
-          } else {
-            this.platform.log.warn( this.deviceName, ': Error: Cannot find or convert: ',this.temperatureName,' in JSON' );
-          }
-        } else {
-          this.platform.log.warn(this.deviceName, ': Error: Humidity name is not defined');
-        }
-      }
-      
-      // If we have Config setup for Air Pressure
-      if ( this.airPressureName ) {
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName,': ',this.airPressureName);
-        }
-      }
-      
-      if ( this.enableLogging) {
-        this.platform.log.info(this.deviceName,': ',JSON.stringify(data));
-      }
-
-    } catch (e) {
-      const error = e as AxiosError;
-      if (axios.isAxiosError(error)) {
-        this.platform.log.warn(this.deviceName,': Error: ', error.message );
-      }
+    if ( this.enableLogging ) {
+      // this.platform.log.debug(this.deviceName,': ',JSON.stringify(data));
     }
   }
   
