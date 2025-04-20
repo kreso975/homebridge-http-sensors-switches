@@ -43,6 +43,13 @@ export function getNestedValue(
   }
 }
 
+/**
+ * Checks if a nested key exists in the given object.
+ *
+ * @param obj - The object to search within.
+ * @param key - The nested key path, specified as a dot-separated string (e.g., "level1.level2").
+ * @returns {boolean} - True if the key exists, otherwise false.
+ */
 export function hasNestedKey(
   obj: Record<string, unknown>,
   key: string,

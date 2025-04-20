@@ -1,6 +1,24 @@
 
+type Sensor = {
+  defaultValue: number;
+  range: [number, number];
+};
 
-export const sensorConfig = {
+type State = {
+  param: string;
+  topic: string;
+  webhook: boolean;
+};
+
+type SensorConfig = {
+  paramNames: string[];
+  sensors: Record<string, Sensor>;
+  states: Record<string, State>;
+};
+
+type Sensors = Record<string, SensorConfig>;
+
+export const sensorConfig: Sensors = {
   OccupancySensor: {
     paramNames: [
       'OccupancyDetected',
@@ -174,13 +192,13 @@ export const sensorConfig = {
       StatusTampered: { defaultValue: 0, range: [0, 1] as [number, number] },     // Valid values: 0 (No Tampering), 1 (Tampered)
     },
     states: {
-      AirQuality: { param: 'AirQuality', topic: 'AirQuality', webhook: true },
-      PM2_5Density: { param: 'PM2_5Density', topic: 'PM2_5Density', webhook: true },
-      PM10Density: { param: 'PM10Density', topic: 'PM10Density', webhook: true },
-      OzoneDensity: { param: 'OzoneDensity', topic: 'OzoneDensity', webhook: true },
-      NitrogenDioxideDensity: { param: 'NitrogenDioxideDensity', topic: 'NitrogenDioxideDensity', webhook: true },
-      SulphurDioxideDensity: { param: 'SulphurDioxideDensity', topic: 'SulphurDioxideDensity', webhook: true },
-      CarbonMonoxideLevel: { param: 'CarbonMonoxideLevel', topic: 'CarbonMonoxideLevel', webhook: true },
+      AirQuality: { param: 'AirQuality', topic: 'AirQuality', webhook: false },
+      PM2_5Density: { param: 'PM2_5Density', topic: 'PM2_5Density', webhook: false },
+      PM10Density: { param: 'PM10Density', topic: 'PM10Density', webhook: false },
+      OzoneDensity: { param: 'OzoneDensity', topic: 'OzoneDensity', webhook: false },
+      NitrogenDioxideDensity: { param: 'NitrogenDioxideDensity', topic: 'NitrogenDioxideDensity', webhook: false },
+      SulphurDioxideDensity: { param: 'SulphurDioxideDensity', topic: 'SulphurDioxideDensity', webhook: false },
+      CarbonMonoxideLevel: { param: 'CarbonMonoxideLevel', topic: 'CarbonMonoxideLevel', webhook: false },
       StatusActive: { param: 'StatusActive', topic: 'StatusActive', webhook: false },
       StatusFault: { param: 'StatusFault', topic: 'StatusFault', webhook: false },
       StatusLowBattery: { param: 'StatusLowBattery', topic: 'StatusLowBattery', webhook: true },

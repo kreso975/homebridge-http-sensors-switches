@@ -40,7 +40,10 @@
                 { "title": "Air Quality", "enum": ["AirQualitySensor"] },
                 { "title": "Carbon Dioxide", "enum": ["CarbonDioxideSensor"] },
                 { "title": "Smoke Sensor", "enum": ["SmokeSensor"] },
-                { "title": "Occupancy Sensor", "enum": ["OccupancySensor"] }
+                { "title": "Occupancy Sensor", "enum": ["OccupancySensor"] },
+                { "title": "Garage Door", "enum": ["GarageDoorOpener"] },
+                { "title": "Window", "enum": ["Window"] },
+                { "title": "Window Covering", "enum": ["WindowCovering"] }
               ],
               "required": true,
               "default": "Switch",
@@ -215,6 +218,12 @@
               "type": "string",
               "required": false
             },
+            "urlDeviceControl": {
+              "title": "HTTP address Device Control",
+              "description": "HTTP address where to send Device control commands",
+              "type": "string",
+              "required": false
+            },
             "urlFanControl": {
               "title": "HTTP address Fan Control",
               "description": "HTTP address where to send Device control commands",
@@ -224,6 +233,54 @@
             "paramNameStatusActive": {
               "title": "Parameter Name for Active",
               "description": "JSON Parameter Name for Active (on/off)",
+              "type": "string",
+              "required": false
+            },
+            "paramNameTargetDoorState": {
+              "title": "Parameter Name for Target Door State",
+              "description": "JSON Parameter Name for TargetDoorState",
+              "type": "string",
+              "required": false
+            },
+            "paramNameCurrentDoorState": {
+              "title": "Parameter Name for CurrentDoorState",
+              "description": "JSON Parameter Name for Current Door State",
+              "type": "string",
+              "required": false
+            },
+            "paramNameObstructionDetected": {
+              "title": "Parameter Name for Obstruction Detected",
+              "description": "JSON Parameter Name for Obstruction Detected",
+              "type": "string",
+              "required": false
+            },
+            "paramNameStatusJammed": {
+              "title": "Parameter Name for Device Jammed",
+              "description": "JSON Parameter Name for Device Jammed",
+              "type": "string",
+              "required": false
+            },
+            "paramNameTargetPosition": {
+              "title": "Parameter Name for Target Position",
+              "description": "JSON Parameter Name for Target Position",
+              "type": "string",
+              "required": false
+            },
+            "paramNameCurrentPosition": {
+              "title": "Parameter Name for Current Position",
+              "description": "JSON Parameter Name for Current Position",
+              "type": "string",
+              "required": false
+            },
+            "paramNamePositionState": {
+              "title": "Parameter Name for Position State",
+              "description": "JSON Parameter Name for Position State",
+              "type": "string",
+              "required": false
+            },
+            "paramNameHoldPosition": {
+              "title": "Parameter Name for Hold Position",
+              "description": "JSON Parameter Name for Hold Position",
               "type": "string",
               "required": false
             },
@@ -602,6 +659,54 @@
             "mqttCO2PeakLevel": {
               "title": "MQTT Topic for CO2 Peak Level",
               "description": "MQTT Topic Name for CO2 Peak Level",
+              "type": "string",
+              "required": false
+            },
+            "mqttTargetDoorState": {
+              "title": "MQTT Topic for Target Door State",
+              "description": "MQTT Topic Name for Target Door State",
+              "type": "string",
+              "required": false
+            },
+            "mqttCurrentDoorState": {
+              "title": "MQTT Topic for Current Door State",
+              "description": "MQTT Topic Name for Current Door State",
+              "type": "string",
+              "required": false
+            },
+            "mqttObstructionDetected": {
+              "title": "MQTT Topic for Obstruction Detected",
+              "description": "MQTT Topic Name for Obstruction Detected",
+              "type": "string",
+              "required": false
+            },
+            "mqttStatusJammed": {
+              "title": "MQTT Topic for Status Jammed",
+              "description": "MQTT Topic Name for Status Jammed",
+              "type": "string",
+              "required": false
+            },
+            "mqttTargetPosition": {
+              "title": "MQTT Topic for Target Position",
+              "description": "MQTT Topic Name for Target Position",
+              "type": "string",
+              "required": false
+            },
+            "mqttCurrentPosition": {
+              "title": "MQTT Topic for Current Position",
+              "description": "MQTT Topic Name for Current Position",
+              "type": "string",
+              "required": false
+            },
+            "mqttPositionState": {
+              "title": "MQTT Topic for Position State",
+              "description": "MQTT Topic Name for Position State",
+              "type": "string",
+              "required": false
+            },
+            "mqttHoldPosition": {
+              "title": "MQTT Topic for Hold Position",
+              "description": "MQTT Topic Name for Hold Position",
               "type": "string",
               "required": false
             },
@@ -1455,7 +1560,7 @@
               },
               "devices[].methodUpdate",
               "devices[].urlStatus",
-              "devices[].urlFanControl",
+              "devices[].urlDeviceControl",
               "devices[].paramNameStatusActive",
               "devices[].paramNameRotationSpeed",
               "devices[].paramNameRotationDirection",
@@ -1502,7 +1607,202 @@
               "devices[].discordAvatar",
               "devices[].discordMessage"
             ]
-          }   
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Garage Door Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'GarageDoorOpener';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
+                ]
+              },
+              "devices[].methodUpdate",
+              "devices[].urlStatus",
+              "devices[].urlDeviceControl",
+              "devices[].paramNameTargetDoorState",
+              "devices[].paramNameCurrentDoorState",
+              "devices[].paramNameObstructionDetected",
+              "devices[].paramNameStatusJammed"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Garage Door Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'GarageDoorOpener';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttTargetDoorState",
+              "devices[].mqttCurrentDoorState",
+              "devices[].mqttObstructionDetected",
+              "devices[].mqttStatusJammed"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Garage Door Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'GarageDoorOpener';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Window Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Window';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
+                ]
+              },
+              "devices[].methodUpdate",
+              "devices[].urlStatus",
+              "devices[].urlDeviceControl",
+              "devices[].paramNameTargetPosition",
+              "devices[].paramNameCurrentPosition",
+              "devices[].paramNamePositionState"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Window Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Window';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttTargetPosition",
+              "devices[].mqttCurrentPosition",
+              "devices[].mqttPositionState"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Window Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Window';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "HTTP Window Covering Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'WindowCovering';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              {
+                "type": "flex",
+                "flex-flow": "row wrap",
+                "items": [
+                  "devices[].sharedPolling",
+                  "devices[].sharedPollingId",
+                  "devices[].sharedPollingInterval"
+                ]
+              },
+              "devices[].methodUpdate",
+              "devices[].urlStatus",
+              "devices[].urlDeviceControl",
+              "devices[].paramNameTargetPosition",
+              "devices[].paramNameCurrentPosition",
+              "devices[].paramNamePositionState",
+              "devices[].paramNameHoldPosition",
+              "devices[].paramNameStatusJammed"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "MQTT Window Covering Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'WindowCovering';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].mqttReconnectInterval",
+              "devices[].mqttBroker",
+              "devices[].mqttPort",
+              "devices[].mqttUsername",
+              "devices[].mqttPassword",
+              "devices[].mqttTargetPosition",
+              "devices[].mqttCurrentPosition",
+              "devices[].mqttPositionState",
+              "devices[].mqttHoldPosition",
+              "devices[].mqttStatusJammed"
+            ]
+          },
+          {
+            "key": "devices[]",
+            "type": "fieldset",
+            "title": "Discord Webhook Window Covering Settings",
+            "condition": {
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'WindowCovering';"
+              },
+            "expandable": true,
+            "expanded": false,
+            "items": [
+              "devices[].discordWebhook",
+              "devices[].discordUsername",
+              "devices[].discordAvatar",
+              "devices[].discordMessage"
+            ]
+          }    
         ]
       }
     ]

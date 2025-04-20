@@ -16,21 +16,75 @@
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen"> &nbsp;
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 
-This plugin communicates with your devices over HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Fan, Temperature/Humidity and Motion sensor.  
-Simple Discord Webhooks available in Light Bulb, Switches and Outlets.   
+This plugin communicates with your devices using HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Fan, Garage Door, Shades / Blinds, Temperature/Humidity, Motion, Contact and Occupancy sensor, Air Quality, Smoke, Carbon Dioxide and Light Sensor.  
+    
+Simple Discord Webhooks available in Light Bulb, Switches and Outlets and sensors.   
 
-<br><br>
+<br>
 
-## 🕺 Motion Sensor 
+## <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/share.svg?raw=true" alt="Shared Polling" height=26 width=26 /> Shared Polling
 > [!NOTE]  
-> HTTP - Read status (true or 1 /false or 0) from JSON - {"Motion": true}  
-> MQTT - Read status (true or 1/false)  
+> Multiple accessories can use same data source http://url/source.json  
+> Enable Shared Polling under HTTP. Set Group name, Data Source URL and Update Interval for each.  
+>  
+> Supported Nested JSON data structure: 'switches.switch2'
 ```json
 {
-    "Motion": false
+    "switches": {
+        "switch1": 1,
+        "switch2": 0
+        },
+    "temperature1": 12.23,
+    "temperature2": 24.43
 }
-```
+```  
   
+<br><br>
+
+## 🕺 Motion, Contact & Occupancy Sensor 
+> [!NOTE]  
+> HTTP - Read status (true or 1 /false or 0) from JSON  
+> MQTT - Read status (true or 1/false or 0)   
+>  
+> Parameters for services you do NOT need, should be left BLANK  
+  
+
+<details>
+<summary>⚙️ Parameters</summary>
+    
+| **Param** 	| **Description** 	| **Values** 	|  
+|---	|---	|:---:	|  
+| paramNameOccupancyDetected <br> mqttOccupancyDetected 	| Occupancy Status 	| 0 (Not detected), 1 (Detected) 	|  
+| paramNameMotionDetected <br> mqttMotionDetected 	| Motion Status 	| 0 (Not detected), 1 (Detected) 	|   
+| paramNameContactSensorState <br> mqttContactSensorState 	| Contact status	|  0: Contact detected (closed), 1: Contact not detected (open) 	|   
+| paramNameStatusActive <br> mqttStatusActive 	| Status of Sensor 	| 0 (Inactive), 1 (Active) 	|   
+| paramNameStatusFault <br> mqttStatusFault 	| Fault status	| 0 (No Fault), 1 (Fault Detected) 	|  
+| paramNameStatusLowBattery <br> mqttStatusLowBattery 	| Battery status 	| 0 (Battery OK), 1 (Low Battery) 	|  
+| paramNameStatusTampered <br> mqttStatusTampered 	| Tempered Status 	|0 (No Tampering), 1 (Tampered) 	|  
+  
+</details>
+<br>  
+  
+```json
+{
+   "MotionSensor": {
+      "MotionDetected": 1,
+      "Active": 1,
+      "Fault": 0,
+      "BatteryLevel": 0,
+      "LowBattery": 0,
+      "Tampered": 0
+   },
+   "OccupancyDetected": 0,
+   "Active" : 1,
+   "Fault" : 0,
+   "BatteryLevel": 0,
+   "LowBattery" : 1,
+   "Tampered" : 0
+ }
+```
+<br>
+
 ## 💡 Light Bulb  
 > [!NOTE]  
 > HTTP:  
@@ -43,7 +97,32 @@ Simple Discord Webhooks available in Light Bulb, Switches and Outlets.
 > - Turn ON/OFF | Values: On = true || 1, Off = false || 0  
 > - RGB in format #FFAA22 or without #     
 >  
-> SET only Parameters you intend to use  
+> Parameters for services you do NOT need, should be left BLANK   
+  
+<details>
+<summary>⚙️ Parameters</summary>
+    
+| **Param** 	| **Description** 	| **Values** 	|  
+|---	|---	|:---:	|  
+| urlON 	| URL to Turn ON Device 	| URL 	|  
+| urlOFF 	| URL to Turn OFF Device 	| URL 	|   
+| urlStatus 	| URL to retrieve JSON with all Data	|  URL 	|   
+| urlLightBulbControl 	| HTTP address where to send Device control commands (POST) 	|URL 	|  
+| stateName 	| JSON Parameter Name for Reading ON/OFF 	| Key 	|   
+| onStatusValue 	| JSON return Value for status ON	| ON, true, 1  	|  
+| offStatusValue 	| JSON return Value for status ON 	| Off, false, 0 	|  
+| useRGB 	| Use RGB instead of HSV 	| true / false 	|  
+| useBrightness255 	| Use Brightness 0 - 255 not 0 - 100 	| true / false 	|  
+| useColorTKelvin  	| Color Temperature in Mired (153-500), Kelvin (2000-6500) 	| true / false 	|  
+| rgbParamName <br> mqttRGB	| JSON Parameter Name for RGB color / mqtt Topic 	|String 	|  
+| brightnessParamName <br> mqttBrightness 	| JSON Parameter Name for Brightness / mqtt Topic 	| String 	|  
+| saturationParamName <br> mqttSaturation 	| JSON Parameter Name for Saturation / mqtt Topic 	|String 	|  
+| hueParamName <br> mqttHue 	| JSON Parameter Name for HUE / mqtt Topic 	| String 	|  
+| colorTemperatureParamName <br> mqttColorTemperature 	| JSON Parameter Name for Color Temperature / mqtt Topic 	| String 	|  
+  
+</details>
+<br>  
+
 ```json
 {
     "Light": true,
@@ -56,14 +135,17 @@ Simple Discord Webhooks available in Light Bulb, Switches and Outlets.
 ```
   
 > [!TIP]  
-> Use RGB will Send and Receive values in RGB format  
-> If use RGB is set, Saturation and Hue will not be sent or read.  
-> Use Brightness 0-255 will Send and Receive converted Brightness value in range 0-255  
+> useRGB will Send and Receive values in RGB format  
+> If useRGB is set, Saturation and Hue will not be sent or read.  Brightness will be calculated from RGB value.
+>   
+> useBrightness 0-255 will Send and Receive converted Brightness value in range 0-255  
 >  
-> Parameters for services you do not need, leave BLANK  
+> Parameters for services you do NOT NEED, should be left BLANK  
   
 > [!IMPORTANT]  
 > Use HTTP or MQTT not both for same accessory.  
+  
+<br>
 
 ## <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/switch.png?raw=true" height=32 width=32> <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/outlet.png?raw=true" height=28 width=28 alt="Publish" title="Publish"> &nbsp;&nbsp;Switch & Outlet  
 > [!NOTE]  
@@ -86,17 +168,11 @@ Simple Discord Webhooks available in Light Bulb, Switches and Outlets.
 > [!IMPORTANT]  
 > Use HTTP or MQTT not both for same accessory.  
 >   
-> Parameters required in Config:  
-> 
-> deviceType = 'Switch',  
-> deviceName = 'Name your Accessory',  
-> deviceID = 'Put something unique / chars and numbers',  
-> urlON = 'URL that triggers your device to change state to ON',  
-> urlOFF = 'URL that triggers your device to change state to OFF'
+
 
 > [!CAUTION]  
 > Parameter:
-> urlStatus = 'url points to JSON with device status' when is set it will bind Accessory to 5 sec check status interval
+> urlStatus = 'url points to JSON with device status' when is set it will bind Accessory into 5 sec check status interval
 ```json
 {
     "POWER": "ON", "inUSE": false
@@ -131,7 +207,6 @@ Simple Discord Webhooks available in Light Bulb, Switches and Outlets.
 > MQTT is just an basic implementation, no encription etc.  
 >  
 
-
 Sensor JSON file example
 ```json
 {
@@ -146,20 +221,9 @@ Sensor JSON file example
 <br>
 
 ## <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/fan.svg?raw=true" alt="Fan plugin" height=26 width=26 /> Fan  
-  
-| **Param** 	| **Description** 	| **Values** 	|  
-|---	|---	|:---:	|  
-| Active 	| Turn Fan On / Off 	| 0 (Inactive), 1 (Active) 	|  
-| RotationSpeed 	| Rotation Speed 	| Valid range: 0 to 100 	| 
-| RotationDirection 	| Fan turn direction 	| 0 (Clockwise), 1 (Counterclockwise) 	| 
-| SwingMode 	| Swing Mode On / Off 	| 0 (Disabled), 1 (Enabled) 	| 
-| TargetFanState 	| Automatione mode 	|0 (Manual), 1 (Automatic) 	| 
-| CurrentFanState 	| Read Status of Fan 	| 0 (Inactive), 1 (Idle), 2 (Blowing Air) 	| 
-
 
 > [!NOTE]  
->
->
+>  
 > HTTP  
 > Read interval 5 sec  
 > Select HTTP Method - GET / POST  
@@ -167,25 +231,33 @@ Sensor JSON file example
 > MQTT  
 > param for ACTIVE is mqttSwitch  
 >   
-> Parameters for SERVICES you do NOT NEED, leave BLANK  
+> Parameters for SERVICES you do NOT NEED, should be left BLANK  
 >  
 > Discord Webhook publishes Fan status to your Discord channel (On/Off)   
   
 
-> [!IMPORTANT]  
-> Use HTTP or MQTT not both for same accessory.  
->   
-> Parameters required in Config:  
-> HTTP  
-> urlFanControl, urlStatus
-> MQTT  
-> mqttBroker
->  
-
 > [!CAUTION]  
 > Parameter:
-> urlStatus = 'url points to JSON with device status' when is set it will bind Accessory to 5 sec check status interval
-Fan JSON file example
+> urlStatus = 'url points to JSON with device status' when is set it will bind Accessory to 5 sec check status interval  
+
+<details>
+<summary>⚙️ Parameters</summary>
+    
+| **Param** 	| **Description** 	| **Values** 	|  
+|---	|---	|:---:	|  
+| paramNameStatusActive <br> mqttSwitch	| Turn Fan On / Off 	| 0 (Inactive), 1 (Active) 	|  
+| paramNameRotationSpeed <br> mqttRotationSpeed 	| Rotation Speed 	| Valid range: 0 to 100 	| 
+| paramNameRotationDirection <br> mqttRotationDirection	| Fan turn direction 	| 0 (Clockwise), 1 (Counterclockwise) 	| 
+| paramNameSwingMode <br> mqttSwingMode	| Swing Mode On / Off 	| 0 (Disabled), 1 (Enabled) 	| 
+| paramNameTargetFanState <br> mqttTargetFanState	| Automatione mode 	|0 (Manual), 1 (Automatic) 	| 
+| paramNameCurrentFanState <br> mqttCurrentFanState	| Read Status of Fan 	| 0 (Inactive), 1 (Idle), 2 (Blowing Air) 	| 
+  
+</details>
+<br>  
+
+<details>
+<summary>⚙️ Fan JSON Example</summary>
+
 ```json
 {
     "Active": 0,
@@ -196,11 +268,181 @@ Fan JSON file example
     "TargetFanState": 1
 }
 ```
+
+</details>
+
 <br>
+
+## <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/garage.svg?raw=true" alt="Garage Door plugin" height=26 width=26 />  Garage Door, Window, <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/blinds.svg?raw=true" alt=", Blinds / Shades plugin" height=26 width=26 /> Blinds / Shades  
+
+> [!NOTE]   
+>   
+> Parameters for SERVICES you do NOT NEED, should be left BLANK  
+>  
+> Discord Webhook publishes status to your Discord channel (On/Off) 
   
 <details>
-<summary>⚙️ Config example</summary>
-<pre>
+<summary>⚙️ Parameters</summary>
+    
+| **Param** 	| **Description** 	| **Values** 	|  
+|---	|---	|:---:	|  
+| paramNameTargetDoorState <br> mqttTargetDoorState	| SET Door position 	| 0 (Open), 1 (Closed) 	|  
+| paramNameCurrentDoorState <br> mqttCurrentDoorState 	| Door state 	| 0: Open, 1: Closed, 2: Opening, 3: Closing, 4: Stopped 	| 
+| paramNameObstructionDetected <br> mqttObstructionDetected 	| Read Obstruction 	| 0: false, 1: true 	| 
+| paramNameStatusJammed <br> mqttStatusJammed 	| Is Jammed 	| 0 (not jammed), 1 (Jammed) 	| 
+| paramNameTargetPosition <br> mqttTargetPosition 	| Set Position 	| Range: 0 (Fully Closed) to 100 (Fully Open) 	| 
+| paramNameCurrentPosition <br> mqttCurrentPosition 	| Read Current Possition 	| Range: 0 (Fully Closed) to 100 (Fully Open) 	| 
+| paramNamePositionState <br> mqttPositionState 	| Read position state 	| 0: Closing, 1: Opening, 2: Stopped 	| 
+| paramNameHoldPosition <br> mqttHoldPosition 	| Enables holding a specific position 	| 0, 1 	| 
+   
+</details>
+<br>  
+
+<details>
+<summary>⚙️ JSON Example</summary>
+
+```json
+{
+    "garage": {
+        "TargetDoorState": 0,
+        "CurrentDoorState": 1,
+        "ObstructionDetected": 0,
+        "StatusJammed": 0
+    },
+    "Window": {
+        "TargetPosition": 0,
+        "CurrentPosition": 0,
+        "PositionState": 0
+    },
+    "WindowCovering": {
+        "TargetPosition": 0,
+        "CurrentPosition": 0,
+        "PositionState": 2,
+        "HoldPosition": 0,
+        "StatusJammed": 0
+    }
+}
+```
+
+</details>
+<br>
+
+## <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/detector.svg?raw=true" alt="Smoke, Carbon Dioxide, Air Quality" height=26 width=26 />  Smoke, Carbon Dioxide & Air Quality Detector
+
+> [!NOTE]  
+>   
+> Parameters for SERVICES you do NOT NEED, leave BLANK  
+>  
+> Discord Webhook publishes change in Carbon Dioxide Detected, Smoke Detected and Status Low Battery to your Discord channel   
+  
+<details>
+<summary>⚙️ Parameters</summary>
+    
+| **Param**                                   | **Description**                     | **Values**                                    |
+|---------------------------------------------|-------------------------------------|-----------------------------------------------|
+| paramNameCarbonDioxideDetected <br> mqttCarbonDioxideDetected | Read Detection                     | 0: no Detection, 1: Detected                 |
+| paramNameCarbonDioxideLevel <br> mqttCarbonDioxideLevel       | CO2 Concentration                  | Range: 0 to 5000 ppm                          |
+| paramNameCarbonDioxidePeakLevel <br> mqttCarbonDioxidePeakLevel | Peak CO2 Concentration            | Range: 0 to 5000 ppm                          |
+| paramNameStatusActive <br> mqttStatusActive                   | Is Active                          | 0: Inactive, 1: Active                        |
+| paramNameStatusFault <br> mqttStatusFault                     | Fault Status                       | 0: No Fault, 1: Fault                         |
+| paramNameStatusLowBattery <br> mqttStatusLowBattery           | Battery Status                     | 0: Normal, 1: Low                             |
+| paramNameStatusTampered <br> mqttStatusTampered               | Tampered Status                    | 0: Not Tampered, 1: Tampered                  |
+| paramNameSmokeDetected <br> mqttSmokeDetected                 | Read Smoke Detection               | 0: No Smoke, 1: Smoke Detected                |
+| paramNameAirQuality <br> mqttAirQuality                       | Air Quality Index                  | Range: 1 (Excellent) to 5 (Very Poor)         |
+| paramNamePM2_5Density <br> mqttPM2_5Density                   | PM2.5 Particle Density             | Range: 0 to 500 µg/m³                         |
+| paramNamePM10Density <br> mqttPM10Density                     | PM10 Particle Density              | Range: 0 to 500 µg/m³                         |
+| paramNameOzoneDensity <br> mqttOzoneDensity                   | Ozone Concentration                | Range: 0 to 500 µg/m³                         |
+| paramNameNitrogenDioxideDensity <br> mqttNitrogenDioxideDensity | NO₂ Concentration                | Range: 0 to 500 µg/m³                         |
+| paramNameSulphurDioxideDensity <br> mqttSulphurDioxideDensity | SO₂ Concentration                | Range: 0 to 500 µg/m³                         |
+| paramNameCarbonMonoxideLevel <br> mqttCarbonMonoxideLevel     | CO Concentration                   | Range: 0 to 500 ppm                           |
+
+   
+</details>
+<br>  
+
+<details>
+<summary>⚙️ JSON Example</summary>
+
+```json
+{
+   "CO2Sensor2": {
+      "CO2Detected": false,
+      "CO2Level": 700,
+      "CO2PeakLevel": 1400,
+      "Active": 1,
+      "Fault": 0,
+      "LowBattery": 0,
+      "Tampered": 0
+   },
+   "SmokeDetected": 0,
+   "StatusActive" : true,
+   "StatusFault" : 0,
+   "LowBattery" : false,
+   "StatusTampered" : 0
+ }
+ 
+```
+
+</details>
+<br>
+  
+## 🌟 Ambient Light Sensor
+
+> [!NOTE]  
+>   
+> Parameters for SERVICES you do NOT NEED, leave BLANK  
+>  
+> Discord Webhook publishes change in Carbon Dioxide Detected, Smoke Detected and Status Low Battery to your Discord channel   
+  
+<details>
+<summary>⚙️ Parameters</summary>
+    
+| **Param**                                   | **Description**               | **Values**                            |
+|---------------------------------------------|-------------------------------|---------------------------------------|
+| paramNameCurrentAmbientLightLevel <br> mqttCurrentAmbientLightLevel | Ambient Light Level          | Range: 0.0001 to 100,000 lux          |
+| paramNameStatusActive <br> mqttStatusActive                   | Is Active                    | 0: Inactive, 1: Active                |
+| paramNameStatusFault <br> mqttStatusFault                     | Fault Status                 | 0: No Fault, 1: Fault                 |
+| paramNameStatusLowBattery <br> mqttStatusLowBattery           | Battery Status               | 0: Normal, 1: Low                     |
+| paramNameStatusTampered <br> mqttStatusTampered               | Tampered Status              | 0: Not Tampered, 1: Tampered          |
+
+   
+</details>
+<br>  
+
+<details>
+<summary>⚙️ JSON Example</summary>
+
+```json
+{
+   "AmbientLightSensor": {
+      "CurrentAmbientLightLevel": 4500,
+      "Active": true,
+      "Fault": 0,
+      "LowBattery": false,
+      "Tampered": 0
+   }
+} 
+```
+
+</details>
+<br>
+
+
+  
+Compromise: Switch accessory, in order to work properly getStatus is bind in 5 sec interval. This is for passive devices not pushing their 
+status.
+I have several devices built by my self like ESP8266 with relay and I'm just switching state. I have JSON file showing status:
+```json
+{
+    "POWER": "ON"
+}
+```
+<br>
+
+<details>
+<summary>⚙️ Plugin Config example</summary>
+
+```json
 {
     "bridge": {
         "name": "Homebridge xxxx",
@@ -286,102 +528,214 @@ Fan JSON file example
                     "mqttHumidity": "qiot/things/Attic/Humidity",
                     "mqttUsername": "testuser",
                     "mqttPassword": "testuser"
+                },
+                {
+                    "deviceType": "Fan",
+                    "enableLogging": true,
+                    "deviceID": "sssert45-58aaaa7f-689",
+                    "deviceName": "Fan test",
+                    "deviceManufacturer": "Stergo",
+                    "deviceModel": "Stergo-Fan",
+                    "deviceSerialNumber": "www2s5587-6s598-6s58",
+                    "deviceFirmwareVersion": "v1",
+                    "urlStatus": "http://192.168.1.101/test/Fanv2/fanv2.json",
+                    "urlFanControl": "http://192.168.1.101/test/Fanv2/fanv2.php",
+                    "paramNameStatusActive": "Fan2.Active",
+                    "paramNameRotationSpeed": "Fan2.RotationSpeed",
+                    "paramNameRotationDirection": "Fan2.RotationDirection",
+                    "paramNameSwingMode": "Fan2.SwingMode",
+                    "paramNameCurrentFanState": "Fan2.CurrentFanState",
+                    "paramNameTargetFanState": "Fan2.TargetFanState"
+                },
+                {
+                    "deviceType": "CarbonDioxideSensor",
+                    "enableLogging": true,
+                    "deviceID": "sssda3-23fdaf-sdadf-sdfsdf",
+                    "deviceName": "CO2",
+                    "deviceManufacturer": "Stergo",
+                    "deviceModel": "vvdd",
+                    "deviceSerialNumber": "33-2-2ds3-ss3-2223-323-w",
+                    "deviceFirmwareVersion": "v1",
+                    "sharedPolling": true,
+                    "sharedPollingId": "CarbonDioxide",
+                    "urlStatus": "http://192.168.1.101/test/co2.json",
+                    "paramNameStatusActive": "Active",
+                    "paramNameCO2Detected": "CO2Detected",
+                    "paramNameCO2Level": "CO2Level",
+                    "paramNameCO2PeakLevel": "CO2PeakLevel",
+                    "paramNameStatusFault": "Fault",
+                    "paramNameBatteryLevel": "BatteryLevel",
+                    "paramNameStatusLowBattery": "LowBattery",
+                    "paramNameStatusTampered": "Tampered",
+                    "sensorUrl": "http://192.168.1.101/test/co2.json",
+                    "sharedPollingInterval": 30000,
+                    "discordWebhook": "https://discordapp.com/api/webhooks/",
+                    "discordUsername": "Stergo",
+                    "discordAvatar": ""
+                },
+                {
+                    "deviceType": "OccupancySensor",
+                    "enableLogging": true,
+                    "deviceID": "sdadddd3-23fdddssdaf-sadf-sdfsdf",
+                    "deviceName": "Occupancy",
+                    "deviceManufacturer": "Stergo",
+                    "deviceModel": "vvdd",
+                    "deviceSerialNumber": "ddd33-2-2ss3-3-22dds23-323-w",
+                    "deviceFirmwareVersion": "v1",
+                    "sharedPolling": true,
+                    "sharedPollingId": "CarbonDioxide",
+                    "urlStatus": "http://192.168.1.101/test/co2.json",
+                    "paramNameStatusActive": "CO2Sensor2.Active",
+                    "paramNameOccupancyDetected": "CO2Sensor2.CO2Detected",
+                    "paramNameStatusFault": "CO2Sensor2.Fault",
+                    "paramNameBatteryLevel": "CO2Sensor2.BatteryLevel",
+                    "paramNameStatusLowBattery": "CO2Sensor2.LowBattery",
+                    "paramNameStatusTampered": "CO2Sensor2.Tampered",
+                    "sensorUrl": "http://192.168.1.101/test/co2.json",
+                    "sharedPollingInterval": 30000,
+                    "mqttOccupancyDetected": "test/detect",
+                    "mqttActive": "test/Active",
+                    "discordWebhook": "https://discordapp.com/api/webhooks/",
+                    "discordUsername": "Stergo",
+                    "discordAvatar": ""
+                },
+                {
+                    "deviceType": "LightBulb",
+                    "enableLogging": true,
+                    "deviceID": "12399ASdhz1244s9yt-2345-98g",
+                    "deviceName": "Attic Clock",
+                    "deviceManufacturer": "Stergo",
+                    "deviceModel": "Test",
+                    "deviceSerialNumber": "12399a-234sdf-34saf-234sdf",
+                    "deviceFirmwareVersion": "000.06.002",
+                    "useRGB": true,
+                    "useBrightness255": true,
+                    "useColorTKelvin": false,
+                    "mqttBroker": "192.168.1.XXX",
+                    "mqttPort": 1883,
+                    "mqttUsername": "testuser",
+                    "mqttPassword": "testuser",
+                    "mqttSwitch": "iot/things/Attic/AtticClock/displayON",
+                    "mqttRGB": "iot/things/Attic/AtticClock/Color"
                 }
             ]
         }
     ]
 }
-</pre>
+```
+
 </details>
 <br>
 
 <details>
 <summary>⚙️ Config params</summary>
 
-| **Param** 	| **Description** 	| **Param needed** 	|
-|---	|---	|:---:	|
-| deviceType 	| Sensor or Switch 	| true 	|
-| deviceName 	| Name for Your Accessory 	| true 	|
-| deviceID 	| Uniqe ID for this Accessory 	| true 	|
-| deviceManufacturer 	| Name for Manufacturer of this Accessory 	| false 	|
-| deviceModel 	| Name of model for this Accessory 	| false 	|
-| deviceSerialNumber 	| Unique serial number 	| false 	|
-| deviceFirmwareVersion 	| Firmware running on device 	| false 	|
-| enableLogging 	| Dafault is enabled (1)	| true 	|
-| urlON 	| URL to Turn ON the Switch 	| true 	|
-| urlOFF 	| URL to Turn OFF the Switch 	| true 	|
-| urlStatus 	| URL to retrieve JSON with all Data 	| true 	|
-| stateName 	| JSON Parameter Name for Reading ON/OFF 	| true 	|
-| onStatusValue 	| JSON return Value for status ON  	| true 	|
-| offStatusValue 	| JSON return Value for status OFF 	| true 	|
-| inUseStateName 	| JSON status param in Use	| false 	|
-| inUseOnStatusValue 	| JSON return Value for inUSE ON 	| false 	|
-| inUseOffStatusValue 	| JSON return Value for inUSE OFF 	| false 	|
-| sensorUrl 	| JSON file containing sensor readings (temperature, humidity) 	| true 	|
-| temperatureName 	| JSON param name for Temperature reading 	| true 	|
-| humidityName 	| JSON param name for Humidity reading 	| true 	|
-| useRGB 	| Use RGB instead of HSV (true/false) 	| true 	|
-| useBrightness255 	| Use Brightness 0 - 255 not 0 - 100 (true/false) 	| true 	|
-| useColorTKelvin 	| Color Temperature in Mired (153-500), Kelvin (2000-6500) 	| true 	|
-| rgbParamName 	| JSON Parameter Name for RGB color 	| false 	|
-| urlLightBulbControl 	| HTTP address where to send Device control commands (POST) 	| false 	|
-| brightnessParamName 	| JSON Parameter Name for Brightness 	| false 	|
-| saturationParamName 	| JSON Parameter Name for Saturation 	| false 	|
-| hueParamName 	| JSON Parameter Name for HUE 	| false 	|
-| colorTemperatureParamName 	| JSON Parameter Name for Color Temperature 	| false 	|
-| paramNameActive 	| JSON Parameter Name for On / Off 	| true 	|
-| paramNameRotationSpeed 	| JSON Parameter Name for Rotation speed 	| false 	|
-| paramNameRotationDirection 	| JSON Parameter Name for Rotation Direction 	| false 	|
-| paramNameSwingMode 	| JSON Parameter Name for Swing Mode 	| false 	|
-| paramNameCurrentFanState 	| JSON Parameter Name for Current Fans Status 	| false 	|
-| paramNameTargetFanState 	| JSON Parameter Name for Automation 	| false 	|
-| updateInterval 	| update interval for reading Sensors, default is 60000 = 60 seconds = 1 minute 	| false 	|
-| mqttBroker 	| URL of MQTT Broker 	| true/false 	|
-| mqttReconnectInterval 	| reconnect interval when no connection to MQTT Broker, default is 60 seconds 	| true/false 	|
-| mqttPort 	| MQTT port 	| false 	|
-| mqttTemperature 	| Temperature Topic 	| true 	|
-| mqttHumidity 	| Humidity Topic 	| true 	|
-| mqttUsername 	| MQTT Broker username 	| false 	|
-| mqttPassword 	| MQTT Broker password 	| false 	|
-| mqttSwitch 	| Switch Topic 	| true 	|
-| mqttInUse 	| Outlet in Use Topic 	| false 	|
-| mqttMotionSensor 	| Motion Sensor Topic 	| true 	|
-| mqttRGB 	| MQTT Topic for RGB	| false 	|
-| mqttBrightness 	| MQTT Topic for Brightness	| false 	|
-| mqttHue 	| MQTT Topic for Hue	| false 	|
-| mqttSaturation 	| MQTT Topic for Saturation	| false 	|
-| mqttColorTemperature 	| MQTT Topic for Color Temperature	| false 	|
-| mqttRotationSpeed 	| MQTT Topic for Rotation Speed	| false 	|
-| mqttRotationDirection 	| MQTT Topic for Rotation Direction	| false 	|
-| mqttSwingMode 	| MQTT Topic for Swing Mode	| false 	|
-| mqttCurrentFanState 	| MQTT Topic for Current Fan State	| false 	|
-| mqttTargetFanState 	| MQTT Topic for Automation	| false 	|
-| motionSensorName 	| JSON param name for Motion Sensor reading 	| true 	|
-| motionSensorUrl 	| JSON file containing Motion Sensor readings 	| true 	|
-| updateIntervalMotionSensor 	| update interval for reading Motion Sensor, default is 60000 = 60 seconds = 1 minute 	| true 	|
-| discordWebhook 	| URL to Discord WebHook 	| false 	|
-| discordUsername 	| Name for message publisher 	| false 	|
-| discordAvatar 	| URL to Online Avatar image 	| false 	|
-| discordMessage 	| Message 	| false 	|
+| **Param**                                   | **Description**                     | **Param needed**  |
+|---------------------------------------------|-------------------------------------|-------------------|
+| brightnessParamName                         | JSON Parameter Name for Brightness  | false             |
+| colorTemperatureParamName                   | JSON Parameter Name for Color Temperature | false        |
+| deviceFirmwareVersion                       | Firmware running on device          | false             |
+| deviceID                                    | Unique ID for this Accessory        | true              |
+| deviceManufacturer                          | Name for Manufacturer of this Accessory | false         |
+| deviceModel                                 | Name of model for this Accessory    | false             |
+| deviceName                                  | Name for Your Accessory             | true              |
+| deviceSerialNumber                          | Unique serial number                | false             |
+| deviceType                                  | Sensor or Switch                    | true              |
+| discordAvatar                               | URL to Online Avatar image          | false             |
+| discordMessage                              | Message                             | false             |
+| discordUsername                             | Name for message publisher          | false             |
+| discordWebhook                              | URL to Discord WebHook              | false             |
+| enableLogging                               | Default is enabled (1)              | true              |
+| hueParamName                                | JSON Parameter Name for HUE         | false             |
+| humidityName                                | JSON param name for Humidity reading | true             |
+| inUseOffStatusValue                         | JSON return Value for inUSE OFF     | false             |
+| inUseOnStatusValue                          | JSON return Value for inUSE ON      | false             |
+| inUseStateName                              | JSON status param in Use            | false             |
+| motionSensorName                            | JSON param name for Motion Sensor reading | true        |
+| motionSensorUrl                             | JSON file containing Motion Sensor readings | true     |
+| mqttActive                                  | MQTT Topic for Active Status        | true              |
+| mqttBrightness                              | MQTT Topic for Brightness           | false             |
+| mqttBroker                                  | URL of MQTT Broker                  | true/false        |
+| mqttCarbonDioxideDetected                   | MQTT Topic for CO2 Detection        | true              |
+| mqttCarbonDioxideLevel                      | MQTT Topic for CO2 Level            | true              |
+| mqttColorTemperature                        | MQTT Topic for Color Temperature    | false             |
+| mqttContactSensorState                      | MQTT Topic for Contact Sensor State | false             |
+| mqttCurrentDoorState                        | MQTT Topic for Current Door State   | true              |
+| mqttCurrentFanState                         | MQTT Topic for Current Fan State    | false             |
+| mqttCurrentPosition                         | MQTT Topic for Current Position     | true              |
+| mqttHue                                     | MQTT Topic for Hue                  | false             |
+| mqttInUse                                   | Outlet in Use Topic                 | false             |
+| mqttMotionDetected                          | MQTT Topic for Motion Detection     | true              |
+| mqttObstructionDetected                     | MQTT Topic for Obstruction Detection | false           |
+| mqttOccupancyDetected                       | MQTT Topic for Occupancy Detection  | false             |
+| mqttPassword                                | MQTT Broker password                | false             |
+| mqttPort                                    | MQTT port                           | false             |
+| mqttPositionState                           | MQTT Topic for Position State       | false             |
+| mqttReconnectInterval                       | Reconnect interval to MQTT Broker   | true/false        |
+| mqttRGB                                     | MQTT Topic for RGB                  | false             |
+| mqttRotationDirection                       | MQTT Topic for Rotation Direction   | false             |
+| mqttRotationSpeed                           | MQTT Topic for Rotation Speed       | false             |
+| mqttSaturation                              | MQTT Topic for Saturation           | false             |
+| mqttSmokeDetected                           | MQTT Topic for Smoke Detection      | true              |
+| mqttStatusActive                            | MQTT Topic for Active Status        | true              |
+| mqttStatusFault                             | MQTT Topic for Fault Status         | false             |
+| mqttStatusJammed                            | MQTT Topic for Jammed Status        | false             |
+| mqttStatusLowBattery                        | MQTT Topic for Low Battery Status   | false             |
+| mqttStatusTampered                          | MQTT Topic for Tampered Status      | false             |
+| mqttSwitch                                  | Switch Topic                        | true              |
+| mqttSwingMode                               | MQTT Topic for Swing Mode           | false             |
+| mqttTargetDoorState                         | MQTT Topic for Target Door State    | true              |
+| mqttTargetFanState                          | MQTT Topic for Automation           | false             |
+| mqttTargetPosition                          | MQTT Topic for Target Position      | true              |
+| paramNameActive                             | JSON Parameter Name for On/Off      | true              |
+| paramNameAmbientLightLevel                  | JSON Parameter Name for Ambient Light Level | true      |
+| paramNameCarbonDioxideDetected              | JSON Parameter Name for CO2 Detection | true          |
+| paramNameCarbonDioxideLevel                 | JSON Parameter Name for CO2 Level   | true              |
+| paramNameCarbonDioxidePeakLevel             | JSON Parameter Name for Peak CO2 Level | false        |
+| paramNameContactSensorState                 | JSON Parameter Name for Contact Sensor State | false       |
+| paramNameCurrentDoorState                   | JSON Parameter Name for Current Door State | true          |
+| paramNameCurrentFanState                    | JSON Parameter Name for Current Fan State | false       |
+| paramNameCurrentPosition                    | JSON Parameter Name for Current Position | true          |
+| paramNameHoldPosition                       | JSON Parameter Name for Hold Position | false            |
+| paramNameMotionDetected                     | JSON Parameter Name for Motion Detection | true        |
+| paramNameObstructionDetected                | JSON Parameter Name for Obstruction Detection | false     |
+| paramNameOccupancyDetected                  | JSON Parameter Name for Occupancy Detection | false       |
+| paramNamePositionState                      | JSON Parameter Name for Position State | false            |
+| paramNameRotationDirection                  | JSON Parameter Name for Rotation Direction | false     |
+| paramNameRotationSpeed                      | JSON Parameter Name for Rotation Speed | false        |
+| paramNameSmokeDetected                      | JSON Parameter Name for Smoke Detection | true        |
+| paramNameStatusActive                       | JSON Parameter Name for Active Status | true          |
+| paramNameStatusFault                        | JSON Parameter Name for Fault Status | false          |
+| paramNameStatusJammed                       | JSON Parameter Name for Jammed Status | false            |
+| paramNameStatusLowBattery                   | JSON Parameter Name for Low Battery Status | false     |
+| paramNameStatusTampered                     | JSON Parameter Name for Tampered Status | false       |
+| paramNameSwingMode                          | JSON Parameter Name for Swing Mode  | false             |
+| paramNameTargetDoorState                    | JSON Parameter Name for Target Door State | true          |
+| paramNameTargetFanState                     | JSON Parameter Name for Automation  | false             |
+| paramNameTargetPosition                     | JSON Parameter Name for Target Position | true          |
+| rgbParamName                                | JSON Parameter Name for RGB color   | false             |
+| saturationParamName                         | JSON Parameter Name for Saturation  | false             |
+| sensorUrl                                   | JSON file containing sensor readings (temperature, humidity) | true |
+| stateName                                   | JSON Parameter Name for Reading ON/OFF | true          |
+| temperatureName                             | JSON param name for Temperature reading | true         |
+| updateInterval                              | Update interval for reading Sensors | false             |
+| updateIntervalMotionSensor                  | Update interval for reading Motion Sensor | true      |
+| urlLightBulbControl                         | HTTP address for sending Device control commands | false |
+| urlOFF                                      | URL to Turn OFF the Switch          | true              |
+| urlON                                       | URL to Turn ON the Switch           | true              |
+| urlStatus                                   | URL to retrieve JSON with all Data  | true              |
+| useBrightness255                            | Use Brightness 0-255 instead of 0-100 | true          |
+| useColorTKelvin                             | Color Temperature in Mired (153-500), Kelvin (2000-6500) | true |
+| useRGB                                      | Use RGB instead of HSV (true/false) | true              |
+
+
 </details>
 <br><br>  
   
-
-Compromise: Switch accessory, in order to work properly getStatus is bind in 5 sec interval. This is for passive devices not pushing their 
-status.
-I have several devices built by my self like ESP8266 with relay and I'm just switching state. I have JSON file showing status:
-```json
-{
-    "POWER": "ON"
-}
-```
-<br><br>  
-  
-
 > [!IMPORTANT]  
 > **Homebridge v2.0 Information**
 >
-> This template currently has a
+> This plugin currently supports
 > - `package.json -> engines.homebridge` value of `"^1.8.0 || ^2.0.0-beta.0"`
 > - `package.json -> devDependencies.homebridge` value of `"^2.0.0-beta.0"`
 >
@@ -389,7 +743,10 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 >
 
 > [!IMPORTANT]  
-> **Node v22 Information**
+> **Node v18 Information**  
+> Node.js version 18 (LTS) is scheduled to reach its end-of-life on April 30, 2025. After this date, it will no longer receive security updates or maintenance releases. If you're using Node.js 18, it's recommended to upgrade to a newer version, such as Node.js 20 or 22, to ensure continued security and stability.
+>  
+> Latest version of plugin supporting Node.js v18 is v2.0.x
 >
 > This template currently has a
 > - `package.json -> engines.node` value of `"^18.20.4 || ^20.18.0 || ^22.10.0"`

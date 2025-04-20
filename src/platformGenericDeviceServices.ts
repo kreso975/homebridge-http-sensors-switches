@@ -1,9 +1,10 @@
-import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
+import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service, Characteristic, WithUUID } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
-import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
-import { getNestedValue } from './lib/utilities.js';                      // Include utility function for nested value retrieval
-import { discordWebHooks } from './lib/discordWebHooks.js';               // Include Discord webhook library
+import { SharedPolling, SharedData } from './lib/SharedPolling.js';        // Include shared polling library
+import { getNestedValue } from './lib/utilities.js';                       // Include utility function for nested value retrieval
+import { discordWebHooks } from './lib/discordWebHooks.js';                // Include Discord webhook library
+import { deviceConfig } from './platformGenericDeviceSettings.js';         // Include device settings
 
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
@@ -13,7 +14,7 @@ import mqtt, { IClientOptions } from 'mqtt';
  * An instance of this class is created for each accessory your platform registers
  * Each accessory may expose multiple services of different service types.
  */
-export class platformFan {
+export class platformGenericDevice {
   public service!: Service;
   public mqttClient!: mqtt.MqttClient;
   private sharedPollingInstance?: SharedPolling;
@@ -34,50 +35,24 @@ export class platformFan {
   public deviceFirmwareVersion: string = '';
 
   public urlStatus: string = '';
-  public urlFanControl: string = '';
+  public urlDeviceControl: string = '';
   public methodUpdate: boolean = false;
-  public paramNameActive: string = '';
-  public paramNameRotationSpeed: string = '';
-  public paramNameRotationDirection: string = '';
-  public paramNameSwingMode: string = '';
-  public paramNameCurrentFanState: string = '';
-  public paramNameTargetFanState: string = '';
 
   public mqttReconnectInterval: string = '';
   public mqttBroker: string = '';
   public mqttPort: string = '';
-  public mqttSwitch: string = '';
   public mqttUsername: string = '';
   public mqttPassword: string = '';
-
-  public mqttRotationSpeed: string = '';
-  public mqttRotationDirection: string = '';
-  public mqttSwingMode: string = '';
-  public mqttCurrentFanState: string = '';
-  public mqttTargetFanState: string = '';
 
   public discordWebhook: string = '';
   public discordUsername: string = '';
   public discordAvatar: string = '';
   public discordMessage: string = '';
 
-  public fanStates = {
-    Active: 0,              		// Values: 0 (Inactive), 1 (Active). (On/Off)
-    CurrentFanState: 0,         // Read only / Values: 0 Inactive, 1 Idle, 2 Blowing Air
-    TargetFanState: 0,          // Values: 0 Manual, 1 Automatic
-    RotationSpeed: 0,           // Range:  0% to 100%.
-    RotationDirection: 0,		    // Values: 0 Clockwise, 1: Counterclockwise
-    SwingMode: 0,               // Values: 0 (Disabled), 1 (Enabled)
-  };
-
-  public fanStatusRanges = {
-    Active: [0, 1],                 // Valid values: 0 (Inactive), 1 (Active)
-    CurrentFanState: [0, 2],        // Valid values: 0 (Inactive), 1 (Idle), 2 (Blowing Air)
-    TargetFanState: [0, 1],         // Valid values: 0 (Manual), 1 (Automatic)
-    RotationSpeed: [0, 100],        // Valid range: 0 to 100
-    RotationDirection: [0, 1],      // Valid values: 0 (Clockwise), 1 (Counterclockwise)
-    SwingMode: [0, 1],              // Valid values: 0 (Disabled), 1 (Enabled)
-  };
+  public paramNames: Record<string, string> = {};
+  public mqttTopics: Record<string, string> = {};
+  public DeviceStates: Record<string, number> = {};
+  public DeviceStatusRanges: Record<string, [number, number]> = {};
 
   constructor(
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
@@ -94,33 +69,61 @@ export class platformFan {
 
     // From Config
     this.enableLogging = device.enableLogging;
+
     this.urlStatus = device.urlStatus;
-    this.urlFanControl = device.urlFanControl;
+    this.urlDeviceControl = device.urlDeviceControl;
     this.methodUpdate = device.methodUpdate;
-    this.paramNameActive = device.paramNameStatusActive;
-    this.paramNameRotationSpeed = device.paramNameRotationSpeed;
-    this.paramNameRotationDirection = device.paramNameRotationDirection;
-    this.paramNameSwingMode = device.paramNameSwingMode;
-    this.paramNameCurrentFanState = device.paramNameCurrentFanState;
-    this.paramNameTargetFanState = device.paramNameTargetFanState;
     
     this.mqttReconnectInterval = device.mqttReconnectInterval || 60; // 60 sec default
     this.mqttBroker = device.mqttBroker;
     this.mqttPort = device.mqttPort;
-    this.mqttSwitch = device.mqttSwitch;
     this.mqttUsername = device.mqttUsername;
     this.mqttPassword = device.mqttPassword;
-
-    this.mqttRotationSpeed = device.mqttRotationSpeed;
-    this.mqttRotationDirection = device.mqttRotationDirection;
-    this.mqttSwingMode = device.mqttSwingMode;
-    this.mqttCurrentFanState = device.mqttCurrentFanState;
-    this.mqttTargetFanState = device.mqttTargetFanState;
 
     this.discordWebhook = device.discordWebhook;
     this.discordUsername = device.discordUsername || 'StergoSmart';
     this.discordAvatar = device.discordAvatar || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
     this.discordMessage = device.discordMessage;
+
+    // Check if deviceType is set and if configuration exists for the current deviceType
+    if (!this.deviceType) {
+      this.platform.log.warn('Device type is NOT SET.');
+      return;
+    }
+    const config = deviceConfig[this.deviceType as keyof typeof deviceConfig];
+    if ( !config ) {
+      this.platform.log.warn(`Device type ${this.deviceType} is not supported.`);
+      return;
+    }
+    // --------------------------------------------------------------------------------
+
+    // Initialize paramNames and mqttTopics dynamically
+    config.paramNames.forEach((paramNameKey) => {
+      // Explicitly cast paramNameKey to a valid key of config.states
+      
+      const paramKey = `paramName${config.states[paramNameKey as keyof typeof config.states]?.param}`; // Add "paramName" prefix
+      if (!paramKey) {
+        this.platform.log.warn(`Param not found for ${paramNameKey} in states.`);
+        return;
+      }
+    
+      const paramValue = device[paramKey as keyof typeof device]?.toString() || '';
+      this.platform.log.debug(`Param Key: ${paramKey}, Value: ${paramValue}`);
+      this.paramNames[paramNameKey] = paramValue;
+    
+      // Populate mqttTopics dynamically (using "mqtt" prefix for keys)
+      const deviceMqttKey = `mqtt${config.states[paramNameKey as keyof typeof config.states]?.topic}`; // Add "paramName" prefix
+      const mqttValue = device[deviceMqttKey as keyof typeof device]?.toString() || '';
+      this.platform.log.debug(`MQTT Key: ${deviceMqttKey}, Value: ${mqttValue}`);
+      this.mqttTopics[paramNameKey] = mqttValue;
+    });
+
+    // Initialize DeviceStates and DeviceStatusRanges dynamically
+    Object.entries(config.sensors).forEach(([sensorKey, deviceConfig]) => {
+      this.DeviceStates[sensorKey] = deviceConfig.defaultValue;
+      this.DeviceStatusRanges[sensorKey] = deviceConfig.range;
+    });
+    // ---------------------------------------------------------------------------------
 
     // Ensure backward compatibility for shared polling
     this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
@@ -137,20 +140,14 @@ export class platformFan {
     
       // Subscribe to data updates
       sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
-        this.updateFanStatusFromSharedData(data);
+        this.updateDeviceStatusFromSharedData(data);
       });
     } else if (this.urlStatus) {
-      this.getFanState();
-      setInterval(this.getFanState.bind(this), 5000);
+      this.getDeviceState();
+      setInterval(this.getDeviceState.bind(this), 5000);
     }  
 
-    if (!this.deviceType) {
-      this.platform.log.warn(this.deviceName, ': Ignoring accessory; No deviceType defined.');
-      return;
-    }
-
-    if (this.deviceType === 'Fan' && (this.urlFanControl || this.mqttBroker)) {
-
+    if ( this.urlStatus || this.mqttBroker ) {
       // set accessory information
       this.accessory.getService(this.platform.Service.AccessoryInformation)!
         .setCharacteristic(this.platform.Characteristic.Manufacturer, this.deviceManufacturer)
@@ -158,65 +155,89 @@ export class platformFan {
         .setCharacteristic(this.platform.Characteristic.FirmwareRevision, this.deviceFirmwareVersion)
         .setCharacteristic(this.platform.Characteristic.SerialNumber, this.deviceSerialNumber);
 
-      if ( this.urlFanControl || this.mqttBroker ) {
-        // Get the Fanv2 service if it exists, otherwise create a new Fanv2 service
-        this.service = this.accessory.getService(this.platform.Service.Fanv2) || this.accessory.addService(this.platform.Service.Fanv2);
-       
-        // Set the service name, this is what is displayed as the default name on the Home app
-        this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
-        
-        if ( this.urlFanControl || this.urlStatus ) {
-          // Register handlers for the characteristics
-          this.getStateDefinition().forEach(({ state, param, setHandler }) => {
-            if ( param ) { // Ensure the parameter is valid
-              if (setHandler) {
-                this.service.getCharacteristic(this.platform.Characteristic[state])
-                  .on('set', this.setFanState.bind(this, state)); // Bind the 'set' handler dynamically
-              }
-              this.service.getCharacteristic(this.platform.Characteristic[state]).on('get', (callback) => {
-                callback(null, this.fanStates[state]); // Correct state reference
-              });
-            }
-          });
-        }
-        
-        // We can now use MQTT
-        if ( this.mqttBroker ) {
-          this.initMQTT();
-          this.getStateDefinition().forEach(({ state, topic, setHandler }) => {
-            if (topic && setHandler) { // Ensure topic is valid and setHandler is enabled
-              this.service.getCharacteristic(this.platform.Characteristic[state])
-                .on('set', (value, callback) => {
-                  // Dynamically bind the publishMQTTmessage for each state
-                  this.publishMQTTmessage(state, value, callback);
-                });
-            }
-          });
-        }
+      // Define a mapping between device types and their corresponding services
+      const serviceMappings: Record<string, WithUUID<typeof Service>> = {
+        Fan: this.platform.Service.Fanv2,
+        GarageDoorOpener: this.platform.Service.GarageDoorOpener,
+        Window: this.platform.Service.Window,
+        WindowCovering: this.platform.Service.WindowCovering,
+        // Add more sensors as needed
+      };
+
+      const serviceConstructor = serviceMappings[this.deviceType];
+      if (!serviceConstructor) {
+        throw new Error(`Unsupported device type: ${this.deviceType}`);
       }
-    }       
+
+      // Dynamically create or retrieve the service instance
+      this.service = this.accessory.getService(serviceConstructor)
+         || this.accessory.addService(new serviceConstructor(this.deviceName, this.deviceSerialNumber));      
+
+      // Set the service name, this is what is displayed as the default name on the Home app
+      this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
+         
+      if ( this.urlDeviceControl || this.urlStatus ) {
+        // Register handlers for the characteristics
+        this.getStateDefinition().forEach(({ state, param, setHandler }) => {
+          const characteristic = this.platform.Characteristic[state as
+            keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+          if ( param ) { // Ensure the parameter is valid
+            if (setHandler) {
+              this.service.getCharacteristic(characteristic)
+                .on('set', this.setDeviceState.bind(this, state)); // Bind the 'set' handler dynamically
+            }
+            this.service
+              .getCharacteristic(characteristic)
+              .on('get', (callback) => {
+                callback(null, this.DeviceStates[state]); // Use correct state reference
+              });
+          }
+        });
+      }
+    
+      // We can now use MQTT
+      if ( this.mqttBroker ) {
+        this.initMQTT();
+        this.getStateDefinition().forEach(({ state, topic, setHandler }) => {
+          if ( topic && setHandler ) { // Ensure topic is valid and setHandler is enabled
+            const characteristic = this.platform.Characteristic[state as
+               keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+            this.service.getCharacteristic(characteristic)
+              .on('set', (value, callback) => {
+              // Dynamically bind the publishMQTTmessage for each state
+                this.publishMQTTmessage(state, value, callback);
+              });
+          }
+        });
+      }
+    }
   }
 
   private getStateDefinition() {
-    return [
-      { state: 'Active' as const, param: this.paramNameActive, topic: this.mqttSwitch, setHandler: true },
-      { state: 'RotationSpeed' as const, param: this.paramNameRotationSpeed, topic: this.mqttRotationSpeed, setHandler: true },
-      { state: 'RotationDirection' as const, param: this.paramNameRotationDirection, topic: this.mqttRotationDirection, setHandler: true },
-      { state: 'SwingMode' as const, param: this.paramNameSwingMode, topic: this.mqttSwingMode, setHandler: true },
-      { state: 'CurrentFanState' as const, param: this.paramNameCurrentFanState, topic: this.mqttCurrentFanState, setHandler: false },
-      { state: 'TargetFanState' as const, param: this.paramNameTargetFanState, topic: this.mqttTargetFanState, setHandler: true },
-    ];
-  }
-  
+    const config = deviceConfig[this.deviceType as keyof typeof deviceConfig]?.states;
+    if (!config) {
+      this.platform.log.warn(`${this.deviceName}: No configuration found for device type: ${this.deviceType}`);
+    }
+    
+    return Object.entries(config).map(([state, stateConfig]) => ({
+      state,
+      param: this.paramNames[state],
+      topic: this.mqttTopics[state],
+      webhook: stateConfig.webhook,
+      setHandler: stateConfig.setHandler,
+    }));
+  }  
+
   // Silly function :)
   private getStatus(isOn: boolean): string {
     return isOn ? 'ON' : 'OFF';
   }
-  private updateFanStatusFromSharedData( data?: Record<string, unknown> ): void {
-    this.processGetFanStatusData(data, true);
+
+  private updateDeviceStatusFromSharedData( data?: Record<string, unknown> ): void {
+    this.processGetDeviceStatusData(data, true);
   }
 
-  private async getFanState(): Promise<void> {
+  private async getDeviceState(): Promise<void> {
     if (!this.urlStatus) {
       this.platform.log.warn(this.deviceName, ': Ignoring request; No status URL defined.');
       return;
@@ -226,8 +247,8 @@ export class platformFan {
       const response = await axios.get(this.urlStatus, { timeout: 8000 });
       const data = response.data;
   
-      this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
-      this.processGetFanStatusData(data, false);
+      //this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
+      this.processGetDeviceStatusData(data, false);
   
     } catch (error) {
       const axiosError = error as AxiosError;
@@ -239,24 +260,23 @@ export class platformFan {
     }
   }
 
-  private processGetFanStatusData(data: Record<string, unknown> | undefined, isSharedData: boolean): void {
+  private processGetDeviceStatusData(data: Record<string, unknown> | undefined, isSharedData: boolean): void {
     if (!data) {
       this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching Switch state'}.`);
       return;
     }
 
     // Log fetched data for debugging
-    this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
+    // this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
 
-    this.getStateDefinition().forEach(({ state, param }) => {
-      // Check if 'param' is defined in the config
-      if (!param) {
-        if (this.enableLogging) {
+    this.getStateDefinition().forEach(({ state, param, webhook }): void => {
+      if ( !param ) {
+        if ( this.enableLogging ) { 
           this.platform.log.debug(`${this.deviceName}: Parameter for ${state} is not configured. Skipping.`);
         }
-        return; // Skip processing this state
+        return;
       }
-      
+  
       const rawValue = getNestedValue(data, param, 'number');
       let value: number | undefined;
   
@@ -274,51 +294,52 @@ export class platformFan {
         }
         return;
       }
-      
-      value = Number(value); // Ensure the value is a valid number
-      const range = this.fanStatusRanges[state];
-      
-      // General range validation for all states
+  
+      const range = this.DeviceStatusRanges[state];
+  
       if (
         Array.isArray(range) && range.length === 2 && 
-          typeof range[0] === 'number' && typeof range[1] === 'number' && 
-          value >= range[0] && value <= range[1]
+        typeof range[0] === 'number' && typeof range[1] === 'number' &&
+        value >= range[0] && value <= range[1]
       ) {
-        if (this.enableLogging && this.fanStates[state] !== value) {
+        if (this.enableLogging && this.DeviceStates[state] !== value) {
           this.platform.log.info(`${this.deviceName}: ${state} SET to: ${value}`);
+          if ( this.discordWebhook && webhook ) {
+            this.initDiscordWebhooks(state);
+          }
         }
-        this.fanStates[state] = value; // Update the state
-        this.service.updateCharacteristic(this.platform.Characteristic[state], value); // Update corresponding characteristic
-      } else if (this.enableLogging) {
-        this.platform.log.warn(
-          `${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`,
-        );
+  
+        this.DeviceStates[state] = value;
+       
+        const characteristic = this.platform.Characteristic[state as
+          keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+        this.service.updateCharacteristic( characteristic, value );
+  
+      } else if ( this.enableLogging ) {
+        this.platform.log.warn(`${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`);
       }
-    });      
-
-    // Debugging state updates
-    this.platform.log.debug(`${this.deviceName}: Fan states updated to:`, this.fanStates);
+    });    
   }
 
-  private async setFanState( what: keyof typeof this.fanStates, value: CharacteristicValue, callback: CharacteristicSetCallback ): Promise<void> {
+  private async setDeviceState( what: keyof typeof this.DeviceStates, value: CharacteristicValue, callback: CharacteristicSetCallback ): Promise<void> {
     
-    const previousValue = this.fanStates[what]; // Save the current state value
-    this.fanStates[what] = value as number; // Update the state dynamically
+    const previousValue = this.DeviceStates[what]; // Save the current state value
+    this.DeviceStates[what] = value as number; // Update the state dynamically
   
     try {
-      const url = this.urlFanControl; // Base URL for fan control
+      const url = this.urlDeviceControl; // Base URL for fan control
       if (!url) {
         this.platform.log.warn(this.deviceName, ': No Fan control URL defined.');
-        callback(new Error('No Fan control URL defined.'));
-        this.fanStates[what] = previousValue; // Revert to the previous state
+        //callback(new Error('No Fan control URL defined.'));
+        this.DeviceStates[what] = previousValue; // Revert to the previous state
         return;
       }
   
       const characteristicDefinition = this.getStateDefinition().find((def) => def.state === what);
       if (!characteristicDefinition) {
         this.platform.log.warn(this.deviceName, `: Unknown fan state: ${what}`);
-        callback(null);
-        this.fanStates[what] = previousValue; // Revert to the previous state
+        //callback(null);
+        this.DeviceStates[what] = previousValue; // Revert to the previous state
         return;
       }
   
@@ -326,8 +347,8 @@ export class platformFan {
   
       if (!param) {
         this.platform.log.warn(this.deviceName, `: Ignoring request; No parameter defined for ${state}.`);
-        callback(new Error(`No parameter defined for ${state}.`));
-        this.fanStates[what] = previousValue; // Revert to the previous state
+        //callback(new Error(`No parameter defined for ${state}.`));
+        this.DeviceStates[what] = previousValue; // Revert to the previous state
         return;
       }
   
@@ -338,11 +359,13 @@ export class platformFan {
       this.platform.log.debug(this.deviceName, `: Setting ${state} to:`, value);
   
       // Update HomeKit characteristic
-      this.service.updateCharacteristic(this.platform.Characteristic[state], value);
+      const characteristic = this.platform.Characteristic[state as
+         keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+      this.service.updateCharacteristic(characteristic, value);
   
       // Construct URL for GET requests with only the updated value
       const modifiedUrl = method === 'GET' ? `${url}?${param}=${encodeURIComponent(value as number)}` : url;
-
+      this.platform.log.debug(this.deviceName, `: Setting ${state} URL:`, modifiedUrl);
       // Prepare Axios request options
       const axiosOptions = {
         method,
@@ -350,7 +373,7 @@ export class platformFan {
         headers: {
           'Content-Type': 'application/json',
         },
-        ...(method === 'POST' && { data: { [param]: this.fanStates[state] } }), // Include data only for POST
+        ...(method === 'POST' && { data: { [param]: this.DeviceStates[state] } }), // Include data only for POST
       };
   
       // Make Axios request
@@ -369,17 +392,17 @@ export class platformFan {
   
       // Initialize Discord Webhook if configured
       if (this.discordWebhook) {
-        this.initDiscordWebhooks();
+        this.initDiscordWebhooks(state);
       }
   
       // Log success and call callback
       callback(null);
       if (this.enableLogging) {
-        this.platform.log.info('Success: Fan ', this.deviceName, ` is: ${this.getStatus(!!this.fanStates[what])}`);
+        this.platform.log.info('Success: Fan ', this.deviceName, ` is: ${this.getStatus(!!this.DeviceStates[what])}`);
       }
     } catch (error) {
       // Handle errors: Revert state and log the issue
-      this.fanStates[what] = previousValue; // Revert to the previous state
+      this.DeviceStates[what] = previousValue; // Revert to the previous state
       if (error instanceof Error) {
         this.platform.log.warn(this.deviceName, `: Axios error for ${what}:`, error.message);
       } else {
@@ -441,7 +464,7 @@ export class platformFan {
           let newValue;
 
           // Handle binary and numeric ranges dynamically
-          const [min, max] = this.fanStatusRanges[state];
+          const [min, max] = this.DeviceStatusRanges[state];
           if (min === 0 && max === 1) {
             newValue = ['1', 'true'].includes(value) ? 1 : 0; // Binary range
           } else {
@@ -449,16 +472,17 @@ export class platformFan {
           }
 
           // Validate against fanStatusRanges
-          if (newValue >= min && newValue <= max) {
-            this.fanStates[state] = newValue; // Update state value
-
-            if (this.enableLogging) {
+          if ( newValue >= min && newValue <= max ) {
+            if ( this.enableLogging && this.DeviceStates[state] !== newValue ) {
               this.platform.log.info(`${this.deviceName}: ${state} set to: ${newValue}`);
             }
-
+            this.DeviceStates[state] = newValue; // Update state value
             // Update Homebridge characteristic
-            const characteristic = this.platform.Characteristic[state];
+            const characteristic = this.platform.Characteristic[state as 
+                keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
             this.service.updateCharacteristic(characteristic, newValue);
+            
+            
           } else {
             if (this.enableLogging) {
               this.platform.log.warn(`${this.deviceName}: Invalid value for ${state}: ${newValue} (must be between ${min} and ${max})`);
@@ -489,7 +513,7 @@ export class platformFan {
   }
 
   private publishMQTTmessage(
-    what: keyof typeof this.fanStates,
+    what: keyof typeof this.DeviceStates,
     value: CharacteristicValue,
     callback: CharacteristicSetCallback,
   ): void {
@@ -522,14 +546,18 @@ export class platformFan {
     callback(null);
   }  
   
-  private initDiscordWebhooks() {
-    // Prepare message just to send On Off status
-    const message = this.deviceName + ': ' + this.discordMessage + this.getStatus(!!this.fanStates.Active);
+  private initDiscordWebhooks(state: keyof typeof this.DeviceStates): void {
+    // Prepare a dynamic message including the passed state
+    const message = `${this.deviceName}: ${state} - ${this.discordMessage} ${this.getStatus(!!this.DeviceStates[state])}`;
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
 
     discord.discordSimpleSend().then((result) => {
-      if ( this.enableLogging) {
-        this.platform.log.info(this.deviceName, ': ', result);
+      if ( this.enableLogging ) {
+        this.platform.log.info(`${this.deviceName}: Webhook sent successfully - `, result);
+      }
+    }).catch((error) => {
+      if ( this.enableLogging ) {
+        this.platform.log.warn(`${this.deviceName}: Failed to send webhook - `, error.message);
       }
     });
   }

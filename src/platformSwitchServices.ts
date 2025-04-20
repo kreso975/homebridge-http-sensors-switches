@@ -2,7 +2,7 @@ import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Serv
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
-import { getNestedValue } from './lib/utilities.js';          // Include utility function for nested value retrieval
+import { getNestedValue, hasNestedKey } from './lib/utilities.js';          // Include utility function for nested value retrieval
 import { discordWebHooks } from './lib/discordWebHooks.js';   // Include Discord webhook library
 
 import axios, { AxiosError } from 'axios';
@@ -181,11 +181,13 @@ export class platformSwitch {
       this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
       this.processSwitchGetData(data, false);
     } catch (error) {
-      const axiosError = error as AxiosError;
-      if (axios.isAxiosError(axiosError)) {
-        this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
-      } else {
-        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON.`);
+      if ( this.enableLogging ) {
+        const axiosError = error as AxiosError;
+        if ( axios.isAxiosError(axiosError) ) {
+          this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
+        } else {
+          this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON.`);
+        }
       }
     }
   }  
@@ -196,11 +198,10 @@ export class platformSwitch {
       return;
     }
 
-    // Proceed with processing the data
-    const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
-
     // Check if we have value
-    if ( value ) {
+    if ( this.statusStateParam && hasNestedKey(data, this.statusStateParam) ) {
+      // Proceed with processing the data
+      const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
       const valueType = typeof value;
 
       // Convert statusOnCheck and statusOffCheck to the appropriate type
@@ -218,7 +219,6 @@ export class platformSwitch {
         statusOffCheck = this.statusOffCheck;
       }
 
-
       // Check and update switch state
       if (value === statusOnCheck) {
         this.updateSwitchState(true, this.deviceName);
@@ -230,7 +230,6 @@ export class platformSwitch {
     } else {
       this.platform.log.warn(this.deviceName, ': Error: Cannot find KEY:', this.statusStateParam, 'in JSON');
     }
-
   }
 
   private cleanup(): void {
@@ -379,5 +378,4 @@ export class platformSwitch {
       this.platform.log.warn(`${this.deviceName}: Discord Webhook error - ${error.message}`);
     });
   }
-
 }

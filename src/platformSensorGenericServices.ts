@@ -84,7 +84,7 @@ export class platformSensorGeneric {
       return;
     }
     const config = sensorConfig[this.deviceType as keyof typeof sensorConfig];
-    if (!config) {
+    if ( !config ) {
       this.platform.log.warn(`Device type ${this.deviceType} is not supported.`);
       return;
     }
@@ -117,7 +117,6 @@ export class platformSensorGeneric {
     });
     // ---------------------------------------------------------------------------------
 
-    
     this.discordWebhook = device.discordWebhook;
     this.discordUsername = device.discordUsername || 'StergoSmart';
     this.discordAvatar = device.discordAvatar
@@ -147,7 +146,6 @@ export class platformSensorGeneric {
     }    
 
     if ( this.urlStatus || this.mqttBroker ) {
-
       // Set accessory information
       this.accessory.getService(this.platform.Service.AccessoryInformation)!
         .setCharacteristic(this.platform.Characteristic.Manufacturer, this.deviceManufacturer)
@@ -176,11 +174,10 @@ export class platformSensorGeneric {
       this.sensorService = this.accessory.getService(serviceConstructor)
         || this.accessory.addService(new serviceConstructor(this.deviceName, this.deviceSerialNumber));      
 
-  
       // Set the service name, this is what is displayed as the default name on the Home app
       this.sensorService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
         
-      if (this.urlStatus) {
+      if ( this.urlStatus ) {
         this.getStateDefinition().forEach(({ state, param }) => {
           if ( param ) {
             const characteristic = this.platform.Characteristic[state as
@@ -260,11 +257,6 @@ export class platformSensorGeneric {
         typeof range[0] === 'number' && typeof range[1] === 'number' &&
         value >= range[0] && value <= range[1]
       ) {
-        if (this.enableLogging) {
-          if (this.SensorStates[state] !== value) {
-            this.platform.log.info(`${this.deviceName}: ${state} - [${this.SensorStates[state]}] SET to: ${value}`);
-          }
-        }
         if (this.enableLogging && this.SensorStates[state] !== value) {
           this.platform.log.info(`${this.deviceName}: ${state} SET to: ${value}`);
         }
@@ -275,10 +267,10 @@ export class platformSensorGeneric {
           keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
         this.sensorService.updateCharacteristic( characteristic, value );
   
-        if (webhook && value === 1) {
+        if ( webhook && value === 1 ) {
           this.initDiscordWebhooks(state);
         }
-      } else if (this.enableLogging) {
+      } else if ( this.enableLogging ) {
         this.platform.log.warn(`${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`);
       }
     });
@@ -338,17 +330,17 @@ export class platformSensorGeneric {
     this.mqttClient = mqtt.connect( mqttOptions);
           
     this.mqttClient.on('connect', () => {
-      if ( this.enableLogging) {
+      if ( this.enableLogging ) {
         this.platform.log.info(this.deviceName,': MQTT Connected');  
       }
       this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
-          if ( this.enableLogging) {
+          if ( this.enableLogging ) {
             this.platform.log.info(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
           }
         } else {
           // Need to insert error handler
-          this.platform.log.warn(this.deviceName, err.toString());
+          this.platform.log.warn(this.deviceName,': Subscribing problem: ', err.toString());
         }
       });
     });
@@ -369,7 +361,7 @@ export class platformSensorGeneric {
           }
 
           // Validate against SensorStatusRanges
-          if (newValue >= min && newValue <= max) {
+          if ( newValue >= min && newValue <= max ) {
             this.SensorStates[state] = newValue; // Update state value
 
             if (this.enableLogging) {
@@ -382,14 +374,12 @@ export class platformSensorGeneric {
             this.sensorService.updateCharacteristic(characteristic, newValue);
 
             // Trigger webhook if `webhook` is true and `newValue === 1`
-            if (webhook && newValue === 1) {
+            if ( webhook && newValue === 1 ) {
               this.initDiscordWebhooks(state);
             }
           } else {
-            if (this.enableLogging) {
-              this.platform.log.warn(
-                `${this.deviceName}: Invalid value for ${state}: ${newValue} (must be between ${min} and ${max})`,
-              );
+            if ( this.enableLogging ) {
+              this.platform.log.warn(`${this.deviceName}: Invalid value for ${state}: ${newValue} (must be between ${min} and ${max})`);
             }
           }
         }
@@ -397,7 +387,7 @@ export class platformSensorGeneric {
     });
   
     // Additional event handlers for connection state
-    this.mqttClient.on('offline', () => {
+    this.mqttClient.on('offline', () => { 
       this.platform.log.debug(this.deviceName, ': Client is offline');
     });
   
@@ -422,14 +412,13 @@ export class platformSensorGeneric {
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
 
     discord.discordSimpleSend().then((result) => {
-      if (this.enableLogging) {
+      if ( this.enableLogging ) {
         this.platform.log.info(`${this.deviceName}: Webhook sent successfully - `, result);
       }
     }).catch((error) => {
-      if (this.enableLogging) {
+      if ( this.enableLogging ) {
         this.platform.log.warn(`${this.deviceName}: Failed to send webhook - `, error.message);
       }
     });
   }
-
 }

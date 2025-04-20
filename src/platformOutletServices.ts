@@ -2,7 +2,7 @@ import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Serv
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
-import { getNestedValue } from './lib/utilities.js';                      // Include utility function for nested value retrieval
+import { getNestedValue, hasNestedKey } from './lib/utilities.js';                      // Include utility function for nested value retrieval
 import { discordWebHooks } from './lib/discordWebHooks.js';               // Include Discord webhook library
 
 import axios, { AxiosError } from 'axios';
@@ -57,8 +57,7 @@ export class platformOutlet {
     On: false,
     OutletInUse: false,
   };
-  private individualPollingInterval?: NodeJS.Timeout; // Individual polling interval
-
+  
   constructor(
       public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
       public readonly accessory: PlatformAccessory,
@@ -115,7 +114,7 @@ export class platformOutlet {
       sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
         this.updateOutletStatusFromSharedData(data);
       });
-    } else if (this.urlStatus) {
+    } else if ( this.urlStatus ) {
       this.getOn();
       setInterval(this.getOn.bind(this), 5000);
     }  
@@ -208,9 +207,8 @@ export class platformOutlet {
       return;
     }
 
-    const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
- 
-    if ( value ) {
+    if ( this.statusStateParam && hasNestedKey(data, this.statusStateParam) ) {
+      const value = getNestedValue(data, this.statusStateParam, 'string'); // Adjust returnType as needed
       const valueType = typeof value;
       
       let statusOnCheck: boolean | number | string;
@@ -236,18 +234,17 @@ export class platformOutlet {
       }
     }
       
-    const value2 = getNestedValue(data, this.inUseStateParam, 'string'); // Adjust returnType as needed
-
-    if ( value2 ) {
-      const valueType2 = typeof value2;
+    if ( this.inUseStateParam && hasNestedKey(data, this.inUseStateParam) ) {
+      const value = getNestedValue(data, this.inUseStateParam, 'string'); // Adjust returnType as needed
+      const valueType = typeof value;
       
       let inUseOnCheck: boolean | number | string;
       let inUseOffCheck: boolean | number | string;
       
-      if (valueType2 === 'boolean') {
+      if (valueType === 'boolean') {
         inUseOnCheck = true;
         inUseOffCheck = false;
-      } else if (valueType2 === 'number') {
+      } else if (valueType === 'number') {
         inUseOnCheck = parseFloat(this.inUseOnCheck);
         inUseOffCheck = parseFloat(this.inUseOffCheck);
       } else {
@@ -256,12 +253,12 @@ export class platformOutlet {
       }
       
       // Update OutletInUse characteristic
-      if ( value2 === inUseOnCheck ) {
+      if ( value === inUseOnCheck ) {
         if ( this.enableLogging && this.outletStates.OutletInUse !== true ) {
           this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(true));
         }
         this.outletStates.OutletInUse = true;
-      } else if ( value2 === inUseOffCheck ) {
+      } else if ( value === inUseOffCheck ) {
         if ( this.enableLogging && this.outletStates.OutletInUse !== false ) {
           this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(false));
         }
