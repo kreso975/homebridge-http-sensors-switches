@@ -1,6 +1,6 @@
 <p align="center">
 
-<img src="https://github.com/homebridge/branding/raw/latest/logos/homebridge-wordmark-logo-vertical.png" width="150">
+<img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/homebridge-http-sensors-switches.png?raw=true" width="100">
 
 </p>
 
