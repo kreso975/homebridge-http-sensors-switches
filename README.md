@@ -15,6 +15,7 @@
 <img src="https://img.shields.io/badge/node-^18.20.4%20%7C%7C%20^20.18.0%20%7C%7C%20^22.10.0-brightgreen"> &nbsp;
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0.beta.0-brightgreen"> &nbsp;
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-donate-gray?logo=ko-fi&logoColor=white&labelColor=blue)](https://ko-fi.com/kreso975)
 
 This plugin communicates with your devices using HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Fan, Garage Door, Shades / Blinds, Temperature/Humidity, Motion, Contact and Occupancy sensor, Air Quality, Smoke, Carbon Dioxide and Light Sensor.  
     
