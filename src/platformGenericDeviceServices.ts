@@ -1,6 +1,7 @@
 import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service, Characteristic, WithUUID } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
+
 import { SharedPolling, SharedData } from './lib/SharedPolling.js';        // Include shared polling library
 import { getNestedValue } from './lib/utilities.js';                       // Include utility function for nested value retrieval
 import { discordWebHooks } from './lib/discordWebHooks.js';                // Include Discord webhook library
@@ -19,6 +20,7 @@ export class platformGenericDevice {
   public mqttClient!: mqtt.MqttClient;
   private sharedPollingInstance?: SharedPolling;
 
+  private isReachable: boolean = true; // Track if the device is reachable
   // Device and configuration properties
   public enableLogging: boolean = true;
   // Ensure backward compatibility for shared polling
@@ -73,7 +75,7 @@ export class platformGenericDevice {
     this.urlStatus = device.urlStatus;
     this.urlDeviceControl = device.urlDeviceControl;
     this.methodUpdate = device.methodUpdate;
-    
+
     this.mqttReconnectInterval = device.mqttReconnectInterval || 60; // 60 sec default
     this.mqttBroker = device.mqttBroker;
     this.mqttPort = device.mqttPort;
@@ -91,28 +93,28 @@ export class platformGenericDevice {
       return;
     }
     const config = deviceConfig[this.deviceType as keyof typeof deviceConfig];
-    if ( !config ) {
+    if (!config) {
       this.platform.log.warn(`Device type ${this.deviceType} is not supported.`);
       return;
     }
     // --------------------------------------------------------------------------------
-
+    // Read device configuration and initialize properties dynamically from Settings
     // Initialize paramNames and mqttTopics dynamically
     config.paramNames.forEach((paramNameKey) => {
       // Explicitly cast paramNameKey to a valid key of config.states
-      
+
       const paramKey = `paramName${config.states[paramNameKey as keyof typeof config.states]?.param}`; // Add "paramName" prefix
       if (!paramKey) {
         this.platform.log.warn(`Param not found for ${paramNameKey} in states.`);
         return;
       }
-    
+
       const paramValue = device[paramKey as keyof typeof device]?.toString() || '';
       this.platform.log.debug(`Param Key: ${paramKey}, Value: ${paramValue}`);
       this.paramNames[paramNameKey] = paramValue;
-    
+
       // Populate mqttTopics dynamically (using "mqtt" prefix for keys)
-      const deviceMqttKey = `mqtt${config.states[paramNameKey as keyof typeof config.states]?.topic}`; // Add "paramName" prefix
+      const deviceMqttKey = `mqtt${config.states[paramNameKey as keyof typeof config.states]?.topic}`; // Add "mqtt" prefix
       const mqttValue = device[deviceMqttKey as keyof typeof device]?.toString() || '';
       this.platform.log.debug(`MQTT Key: ${deviceMqttKey}, Value: ${mqttValue}`);
       this.mqttTopics[paramNameKey] = mqttValue;
@@ -126,28 +128,28 @@ export class platformGenericDevice {
     // ---------------------------------------------------------------------------------
 
     // Ensure backward compatibility for shared polling
-    this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
-    this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
-    this.sharedPollingInterval = device.sharedPollingInterval ?? 5000; // Set the polling interval to 5 sec or from config value
+    this.sharedPolling = device.sharedPolling ?? false;                 // Default shared polling to false
+    this.sharedPollingId = device.sharedPollingId ?? '';                // Default shared polling group ID to an empty string
+    this.sharedPollingInterval = device.sharedPollingInterval ?? 5000;  // Set the polling interval to 5 sec or from config value
 
-    if (this.sharedPolling && this.sharedPollingId) {
+    if ( this.sharedPolling && this.sharedPollingId ) {
       const sharedPollingInstance = SharedPolling.registerPolling(
         this.sharedPollingId,
         this.urlStatus,
         this.platform,
-        this.sharedPollingInterval, // Set the polling interval to 5 sec or from config value
+        this.sharedPollingInterval,                                     // Set the polling interval to 5 sec or from config value
       );
-    
+
       // Subscribe to data updates
       sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
-        this.updateDeviceStatusFromSharedData(data);
+        this.updateDeviceStatusFromSharedData(data);  
       });
     } else if (this.urlStatus) {
       this.getDeviceState();
       setInterval(this.getDeviceState.bind(this), 5000);
-    }  
+    }
 
-    if ( this.urlStatus || this.mqttBroker ) {
+    if (this.urlStatus || this.mqttBroker) {
       // set accessory information
       this.accessory.getService(this.platform.Service.AccessoryInformation)!
         .setCharacteristic(this.platform.Characteristic.Manufacturer, this.deviceManufacturer)
@@ -158,9 +160,11 @@ export class platformGenericDevice {
       // Define a mapping between device types and their corresponding services
       const serviceMappings: Record<string, WithUUID<typeof Service>> = {
         Fan: this.platform.Service.Fanv2,
+        DoorOpener: this.platform.Service.Door,
         GarageDoorOpener: this.platform.Service.GarageDoorOpener,
         Window: this.platform.Service.Window,
         WindowCovering: this.platform.Service.WindowCovering,
+        Valve: this.platform.Service.Valve,
         // Add more sensors as needed
       };
 
@@ -171,40 +175,39 @@ export class platformGenericDevice {
 
       // Dynamically create or retrieve the service instance
       this.service = this.accessory.getService(serviceConstructor)
-         || this.accessory.addService(new serviceConstructor(this.deviceName, this.deviceSerialNumber));      
+        || this.accessory.addService(new serviceConstructor(this.deviceName, this.deviceSerialNumber));
 
       // Set the service name, this is what is displayed as the default name on the Home app
       this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
-         
-      if ( this.urlDeviceControl || this.urlStatus ) {
+
+      if (this.urlDeviceControl || this.urlStatus) {
         // Register handlers for the characteristics
         this.getStateDefinition().forEach(({ state, param, setHandler }) => {
           const characteristic = this.platform.Characteristic[state as
             keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
-          if ( param ) { // Ensure the parameter is valid
+          if (param) { // Ensure the parameter is valid
             if (setHandler) {
               this.service.getCharacteristic(characteristic)
-                .on('set', this.setDeviceState.bind(this, state)); // Bind the 'set' handler dynamically
+                .on('set', this.wrapSetHandler(state));
             }
             this.service
               .getCharacteristic(characteristic)
-              .on('get', (callback) => {
-                callback(null, this.DeviceStates[state]); // Use correct state reference
-              });
+              .on('get', this.wrapGetHandler(state));
           }
         });
       }
-    
+
       // We can now use MQTT
-      if ( this.mqttBroker ) {
+      // Left to a user to decide if they want to use MQTT or not also to run in parallel with HTTP - not recommended
+      if (this.mqttBroker) {
         this.initMQTT();
         this.getStateDefinition().forEach(({ state, topic, setHandler }) => {
-          if ( topic && setHandler ) { // Ensure topic is valid and setHandler is enabled
+          if (topic && setHandler) { // Ensure topic is valid and setHandler is enabled
             const characteristic = this.platform.Characteristic[state as
-               keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+              keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
             this.service.getCharacteristic(characteristic)
               .on('set', (value, callback) => {
-              // Dynamically bind the publishMQTTmessage for each state
+                // Dynamically bind the publishMQTTmessage for each state
                 this.publishMQTTmessage(state, value, callback);
               });
           }
@@ -213,27 +216,61 @@ export class platformGenericDevice {
     }
   }
 
+  /**
+   * Wraps the get handler for a characteristic to handle device state retrieval.
+   * @param state The state key to retrieve.
+   * @returns A function that handles the get request.
+   */
+  private wrapGetHandler(state: string): (callback: (error: Error | null, value?: CharacteristicValue) => void) => void {
+    return (callback) => {
+      if (!this.isReachable) {
+        callback(new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE));
+        return;
+      }
+
+      callback(null, this.DeviceStates[state]);
+    };
+  }
+
+  /**
+   * Wraps the set handler for a characteristic to handle device state updates.
+   * @param state The state key to update.
+   * @returns A function that handles the set request.
+   */
+  private wrapSetHandler(state: keyof typeof this.DeviceStates): (value: CharacteristicValue, callback: CharacteristicSetCallback) => void {
+    return (value, callback) => {
+      if (!this.isReachable) {
+        callback(new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE));
+        return;
+      }
+
+      this.setDeviceState(state, value, callback);
+    };
+  }
+
   private getStateDefinition() {
     const config = deviceConfig[this.deviceType as keyof typeof deviceConfig]?.states;
     if (!config) {
       this.platform.log.warn(`${this.deviceName}: No configuration found for device type: ${this.deviceType}`);
+      return [];
     }
-    
+
     return Object.entries(config).map(([state, stateConfig]) => ({
       state,
       param: this.paramNames[state],
       topic: this.mqttTopics[state],
       webhook: stateConfig.webhook,
       setHandler: stateConfig.setHandler,
+      fromConfig: stateConfig.fromConfig,
     }));
-  }  
+  }
 
   // Silly function :)
   private getStatus(isOn: boolean): string {
     return isOn ? 'ON' : 'OFF';
   }
 
-  private updateDeviceStatusFromSharedData( data?: Record<string, unknown> ): void {
+  private updateDeviceStatusFromSharedData(data?: Record<string, unknown>): void {
     this.processGetDeviceStatusData(data, true);
   }
 
@@ -244,13 +281,16 @@ export class platformGenericDevice {
     }
 
     try {
+      this.isReachable = true; // ✅ Mark as reachable
       const response = await axios.get(this.urlStatus, { timeout: 8000 });
       const data = response.data;
-  
+
       //this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
       this.processGetDeviceStatusData(data, false);
-  
+
     } catch (error) {
+      this.isReachable = false; // ❌ Mark as unreachable
+
       const axiosError = error as AxiosError;
       if (axios.isAxiosError(axiosError)) {
         this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
@@ -262,71 +302,98 @@ export class platformGenericDevice {
 
   private processGetDeviceStatusData(data: Record<string, unknown> | undefined, isSharedData: boolean): void {
     if (!data) {
-      this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching Switch state'}.`);
+      this.platform.log.warn(`${this.deviceName}: No data available for ${isSharedData ? 'shared data update' : 'fetching device state'}.`);
       return;
     }
 
-    // Log fetched data for debugging
-    // this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
-
-    this.getStateDefinition().forEach(({ state, param, webhook }): void => {
-      if ( !param ) {
-        if ( this.enableLogging ) { 
+    this.getStateDefinition().forEach(({ state, param, webhook, fromConfig }): void => {
+      if (!param) {
+        if (this.enableLogging) {
           this.platform.log.debug(`${this.deviceName}: Parameter for ${state} is not configured. Skipping.`);
         }
         return;
       }
-  
+
+      // Skip JSON parsing if value is from config
+      if (fromConfig) {
+        const paramKey = 'paramName' + state;
+        const value = this.accessory.context.device[paramKey];
+        const range = this.DeviceStatusRanges[state];
+
+        if ( Array.isArray(range) && range.length === 2 && typeof range[0] === 'number' && typeof range[1] === 'number' &&
+              value >= range[0] && value <= range[1] ) {
+          const characteristic = this.platform.Characteristic[state as keyof typeof this.platform.Characteristic
+          ] as unknown as WithUUID<new () => Characteristic>;
+
+          const currentValue = this.service.getCharacteristic(characteristic).value;
+
+          if (currentValue !== value) {
+            this.service.updateCharacteristic(characteristic, value);
+
+            if (this.enableLogging) {
+              this.platform.log.info(`${this.deviceName}: ${state} (from config) SET to: ${value}`);
+            }
+          }
+        } else if (this.enableLogging) {
+          this.platform.log.warn(
+            `${this.deviceName}: Configured value for ${state} is invalid: ${value} (expected range: ${range[0]} to ${range[1]})`,
+          );
+        }
+
+        return;
+      }
+
+      // Otherwise, parse from live JSON
       const rawValue = getNestedValue(data, param, 'number');
       let value: number | undefined;
-  
+
       if (typeof rawValue === 'number') {
         value = rawValue;
       } else if (typeof rawValue === 'boolean') {
-        value = rawValue ? 1 : 0; // Convert boolean to number
+        value = rawValue ? 1 : 0;
       } else {
-        value = undefined; // Treat invalid types as undefined
+        value = undefined;
       }
-  
+
       if (value === undefined) {
         if (this.enableLogging) {
           this.platform.log.warn(`${this.deviceName}: Parameter '${param}' not found in JSON for state ${state}.`);
         }
         return;
       }
-  
+
       const range = this.DeviceStatusRanges[state];
-  
+
       if (
-        Array.isArray(range) && range.length === 2 && 
+        Array.isArray(range) && range.length === 2 &&
         typeof range[0] === 'number' && typeof range[1] === 'number' &&
         value >= range[0] && value <= range[1]
       ) {
         if (this.enableLogging && this.DeviceStates[state] !== value) {
           this.platform.log.info(`${this.deviceName}: ${state} SET to: ${value}`);
-          if ( this.discordWebhook && webhook ) {
+          if (this.discordWebhook && webhook) {
             this.initDiscordWebhooks(state);
           }
         }
-  
+
         this.DeviceStates[state] = value;
-       
-        const characteristic = this.platform.Characteristic[state as
-          keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
-        this.service.updateCharacteristic( characteristic, value );
-  
-      } else if ( this.enableLogging ) {
+
+        const characteristic = this.platform.Characteristic[
+          state as keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+        this.service.updateCharacteristic(characteristic, value);
+      } else if (this.enableLogging) {
         this.platform.log.warn(`${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`);
       }
-    });    
+    });
   }
 
-  private async setDeviceState( what: keyof typeof this.DeviceStates, value: CharacteristicValue, callback: CharacteristicSetCallback ): Promise<void> {
-    
+  private async setDeviceState(what: keyof typeof this.DeviceStates, value: CharacteristicValue, callback: CharacteristicSetCallback): Promise<void> {
+
     const previousValue = this.DeviceStates[what]; // Save the current state value
     this.DeviceStates[what] = value as number; // Update the state dynamically
-  
+
     try {
+      this.isReachable = true; // ✅ Mark as reachable
       const url = this.urlDeviceControl; // Base URL for fan control
       if (!url) {
         this.platform.log.warn(this.deviceName, ': No Fan control URL defined.');
@@ -334,7 +401,7 @@ export class platformGenericDevice {
         this.DeviceStates[what] = previousValue; // Revert to the previous state
         return;
       }
-  
+
       const characteristicDefinition = this.getStateDefinition().find((def) => def.state === what);
       if (!characteristicDefinition) {
         this.platform.log.warn(this.deviceName, `: Unknown fan state: ${what}`);
@@ -342,27 +409,27 @@ export class platformGenericDevice {
         this.DeviceStates[what] = previousValue; // Revert to the previous state
         return;
       }
-  
+
       const { state, param, topic } = characteristicDefinition;
-  
+
       if (!param) {
         this.platform.log.warn(this.deviceName, `: Ignoring request; No parameter defined for ${state}.`);
         //callback(new Error(`No parameter defined for ${state}.`));
         this.DeviceStates[what] = previousValue; // Revert to the previous state
         return;
       }
-  
+
       // Determine HTTP method based on methodUpdate (true = GET, false = POST)
       const method: 'POST' | 'GET' = this.methodUpdate ? 'GET' : 'POST';
-  
+
       // Logging the characteristic value change
       this.platform.log.debug(this.deviceName, `: Setting ${state} to:`, value);
-  
+
       // Update HomeKit characteristic
       const characteristic = this.platform.Characteristic[state as
-         keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+        keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
       this.service.updateCharacteristic(characteristic, value);
-  
+
       // Construct URL for GET requests with only the updated value
       const modifiedUrl = method === 'GET' ? `${url}?${param}=${encodeURIComponent(value as number)}` : url;
       this.platform.log.debug(this.deviceName, `: Setting ${state} URL:`, modifiedUrl);
@@ -375,12 +442,12 @@ export class platformGenericDevice {
         },
         ...(method === 'POST' && { data: { [param]: this.DeviceStates[state] } }), // Include data only for POST
       };
-  
+
       // Make Axios request
       await axios(axiosOptions);
-  
+
       // Handle optional MQTT topic publishing
-      if ( topic && this.mqttClient ) {
+      if (topic && this.mqttClient) {
         this.mqttClient.publish(topic, String(value), { qos: 1, retain: true }, (err) => {
           if (err && this.enableLogging) {
             this.platform.log.warn(this.deviceName, `: Failed to publish MQTT message for ${state}:`, err.message);
@@ -389,18 +456,19 @@ export class platformGenericDevice {
           }
         });
       }
-  
+
       // Initialize Discord Webhook if configured
       if (this.discordWebhook) {
         this.initDiscordWebhooks(state);
       }
-  
+
       // Log success and call callback
       callback(null);
       if (this.enableLogging) {
-        this.platform.log.info('Success: Fan ', this.deviceName, ` is: ${this.getStatus(!!this.DeviceStates[what])}`);
+        this.platform.log.info('Success: ', this.deviceName, ` is: ${this.getStatus(!!this.DeviceStates[what])}`);
       }
     } catch (error) {
+      this.isReachable = false; // ❌ Mark as unreachable
       // Handle errors: Revert state and log the issue
       this.DeviceStates[what] = previousValue; // Revert to the previous state
       if (error instanceof Error) {
@@ -410,7 +478,7 @@ export class platformGenericDevice {
       }
       callback(error as Error); // Notify failure
     }
-  }  
+  }
 
   private initMQTT() {
     // Define an empty array to hold the subscribed topics
@@ -438,16 +506,17 @@ export class platformGenericDevice {
     });
 
     // Initialize MQTT client
-    this.mqttClient = mqtt.connect( mqttOptions);
-        
+    this.mqttClient = mqtt.connect(mqttOptions);
+
     this.mqttClient.on('connect', () => {
-      if ( this.enableLogging) {
-        this.platform.log.info(this.deviceName,': MQTT Connected');  
+      this.isReachable = true;
+      if (this.enableLogging) {
+        this.platform.log.info(this.deviceName, ': MQTT Connected');
       }
       this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
         if (!err) {
-          if ( this.enableLogging) {
-            this.platform.log.info(this.deviceName,': Subscribed to: ', mqttSubscribedTopics.toString());
+          if (this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': Subscribed to: ', mqttSubscribedTopics.toString());
           }
         } else {
           // Need to insert error handler
@@ -456,44 +525,56 @@ export class platformGenericDevice {
       });
     });
 
-    // Handle incoming messages
     this.mqttClient.on('message', (topic, message) => {
-      this.getStateDefinition().forEach(({ state, topic: stateTopic }) => {
-        if (stateTopic === topic) { // Match incoming topic
-          const value = message.toString();
-          let newValue;
+      const matched = this.getStateDefinition().find(({ topic: stateTopic }) => stateTopic === topic);
 
-          // Handle binary and numeric ranges dynamically
-          const [min, max] = this.DeviceStatusRanges[state];
-          if (min === 0 && max === 1) {
-            newValue = ['1', 'true'].includes(value) ? 1 : 0; // Binary range
-          } else {
-            newValue = Number(value); // Numeric range
-          }
+      if (!matched) {
+        if (this.enableLogging) {
+          this.platform.log.warn(`${this.deviceName}: Received MQTT message for unknown topic: ${topic}`);
+        }
+        return;
+      }
 
-          // Validate against fanStatusRanges
-          if ( newValue >= min && newValue <= max ) {
-            if ( this.enableLogging && this.DeviceStates[state] !== newValue ) {
-              this.platform.log.info(`${this.deviceName}: ${state} set to: ${newValue}`);
-            }
-            this.DeviceStates[state] = newValue; // Update state value
-            // Update Homebridge characteristic
-            const characteristic = this.platform.Characteristic[state as 
-                keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
-            this.service.updateCharacteristic(characteristic, newValue);
-            
-            
-          } else {
-            if (this.enableLogging) {
-              this.platform.log.warn(`${this.deviceName}: Invalid value for ${state}: ${newValue} (must be between ${min} and ${max})`);
-            }
+      const { state } = matched;
+      const value = message.toString();
+      const [min, max] = this.DeviceStatusRanges[state];
+
+      let newValue: number;
+
+      // Handle binary and numeric ranges dynamically
+      if (min === 0 && max === 1) {
+        const normalizedValue = value.trim().toLowerCase();
+        newValue = ['1', 'true'].includes(normalizedValue) ? 1 : 0;
+      } else {
+        newValue = Number(value);
+      }
+
+      // Validate and update
+      if (newValue >= min && newValue <= max) {
+        if (this.DeviceStates[state] !== newValue) {
+          this.DeviceStates[state] = newValue;
+
+          const characteristic = this.platform.Characteristic[state as keyof typeof this.platform.Characteristic
+          ] as unknown as WithUUID<new () => Characteristic>;
+          this.service.updateCharacteristic(characteristic, newValue);
+
+          if (this.enableLogging) {
+            this.platform.log.info(`${this.deviceName}: ${state} set to: ${newValue}`);
           }
         }
-      });
+
+        // Mark device as reachable on valid message
+        this.isReachable = true;
+      } else {
+        if (this.enableLogging) {
+          this.platform.log.warn(`${this.deviceName}: Invalid value for ${state}: ${newValue} (must be between ${min} and ${max})`);
+        }
+      }
     });
 
     // Additional event handlers for connection state
     this.mqttClient.on('offline', () => {
+      this.isReachable = false;
       this.platform.log.debug(this.deviceName, ': Client is offline');
     });
 
@@ -502,11 +583,13 @@ export class platformGenericDevice {
     });
 
     this.mqttClient.on('close', () => {
+      this.isReachable = false;
       this.platform.log.debug(this.deviceName, ': Connection closed');
     });
 
     // Enhanced error handling
     this.mqttClient.on('error', (err) => {
+      this.isReachable = false;
       this.platform.log.warn(this.deviceName, ': Connection error:', err);
       this.platform.log.warn(this.deviceName, ': Reconnecting in: ', this.mqttReconnectInterval, ' seconds.');
     });
@@ -518,21 +601,21 @@ export class platformGenericDevice {
     callback: CharacteristicSetCallback,
   ): void {
     const definition = this.getStateDefinition().find(({ state }) => state === what);
-  
+
     if (!definition || !definition.topic) {
       // Log warning if no matching definition or topic is found
       this.platform.log.warn(`${this.deviceName}: No valid topic for state: ${what}`);
       callback(new Error(`No valid topic for state: ${what}`));
       return;
     }
-  
+
     const topic = definition.topic; // Use topic from definition
     const message = String(value); // Convert value to a string for publishing
-  
+
     if (this.enableLogging) {
       this.platform.log.info(`${this.deviceName}: Publishing ${what} to topic ${topic} with value: ${message}`);
     }
-  
+
     // Publish MQTT message
     this.mqttClient.publish(topic, message, { qos: 1, retain: true }, (err) => {
       if (err) {
@@ -541,22 +624,22 @@ export class platformGenericDevice {
         this.platform.log.debug(`${this.deviceName}: Message for ${what} published successfully`);
       }
     });
-  
+
     // Callback to indicate success
     callback(null);
-  }  
-  
+  }
+
   private initDiscordWebhooks(state: keyof typeof this.DeviceStates): void {
     // Prepare a dynamic message including the passed state
     const message = `${this.deviceName}: ${state} - ${this.discordMessage} ${this.getStatus(!!this.DeviceStates[state])}`;
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
 
     discord.discordSimpleSend().then((result) => {
-      if ( this.enableLogging ) {
+      if (this.enableLogging) {
         this.platform.log.info(`${this.deviceName}: Webhook sent successfully - `, result);
       }
     }).catch((error) => {
-      if ( this.enableLogging ) {
+      if (this.enableLogging) {
         this.platform.log.warn(`${this.deviceName}: Failed to send webhook - `, error.message);
       }
     });

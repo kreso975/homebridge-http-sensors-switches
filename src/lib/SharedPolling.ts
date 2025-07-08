@@ -154,11 +154,12 @@ export class SharedPolling extends EventEmitter {
       const response = await axios.get(this.url, { timeout: 8000 });
       this.data = response.data as SharedData;
 
-      // Emit an event to notify data update
+      // Emit an event to notify .on('dataUpdated') listeners
       this.emit('dataUpdated', this.data);
 
       this.platform.log.debug(`Updated data for URL: ${this.url}`);
     } catch (error) {
+      // If necessary, emit an error event here so the device can be marked as "No Response"
       const errorMessage = (error as AxiosError).message;
       this.platform.log.debug( `Error fetching data for URL: ${this.url} - ${errorMessage}` );
     }

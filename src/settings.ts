@@ -24,7 +24,9 @@ export const listOfServices = [
   ['SmokeSensor', './platformSensorGenericServices.js', 'platformSensorGeneric'],
   ['OccupancySensor', './platformSensorGenericServices.js', 'platformSensorGeneric'],
   ['AirQualitySensor', './platformSensorGenericServices.js', 'platformSensorGeneric'],
+  ['DoorOpener', './platformGenericDeviceServices.js', 'platformGenericDevice'],
   ['GarageDoorOpener', './platformGenericDeviceServices.js', 'platformGenericDevice'],
   ['Window', './platformGenericDeviceServices.js', 'platformGenericDevice'],
   ['WindowCovering', './platformGenericDeviceServices.js', 'platformGenericDevice'],
+  ['Valve', './platformGenericDeviceServices.js', 'platformGenericDevice'],
 ];

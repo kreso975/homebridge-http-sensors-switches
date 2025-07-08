@@ -13,6 +13,7 @@ export class platformSwitch {
   public mqttClient!: mqtt.MqttClient;
   private sharedPollingInstance?: SharedPolling;
 
+  private isReachable: boolean = true; // Track if the device is reachable
   // Device and configuration properties
   public enableLogging: boolean = true;
   // Ensure backward compatibility for shared polling
@@ -139,10 +140,8 @@ export class platformSwitch {
       // Configure HTTP-based state changes
       if ( this.urlON ) {
         this.service.getCharacteristic(this.platform.Characteristic.On)
-          .on('set', this.setOn.bind(this)) // Handle setting the switch state
-          .on('get', (callback) => {
-            callback(null, this.switchStates.On); // Return the current state
-          });
+          .on('set', this.wrapSetHandler())
+          .on('get', this.wrapGetHandler('On'));
       }
   
       // Configure MQTT if provided
@@ -152,6 +151,32 @@ export class platformSwitch {
           .on('set', this.publishMQTTmessage.bind(this)); // Publish MQTT messages when state changes
       }
     }
+  }
+
+  private wrapGetHandler(state: keyof typeof this.switchStates): (callback: (error: Error | null, value?: CharacteristicValue) => void) => void {
+    return (callback) => {
+      if (!this.isReachable) {
+        callback(new this.platform.api.hap.HapStatusError(
+          this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+        ));
+        return;
+      }
+
+      callback(null, this.switchStates[state]);
+    };
+  }
+
+  private wrapSetHandler(): (value: CharacteristicValue, callback: CharacteristicSetCallback) => void {
+    return (value, callback) => {
+      if (!this.isReachable) {
+        callback(new this.platform.api.hap.HapStatusError(
+          this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+        ));
+        return;
+      }
+
+      this.setOn(value, callback);
+    };
   }
   
   private updateSwitchState(isOn: boolean, deviceName: string): void {
@@ -175,12 +200,14 @@ export class platformSwitch {
     }
   
     try {
+      this.isReachable = true; // ✅ Mark as reachable
       const response = await axios.get(this.urlStatus, { timeout: 8000 });
       const data = response.data;
   
       this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
       this.processSwitchGetData(data, false);
     } catch (error) {
+      this.isReachable = false; // ❌ Mark as unreachable
       if ( this.enableLogging ) {
         const axiosError = error as AxiosError;
         if ( axios.isAxiosError(axiosError) ) {
@@ -278,7 +305,8 @@ export class platformSwitch {
     this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
 
     try {
-    // Send the HTTP request to trigger the switch state
+      this.isReachable = true; // ✅ Mark as reachable
+      // Send the HTTP request to trigger the switch state
       await axios.get(this.url);
 
       // If Discord Webhook is enabled, send status update
@@ -293,7 +321,8 @@ export class platformSwitch {
 
       callback(null); // Indicate success to HomeKit
     } catch (error) {
-    // Handle errors and revert the switch state
+      this.isReachable = false; // ❌ Mark as unreachable
+      // Handle errors and revert the switch state
       const errorMessage = (error as AxiosError).message;
       this.switchStates.On = !this.switchStates.On; // Revert state
       this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
@@ -326,6 +355,7 @@ export class platformSwitch {
     this.mqttClient = mqtt.connect(mqttOptions);
   
     this.mqttClient.on('connect', () => {
+      this.isReachable = true; // ✅ Mark as reachable
       if (this.enableLogging) {
         this.platform.log.info(`${this.deviceName}: MQTT Connected`);
       }
@@ -351,8 +381,24 @@ export class platformSwitch {
     });
   
     this.mqttClient.on('error', (err) => {
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.warn(`${this.deviceName}: MQTT connection error - ${err.message}`);
       this.platform.log.warn(`${this.deviceName}: Attempting reconnection in ${this.mqttReconnectInterval} seconds`);
+    });
+
+    // Additional event handlers for connection state
+    this.mqttClient.on('offline', () => {
+      this.isReachable = false;
+      this.platform.log.debug(this.deviceName, ': Client is offline');
+    });
+
+    this.mqttClient.on('reconnect', () => {
+      this.platform.log.debug(this.deviceName, ': Reconnecting...');
+    });
+
+    this.mqttClient.on('close', () => {
+      this.isReachable = false;
+      this.platform.log.debug(this.deviceName, ': Connection closed');
     });
   }
 

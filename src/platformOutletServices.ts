@@ -13,6 +13,7 @@ export class platformOutlet {
   public mqttClient!: mqtt.MqttClient;
   private sharedPollingInstance?: SharedPolling;
 
+  private isReachable: boolean = true; // Track if the device is reachable
   // Device and configuration properties
   public enableLogging: boolean = true;
   // Ensure backward compatibility for shared polling
@@ -137,18 +138,13 @@ export class platformOutlet {
 
            if (this.urlON) {
              this.service.getCharacteristic(this.platform.Characteristic.On)
-               .on('set', this.setOn.bind(this))
-               .on('get', (callback) => {
-                 callback(null, this.outletStates.On);
-               });
+               .on('set', this.wrapSetHandler()) // Reuses setOn
+               .on('get', this.wrapGetHandler('On'));
            }
 
            if (this.inUseOnCheck) {
-             // Add OutletInUse characteristic
              this.service.getCharacteristic(this.platform.Characteristic.OutletInUse)
-               .on('get', (callback) => {
-                 callback(null, this.outletStates.OutletInUse);
-               });
+               .on('get', this.wrapGetHandler('OutletInUse'));
            }
 
            if (this.mqttBroker) {
@@ -159,6 +155,32 @@ export class platformOutlet {
            }
          }
     }
+  }
+
+  private wrapGetHandler(state: keyof typeof this.outletStates): (callback: (error: Error | null, value?: CharacteristicValue) => void) => void {
+    return (callback) => {
+      if (!this.isReachable) {
+        callback(new this.platform.api.hap.HapStatusError(
+          this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+        ));
+        return;
+      }
+
+      callback(null, this.outletStates[state]);
+    };
+  }
+
+  private wrapSetHandler(): (value: CharacteristicValue, callback: CharacteristicSetCallback) => void {
+    return (value, callback) => {
+      if (!this.isReachable) {
+        callback(new this.platform.api.hap.HapStatusError(
+          this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+        ));
+        return;
+      }
+
+      this.setOn(value, callback); // Preserves your original logic
+    };
   }
 
   private getStatus(isOn: boolean): string {
@@ -186,12 +208,14 @@ export class platformOutlet {
     }
 
     try {
+      this.isReachable = true; // ✅ Mark as reachable
       const response = await axios.get(this.urlStatus, { timeout: 8000 });
       const data = response.data;
   
       this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
       this.processOutletGetData(data, false);
     } catch (error) {
+      this.isReachable = false; // ❌ Mark as unreachable
       const axiosError = error as AxiosError;
       if (axios.isAxiosError(axiosError)) {
         this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
@@ -296,6 +320,7 @@ export class platformOutlet {
 
     axios.get(this.url)
       .then(() => {
+        this.isReachable = true; // ✅ Mark as reachable
         this.outletStates.OutletInUse = this.outletStates.On;
         this.service.updateCharacteristic(this.platform.Characteristic.OutletInUse, this.outletStates.OutletInUse);
         if ( this.enableLogging) {
@@ -303,6 +328,7 @@ export class platformOutlet {
         }
       })
       .catch((error) => {
+        this.isReachable = false; // ❌ Mark as unreachable
         this.outletStates.On = !value;
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.outletStates.On);
         this.platform.log.warn(this.deviceName, ': Setting power state to :', this.outletStates.On);
@@ -344,6 +370,7 @@ export class platformOutlet {
 
     this.mqttClient = mqtt.connect(mqttOptions);
     this.mqttClient.on('connect', () => {
+      this.isReachable = true; // ✅ Mark as reachable
       if ( this.enableLogging) {
         this.platform.log.info(this.deviceName, ': MQTT Connected');
       }
@@ -394,6 +421,7 @@ export class platformOutlet {
     });
 
     this.mqttClient.on('offline', () => {
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.debug(this.deviceName, ': Client is offline');
     });
 
@@ -402,11 +430,13 @@ export class platformOutlet {
     });
 
     this.mqttClient.on('close', () => {
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.debug(this.deviceName, ': Connection closed');
     });
 
     // Handle errors
     this.mqttClient.on('error', (err) => {
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.warn(this.deviceName, ': Connection error:', err);
       this.platform.log.warn(this.deviceName, ': Reconnecting in: ', this.mqttReconnectInterval, ' seconds.');
     });

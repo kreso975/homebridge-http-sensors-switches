@@ -1,4 +1,4 @@
-import { PlatformAccessory, Service  } from 'homebridge';
+import { PlatformAccessory, CharacteristicValue, Service  } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
@@ -19,6 +19,7 @@ export class platformSensors {
   public mqttClient!: mqtt.MqttClient;
   private sharedPollingInstance?: SharedPolling;
 
+  private isReachable: boolean = true; // Track if the device is reachable
   public enableLogging: boolean = true;
   // Ensure backward compatibility for shared polling
   public sharedPolling = false; // Default to false
@@ -128,9 +129,7 @@ export class platformSensors {
         //this.service = this.service.addCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity);
         // register handlers for the CurrentTemperature Characteristic
         this.temperatureService.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
-          .on('get', (callback) => {
-            callback(null, this.currentTemperature);
-          });
+          .on('get', this.wrapGetHandler('currentTemperature'));
       }
 
       // If we have Config setup for Humidity
@@ -143,9 +142,7 @@ export class platformSensors {
 
         // register handlers for the CurrentRelativeHumidity Characteristic
         this.humidityService.getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
-          .on('get', (callback) => {
-            callback(null, this.currentHumidity);
-          });
+          .on('get', this.wrapGetHandler('currentHumidity'));
       }
 
       // If we have Config setup for Air Pressure
@@ -164,6 +161,19 @@ export class platformSensors {
     } 
   }
 
+  private wrapGetHandler(stateKey: 'currentTemperature' | 'currentHumidity'): (callback: (error: Error | null, value?: CharacteristicValue) => void) => void {
+    return (callback) => {
+      if (!this.isReachable) {
+        callback(new this.platform.api.hap.HapStatusError(
+          this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+        ));
+        return;
+      }
+
+      callback(null, this[stateKey]);
+    };
+  }
+
   private updateSensorStatusFromSharedData( data?: Record<string, unknown> ): void {
     this.processGetSensorStatus(data, true);
   }
@@ -174,11 +184,13 @@ export class platformSensors {
       return;
     }
     try {
+      this.isReachable = true; // ✅ Mark as reachable
       const response = await axios.get(this.sensorUrl, { timeout: 8000 });
       const data = response.data;
 
       this.processGetSensorStatus(data, false);  
     } catch (error) {
+      this.isReachable = false; // ❌ Mark as unreachable
       const axiosError = error as AxiosError;
       if (axios.isAxiosError(axiosError)) {
         this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
@@ -277,6 +289,7 @@ export class platformSensors {
     this.mqttClient = mqtt.connect( mqttOptions);
     
     this.mqttClient.on('connect', () => {
+      this.isReachable = true; // ✅ Mark as reachable
       if ( this.enableLogging) {
         this.platform.log.info(this.deviceName,': MQTT Connected');  
       }
@@ -313,6 +326,7 @@ export class platformSensors {
     });
 
     this.mqttClient.on('offline', () => {
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.debug(this.deviceName,': Client is offline');
     });
 
@@ -321,11 +335,13 @@ export class platformSensors {
     });
     
     this.mqttClient.on('close', () => {
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.debug(this.deviceName,': Connection closed');
     });
     
     // Handle errors
     this.mqttClient.on('error', (err) => {
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.warn(this.deviceName,': Connection error:', err);
       this.platform.log.warn(this.deviceName, ': Reconnecting in: ', this.mqttReconnectInterval, ' seconds.');
       //this.mqttClient.end();

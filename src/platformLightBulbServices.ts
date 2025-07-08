@@ -18,6 +18,7 @@ export class platformLightBulb {
   public mqttClient!: mqtt.MqttClient;
   private sharedPollingInstance?: SharedPolling;
 
+  private isReachable: boolean = true; // Track if the device is reachable
   // Device and configuration properties
   public enableLogging: boolean = true;
   // Ensure backward compatibility for shared polling
@@ -180,66 +181,34 @@ export class platformLightBulb {
         this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
         
         if (this.urlON) {
-          // register handlers for the On/Off Characteristic
           this.service.getCharacteristic(this.platform.Characteristic.On)
-            .on('set', this.setOn.bind(this))
-            .on('get', (callback) => {
-              callback(null, this.lightBulbStates.On);
-            });
+            .on('set', this.wrapSetHandler('On', this.setOn))
+            .on('get', this.wrapGetHandler('On'));
         }
-        
-        // Handle LightBulb characteristics if urlLightBulbControl is set
-        if (this.urlLightBulbControl) {
 
-          // register handlers for the Brightness Characteristic
+        if (this.urlLightBulbControl) {
           if (this.useRGB || this.brightnessParamName) {
             this.service.getCharacteristic(this.platform.Characteristic.Brightness)
-              .on('set', (value, callback) => {
-                this.setBrightness(value, callback);
-                if (this.useRGB) {
-                  this.updateAndSendRGB();
-                }
-              })
-              .on('get', (callback) => {
-                callback(null, this.lightBulbStates.Brightness);
-              });
+              .on('set', this.wrapSetHandler('Brightness', this.setBrightness, this.useRGB ? this.updateAndSendRGB : undefined))
+              .on('get', this.wrapGetHandler('Brightness'));
           }
-        
-          // register handlers for the Hue Characteristic
+
           if (this.useRGB || this.hueParamName) {
             this.service.getCharacteristic(this.platform.Characteristic.Hue)
-              .on('set', (value, callback) => {
-                this.setHue(value, callback);
-                if (this.useRGB) {
-                  this.updateAndSendRGB();
-                }
-              })
-              .on('get', (callback) => {
-                callback(null, this.lightBulbStates.Hue);
-              });
+              .on('set', this.wrapSetHandler('Hue', this.setHue, this.useRGB ? this.updateAndSendRGB : undefined))
+              .on('get', this.wrapGetHandler('Hue'));
           }
 
-          // register handlers for the Saturation Characteristic
           if (this.useRGB || this.saturationParamName) {
             this.service.getCharacteristic(this.platform.Characteristic.Saturation)
-              .on('set', (value, callback) => {
-                this.setSaturation(value, callback);
-                if (this.useRGB) {
-                  this.updateAndSendRGB();
-                }
-              })
-              .on('get', (callback) => {
-                callback(null, this.lightBulbStates.Saturation);
-              });
+              .on('set', this.wrapSetHandler('Saturation', this.setSaturation, this.useRGB ? this.updateAndSendRGB : undefined))
+              .on('get', this.wrapGetHandler('Saturation'));
           }
 
-          // register handlers for the Color Temperature Characteristic
-          if(this.colorTemperatureParamName) {
+          if (this.colorTemperatureParamName) {
             this.service.getCharacteristic(this.platform.Characteristic.ColorTemperature)
-              .on('set', this.setColorTemperature.bind(this))
-              .on('get', (callback) => {
-                callback(null, this.lightBulbStates.ColorTemperature);
-              });
+              .on('set', this.wrapSetHandler('ColorTemperature', this.setColorTemperature))
+              .on('get', this.wrapGetHandler('ColorTemperature'));
           }
         }
 
@@ -274,6 +243,36 @@ export class platformLightBulb {
     }
   }
 
+  private wrapGetHandler(state: keyof typeof this.lightBulbStates): (callback: (error: Error | null, value?: CharacteristicValue) => void) => void {
+    return (callback) => {
+      if (!this.isReachable) {
+        callback(new this.platform.api.hap.HapStatusError(
+          this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+        ));
+        return;
+      }
+
+      callback(null, this.lightBulbStates[state]);
+    };
+  }
+
+  private wrapSetHandler( state: keyof typeof this.lightBulbStates, setFn: (value: CharacteristicValue, callback: CharacteristicSetCallback) => void,
+    postSetFn?: () => void ): (value: CharacteristicValue, callback: CharacteristicSetCallback) => void {
+    return (value, callback) => {
+      if (!this.isReachable) {
+        callback(new this.platform.api.hap.HapStatusError(
+          this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+        ));
+        return;
+      }
+
+      setFn.call(this, value, callback);
+      if (postSetFn) {
+        postSetFn.call(this);
+      }
+    };
+  }
+
   // Silly function :)
   private getStatus(isOn: boolean): string {
     return isOn ? 'ON' : 'OFF';
@@ -302,12 +301,14 @@ export class platformLightBulb {
       return;
     }
     try {
+      this.isReachable = true; // ✅ Mark as reachable
       const response = await axios.get(this.urlStatus, { timeout: 8000 });
       const data = response.data;
   
       //this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
       this.processLightBulbStatusData(data, false);
     } catch (error) {
+      this.isReachable = false; // ❌ Mark as unreachable
       const axiosError = error as AxiosError;
       if (axios.isAxiosError(axiosError)) {
         this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
@@ -478,6 +479,7 @@ export class platformLightBulb {
       this.service.updateCharacteristic(this.platform.Characteristic.On, false);
     }
 
+    this.isReachable = true; // ✅ Mark as reachable
     axios.get(this.url)
       // We are not going to wait, we will presume everything is OK and if it's not Error handler will handle it
       //  .then((response) => {
@@ -486,6 +488,7 @@ export class platformLightBulb {
       //    this.platform.log.debug('Success: ', error);
       //  })
       .catch((error) => {
+        this.isReachable = false; // ❌ Mark as unreachable
         // handle error
         // Let's reverse On value since we couldn't reach URL
         this.lightBulbStates.On = !value;
@@ -510,6 +513,7 @@ export class platformLightBulb {
   
   private async setBrightness(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     try {
+      this.isReachable = true; // ✅ Mark as reachable
       let brightnessValue = value;
   
       // Check if useBrightness255 is true and convert the brightness value
@@ -548,6 +552,7 @@ export class platformLightBulb {
         callback(new Error('Failed to set brightness'));
       }
     } catch (e) {
+      this.isReachable = false; // ❌ Mark as unreachable
       const error = e as AxiosError;
       if (axios.isAxiosError(error)) {
         this.platform.log.warn(this.deviceName, ': Error: URL Status check:', error.message);
@@ -559,7 +564,8 @@ export class platformLightBulb {
   private async setHue(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     if (!this.useRGB && this.hueParamName) {
       try {
-      // Construct the URL with the hue parameter
+        this.isReachable = true; // ✅ Mark as reachable
+        // Construct the URL with the hue parameter
         const url = `${this.urlLightBulbControl}`;
   
         const response = await axios({
@@ -584,6 +590,7 @@ export class platformLightBulb {
           callback(new Error('Failed to set hue'));
         }
       } catch (e) {
+        this.isReachable = false; // ❌ Mark as unreachable
         const error = e as AxiosError;
         if (axios.isAxiosError(error)) {
           this.platform.log.warn(this.deviceName, ': Error: URL Status check:', error.message);
@@ -605,7 +612,7 @@ export class platformLightBulb {
   private async setSaturation(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     if (!this.useRGB && this.saturationParamName) {
       try {
-  
+        this.isReachable = true; // ✅ Mark as reachable
         // Construct the URL with the saturation parameter
         const url = `${this.urlLightBulbControl}`;
   
@@ -631,6 +638,7 @@ export class platformLightBulb {
           callback(new Error('Failed to set saturation'));
         }
       } catch (e) {
+        this.isReachable = false; // ❌ Mark as unreachable
         const error = e as AxiosError;
         if (axios.isAxiosError(error)) {
           this.platform.log.warn(this.deviceName, ': Error: URL Status check:', error.message);
@@ -652,6 +660,7 @@ export class platformLightBulb {
   
   private async setColorTemperature(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     try {
+      this.isReachable = true; // ✅ Mark as reachable
       // Convert from mired to Kelvin if useColorTKelvin is set
       let colorTemperature = value as number;
       if (this.useColorTKelvin) {
@@ -684,6 +693,7 @@ export class platformLightBulb {
         callback(new Error('Failed to set Color Temperature'));
       }
     } catch (e) {
+      this.isReachable = false; // ❌ Mark as unreachable
       const error = e as AxiosError;
       if (axios.isAxiosError(error)) {
         this.platform.log.warn(this.deviceName, ': Error: URL Status check:', error.message);
@@ -742,7 +752,7 @@ export class platformLightBulb {
     
     this.mqttClient = mqtt.connect(mqttOptions);
     this.mqttClient.on('connect', () => {
-
+      this.isReachable = true; // ✅ Mark as reachable
       if ( this.enableLogging) {
         this.platform.log.info(this.deviceName, ': MQTT Connected');
       }
@@ -884,6 +894,7 @@ export class platformLightBulb {
     });
 
     this.mqttClient.on('offline', () => {
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.debug(this.deviceName, ': Client is offline');
     });
 
@@ -892,11 +903,13 @@ export class platformLightBulb {
     });
 
     this.mqttClient.on('close', () => {
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.debug(this.deviceName, ': Connection closed');
     });
 
     // Handle errors
     this.mqttClient.on('error', (err) => {
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.warn(this.deviceName, ': Connection error:', err);
       this.platform.log.warn(this.deviceName, ': Reconnecting in: ', this.mqttReconnectInterval, ' seconds.');
       //this.mqttClient.end();

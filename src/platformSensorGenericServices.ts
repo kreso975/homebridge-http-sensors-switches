@@ -1,4 +1,4 @@
-import { PlatformAccessory, Service, Characteristic, WithUUID } from 'homebridge';
+import { PlatformAccessory, CharacteristicValue, Service, Characteristic, WithUUID } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
@@ -19,6 +19,7 @@ export class platformSensorGeneric {
   public mqttClient!: mqtt.MqttClient;
   private sharedPollingInstance?: SharedPolling;
 
+  private isReachable: boolean = true; // Track if the device is reachable
   public enableLogging: boolean = true;
   // Ensure backward compatibility for shared polling
   public sharedPolling = false; // Default to false
@@ -89,7 +90,7 @@ export class platformSensorGeneric {
       return;
     }
     // --------------------------------------------------------------------------------
-
+    // Read device configuration and initialize properties dynamically from Settings
     // Initialize paramNames and mqttTopics dynamically
     config.paramNames.forEach((paramNameKey) => {
       // Explicitly cast paramNameKey to a valid key of config.states
@@ -104,7 +105,7 @@ export class platformSensorGeneric {
       this.paramNames[paramNameKey] = paramValue;
     
       // Populate mqttTopics dynamically (using "mqtt" prefix for keys)
-      const deviceMqttKey = `mqtt${config.states[paramNameKey as keyof typeof config.states]?.topic}`; // Add "paramName" prefix
+      const deviceMqttKey = `mqtt${config.states[paramNameKey as keyof typeof config.states]?.topic}`; // Add "mqtt" prefix
       const mqttValue = device[deviceMqttKey as keyof typeof device]?.toString() || '';
       this.platform.log.debug(`MQTT Key: ${deviceMqttKey}, Value: ${mqttValue}`);
       this.mqttTopics[paramNameKey] = mqttValue;
@@ -124,8 +125,8 @@ export class platformSensorGeneric {
     this.discordMessage = device.discordMessage;
 
     // Ensure backward compatibility for shared polling
-    this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
-    this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
+    this.sharedPolling = device.sharedPolling ?? false;                 // Default shared polling to false
+    this.sharedPollingId = device.sharedPollingId ?? '';                // Default shared polling group ID to an empty string
     this.sharedPollingInterval = device.sharedPollingInterval ?? 60000; // Set the polling interval to 60 sec or from config value
 
     if (this.sharedPolling && this.sharedPollingId) {
@@ -133,7 +134,7 @@ export class platformSensorGeneric {
         this.sharedPollingId,
         this.urlStatus,
         this.platform,
-        this.sharedPollingInterval, // Set the polling interval to 60 sec or from config value
+        this.sharedPollingInterval,                                     // Set the polling interval to 60 sec or from config value
       );
     
       // Subscribe to data updates
@@ -182,11 +183,10 @@ export class platformSensorGeneric {
           if ( param ) {
             const characteristic = this.platform.Characteristic[state as
               keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+
             this.sensorService
               .getCharacteristic(characteristic)
-              .on('get', (callback) => {
-                callback(null, this.SensorStates[state]); // Use correct state reference
-              });
+              .on('get', this.wrapGetHandler(state));
           }
         });
       }
@@ -197,6 +197,24 @@ export class platformSensorGeneric {
       }
       
     } 
+  }
+
+  /**
+   * Wraps the get handler for a characteristic to handle device state retrieval.
+   * @param state The state key to retrieve.
+   * @returns A function that handles the get request.
+   */
+  private wrapGetHandler(state: string): (callback: (error: Error | null, value?: CharacteristicValue) => void) => void {
+    return (callback) => {
+      if (!this.isReachable) {
+        callback(new this.platform.api.hap.HapStatusError(
+          this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+        ));
+        return;
+      }
+  
+      callback(null, this.SensorStates[state]);
+    };
   }
 
   // Silly function :)
@@ -287,11 +305,25 @@ export class platformSensorGeneric {
     }
   
     try {
+      this.isReachable = true; // ✅ Mark as reachable
       const response = await axios.get(this.urlStatus, { timeout: 8000 });
       const data = response.data;
   
       this.processSensorState(data, false);
     } catch (error) {
+      this.isReachable = false; // ❌ Mark as unreachable
+
+      // 🔔 Notify HomeKit of communication failure
+      if (this.sensorService) {
+        this.getStateDefinition().forEach(({ state }) => {
+          const characteristic = this.platform.Characteristic[
+            state as keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+          this.sensorService.updateCharacteristic(characteristic, new this.platform.api.hap.HapStatusError(
+            this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+          ));
+        });
+      }
+
       const axiosError = error as AxiosError;
       if (axios.isAxiosError(axiosError)) {
         this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
@@ -330,6 +362,7 @@ export class platformSensorGeneric {
     this.mqttClient = mqtt.connect( mqttOptions);
           
     this.mqttClient.on('connect', () => {
+      this.isReachable = true; // ✅ Mark as reachable
       if ( this.enableLogging ) {
         this.platform.log.info(this.deviceName,': MQTT Connected');  
       }
@@ -355,7 +388,8 @@ export class platformSensorGeneric {
           // Handle binary and numeric ranges dynamically
           const [min, max] = this.SensorStatusRanges[state];
           if (min === 0 && max === 1) {
-            newValue = ['1', 'true'].includes(value) ? 1 : 0; // Binary range
+            const normalizedValue = value.trim().toLowerCase();
+            newValue = ['1', 'true'].includes(normalizedValue) ? 1 : 0;
           } else {
             newValue = Number(value); // Numeric range
           }
@@ -373,6 +407,8 @@ export class platformSensorGeneric {
               keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
             this.sensorService.updateCharacteristic(characteristic, newValue);
 
+            this.isReachable = true;
+
             // Trigger webhook if `webhook` is true and `newValue === 1`
             if ( webhook && newValue === 1 ) {
               this.initDiscordWebhooks(state);
@@ -388,6 +424,7 @@ export class platformSensorGeneric {
   
     // Additional event handlers for connection state
     this.mqttClient.on('offline', () => { 
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.debug(this.deviceName, ': Client is offline');
     });
   
@@ -396,11 +433,13 @@ export class platformSensorGeneric {
     });
   
     this.mqttClient.on('close', () => {
+      this.isReachable = false; // ❌ Mark as unreachable
       this.platform.log.debug(this.deviceName, ': Connection closed');
     });
   
     // Enhanced error handling
     this.mqttClient.on('error', (err) => {
+      this.isReachable = false;
       this.platform.log.warn(this.deviceName, ': Connection error:', err);
       this.platform.log.warn(this.deviceName, ': Reconnecting in: ', this.mqttReconnectInterval, ' seconds.');
     });
