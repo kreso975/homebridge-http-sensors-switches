@@ -4,7 +4,7 @@
   "type": "module",
   "version": "2.1.0",
   "private": false,
-  "description": "This plugin communicates with your devices over HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Fan, Garage Door, Shades / Blinds, Temperature/Humidity, Motion, Contact and Occupancy sensor, Air Quality, Smoke, Carbon Dioxide and Light Sensor. Simple Discord Webhooks available in Light Bulb, Switches and Outlets and sensors.",
+  "description": "This plugin communicates with your devices over HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Fan, Garage Door, Shades / Blinds, Temperature/Humidity, Motion, Contact and Occupancy sensor, Door, Sprinkler, Valve, Air Quality, Smoke, Carbon Dioxide and Light Sensor. Simple Discord Webhooks available in Light Bulb, Switches and Outlets and sensors.",
   "author": "Kresimir Kokanovic",
   "license": "Apache-2.0",
   "homepage": "https://github.com/kreso975/homebridge-http-sensors-switches#readme",
@@ -47,6 +47,9 @@
     "Carbon Dioxide",
     "Smoke sensor",
     "smart home",
+    "valve",
+    "Door",
+    "Sprinkler",
     "motion sensor",
     "temperature sensor",
     "plugin"
