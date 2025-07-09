@@ -139,7 +139,12 @@ export class platformSensorGeneric {
     
       // Subscribe to data updates
       sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
+        this.isReachable = true; // ✅ Mark as reachable
         this.updateSensorStatusFromSharedData(data);
+      });
+
+      sharedPollingInstance.on('dataError', () => {
+        this.isReachable = false; // ❌ Mark as unreachable
       });
     } else if (this.urlStatus) {
       this.getSensorState();
@@ -207,9 +212,7 @@ export class platformSensorGeneric {
   private wrapGetHandler(state: string): (callback: (error: Error | null, value?: CharacteristicValue) => void) => void {
     return (callback) => {
       if (!this.isReachable) {
-        callback(new this.platform.api.hap.HapStatusError(
-          this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
-        ));
+        callback(new this.platform.api.hap.HapStatusError( this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE ));
         return;
       }
   
@@ -235,6 +238,45 @@ export class platformSensorGeneric {
       webhook: stateConfig.webhook,
     }));
   }  
+
+  private updateSensorStatusFromSharedData( data?: Record<string, unknown> ): void {
+    this.processSensorState(data, true);
+  }
+
+  private async getSensorState(): Promise<void> {
+    if (!this.urlStatus) {
+      this.platform.log.warn(`${this.deviceName}: Ignoring request; No status URL defined.`);
+      return;
+    }
+  
+    try {
+      this.isReachable = true; // ✅ Mark as reachable
+      const response = await axios.get(this.urlStatus, { timeout: 8000 });
+      const data = response.data;
+  
+      this.processSensorState(data, false);
+    } catch (error) {
+      this.isReachable = false; // ❌ Mark as unreachable
+
+      // 🔔 Notify HomeKit of communication failure
+      if (this.sensorService) {
+        this.getStateDefinition().forEach(({ state }) => {
+          const characteristic = this.platform.Characteristic[
+            state as keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+          this.sensorService.updateCharacteristic(characteristic, new this.platform.api.hap.HapStatusError(
+            this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+          ));
+        });
+      }
+
+      const axiosError = error as AxiosError;
+      if (axios.isAxiosError(axiosError)) {
+        this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
+      } else {
+        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON.`);
+      }
+    }
+  }
   
   private processSensorState( data: Record<string, unknown> | undefined, isSharedData: boolean ): void {
     if (!data) {
@@ -292,45 +334,6 @@ export class platformSensorGeneric {
         this.platform.log.warn(`${this.deviceName}: Received invalid ${state} value: ${value} (valid range: ${range[0]} to ${range[1]}).`);
       }
     });
-  }
-  
-  private updateSensorStatusFromSharedData( data?: Record<string, unknown> ): void {
-    this.processSensorState(data, true);
-  }
-  
-  private async getSensorState(): Promise<void> {
-    if (!this.urlStatus) {
-      this.platform.log.warn(`${this.deviceName}: Ignoring request; No status URL defined.`);
-      return;
-    }
-  
-    try {
-      this.isReachable = true; // ✅ Mark as reachable
-      const response = await axios.get(this.urlStatus, { timeout: 8000 });
-      const data = response.data;
-  
-      this.processSensorState(data, false);
-    } catch (error) {
-      this.isReachable = false; // ❌ Mark as unreachable
-
-      // 🔔 Notify HomeKit of communication failure
-      if (this.sensorService) {
-        this.getStateDefinition().forEach(({ state }) => {
-          const characteristic = this.platform.Characteristic[
-            state as keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
-          this.sensorService.updateCharacteristic(characteristic, new this.platform.api.hap.HapStatusError(
-            this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
-          ));
-        });
-      }
-
-      const axiosError = error as AxiosError;
-      if (axios.isAxiosError(axiosError)) {
-        this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
-      } else {
-        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON.`);
-      }
-    }
   }
   
   private initMQTT() {

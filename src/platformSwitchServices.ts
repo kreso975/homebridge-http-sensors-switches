@@ -1,9 +1,9 @@
 import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
-import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
-import { getNestedValue, hasNestedKey } from './lib/utilities.js';          // Include utility function for nested value retrieval
-import { discordWebHooks } from './lib/discordWebHooks.js';   // Include Discord webhook library
+import { SharedPolling, SharedData } from './lib/SharedPolling.js';     // Include shared polling library
+import { getNestedValue, hasNestedKey } from './lib/utilities.js';      // Include utility function for nested value retrieval
+import { discordWebHooks } from './lib/discordWebHooks.js';             // Include Discord webhook library
 
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
@@ -96,11 +96,15 @@ export class platformSwitch {
         this.platform,
         this.sharedPollingInterval, // Set the polling interval to 5 sec or from config value
       );
-    
+      
       // Subscribe to data updates
       sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
-        //this.platform.log.debug(`${this.deviceName}: Data updated event triggered with data:`, data);
+        this.isReachable = true; // ✅ Mark as reachable
         this.updateSwitchStatusFromSharedData(data);
+      });
+
+      sharedPollingInstance.on('dataError', () => {
+        this.isReachable = false; // ❌ Mark as unreachable
       });
     } else if (this.urlStatus) {
       this.startIndividualPolling();

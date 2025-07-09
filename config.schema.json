@@ -445,9 +445,7 @@
                 { "title": "Shower head", "enum": [2] },
                 { "title": "Tap", "enum": [3] }
               ],
-              "required": true,
-              "default": 1,
-              "placeholder": "1"
+              "required": false
             },
             "sensorUrl": {
               "title": "Sensor URL",
@@ -794,7 +792,7 @@
       {
         "key": "devices[].paramNameValveType",
         "condition": {
-                "functionBody": "return model.devices[arrayIndices] && model.devices[arrayIndices].deviceType === 'Valve';"
+                "functionBody": "return model.devices[arrayIndices].deviceType === 'Valve';"
               }
       },
       "devices[].deviceName",

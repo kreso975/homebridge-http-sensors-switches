@@ -246,9 +246,7 @@ export class platformLightBulb {
   private wrapGetHandler(state: keyof typeof this.lightBulbStates): (callback: (error: Error | null, value?: CharacteristicValue) => void) => void {
     return (callback) => {
       if (!this.isReachable) {
-        callback(new this.platform.api.hap.HapStatusError(
-          this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
-        ));
+        callback(new this.platform.api.hap.HapStatusError( this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE ));
         return;
       }
 
@@ -260,9 +258,7 @@ export class platformLightBulb {
     postSetFn?: () => void ): (value: CharacteristicValue, callback: CharacteristicSetCallback) => void {
     return (value, callback) => {
       if (!this.isReachable) {
-        callback(new this.platform.api.hap.HapStatusError(
-          this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
-        ));
+        callback(new this.platform.api.hap.HapStatusError( this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE ));
         return;
       }
 

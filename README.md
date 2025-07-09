@@ -17,7 +17,7 @@
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-donate-gray?logo=ko-fi&logoColor=white&labelColor=blue)](https://ko-fi.com/kreso975)
 
-This plugin communicates with your devices using HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Fan, Garage Door, Shades / Blinds, Temperature/Humidity, Motion, Contact and Occupancy sensor, Air Quality, Smoke, Carbon Dioxide and Light Sensor.  
+This plugin communicates with your devices using HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Fan, Valve, Sprinkler / Irrigation, Shower, Tap, Door, Garage Door, Shades / Blinds, Temperature/Humidity, Motion, Contact and Occupancy sensor, Air Quality, Smoke, Carbon Dioxide and Light Sensor.  
     
 Simple Discord Webhooks available in Light Bulb, Switches and Outlets and sensors.   
 
@@ -39,8 +39,20 @@ Simple Discord Webhooks available in Light Bulb, Switches and Outlets and sensor
     "temperature2": 24.43
 }
 ```  
-  
-<br><br>
+<details>
+<summary>⚙️ Parameters</summary>
+
+```json
+{
+    "sharedPolling": true,
+    "sharedPollingId": "Switches",
+    "sharedPollingInterval": 5000, // Miliseconds - 5sec
+    "urlStatus": "THIS MUST BE INSERTED FOR ALL IN SHARED POLL",
+}
+```  
+
+</details>  
+<br>
 
 ## 🕺 Motion, Contact & Occupancy Sensor 
 > [!NOTE]  
@@ -271,10 +283,48 @@ Sensor JSON file example
 ```
 
 </details>
+<br>
+
+## 💧💦 🚿  Valve, Sprinkler / Irrigation, Tap, Shower  
+
+> [!NOTE]  
+>  
+> HTTP  
+> Read interval 5 sec  
+> 
+> If param InUse is not in use SET it with the same value as StatusActive so that can be triggered with same value, enabling it to set On/Off    
+>   
+>  Param ValveType is set in Config so it does not need to be set in JSON. Dynamic change is not supported in current plugin version
+>  
+
+<details>
+<summary>⚙️ Parameters</summary>
+    
+| **Param** 	| **Description** 	| **Values** 	|  
+|---	|---	|:---:	|  
+| paramNameStatusActive <br> mqttSwitch	| Set Valve Status 	| 0 (Inactive), 1 (Active) 	|  
+| paramNameInUse <br> mqttInUse 	| In Use Status 	| 0 (Not in Use), 1 (In Use) 	| 
+| paramNameValveType	| Valve Type 	| 0: Generic valve, 1: Irrigation, 2: Shower head, 3: Tap 	| 
+  
+</details>
+<br>  
+
+<details>
+<summary>⚙️ Valve JSON Example</summary>
+
+```json
+{
+    "StatusActive": 0,
+    "InUse": 0,
+    "ValveType": 1
+}
+```
+
+</details>
 
 <br>
 
-## <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/garage.svg?raw=true" alt="Garage Door plugin" height=26 width=26 />  Garage Door, Window, <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/blinds.svg?raw=true" alt=", Blinds / Shades plugin" height=26 width=26 /> Blinds / Shades  
+## <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/garage.svg?raw=true" alt="Garage Door plugin" height=26 width=26 />  Door, Garage Door, Window, <img src="https://github.com/kreso975/homebridge-http-sensors-switches/blob/latest/img/blinds.svg?raw=true" alt=", Blinds / Shades plugin" height=26 width=26 /> Blinds / Shades  
 
 > [!NOTE]   
 >   
@@ -288,6 +338,7 @@ Sensor JSON file example
 | **Param** 	| **Description** 	| **Values** 	|  
 |---	|---	|:---:	|  
 | paramNameTargetDoorState <br> mqttTargetDoorState	| SET Door position 	| 0 (Open), 1 (Closed) 	|  
+| paramNamePositionState <br> mqttPositionState	| Door state 	| 0 (Closing), 1 (Opening), 2 (stopped) 	|  
 | paramNameCurrentDoorState <br> mqttCurrentDoorState 	| Door state 	| 0: Open, 1: Closed, 2: Opening, 3: Closing, 4: Stopped 	| 
 | paramNameObstructionDetected <br> mqttObstructionDetected 	| Read Obstruction 	| 0: false, 1: true 	| 
 | paramNameStatusJammed <br> mqttStatusJammed 	| Is Jammed 	| 0 (not jammed), 1 (Jammed) 	| 
@@ -304,6 +355,13 @@ Sensor JSON file example
 
 ```json
 {
+    "door": {
+        "TargetPosition": 0,  // 0 - 100 %
+        "CurrentPosition": 0, // 0 - 100 %
+        "PositionState": 2,
+        "ObstructionDetected": 0,
+        "DeviceJammed": 0,
+    },
     "garage": {
         "TargetDoorState": 0,
         "CurrentDoorState": 1,
@@ -714,6 +772,7 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 | paramNameTargetDoorState                    | JSON Parameter Name for Target Door State | true          |
 | paramNameTargetFanState                     | JSON Parameter Name for Automation  | false             |
 | paramNameTargetPosition                     | JSON Parameter Name for Target Position | true          |
+| paramNameValveType                          | JSON Parameter Name for Valve Type - 0: Generic valve, 1: Irrigation, 2: Shower head, 3: Tap | true          |
 | rgbParamName                                | JSON Parameter Name for RGB color   | false             |
 | saturationParamName                         | JSON Parameter Name for Saturation  | false             |
 | sensorUrl                                   | JSON file containing sensor readings (temperature, humidity) | true |
@@ -747,7 +806,7 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 > **Node v18 Information**  
 > Node.js version 18 (LTS) is scheduled to reach its end-of-life on April 30, 2025. After this date, it will no longer receive security updates or maintenance releases. If you're using Node.js 18, it's recommended to upgrade to a newer version, such as Node.js 20 or 22, to ensure continued security and stability.
 >  
-> Latest version of plugin supporting Node.js v18 is v2.0.x
+> Latest version of plugin supporting Node.js v18 is v2.1.x
 >
 > This template currently has a
 > - `package.json -> engines.node` value of `"^18.20.4 || ^20.18.0 || ^22.10.0"`

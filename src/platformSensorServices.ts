@@ -96,7 +96,12 @@ export class platformSensors {
     
       // Subscribe to data updates
       sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
+        this.isReachable = true; // ✅ Mark as reachable
         this.updateSensorStatusFromSharedData(data);
+      });
+
+      sharedPollingInstance.on('dataError', () => {
+        this.isReachable = false; // ❌ Mark as unreachable
       });
     } else if (this.sensorUrl) {
       this.getSensorData();
@@ -213,17 +218,12 @@ export class platformSensors {
         
         if (typeof tmpTemperature === 'number') {
           this.currentTemperature = tmpTemperature;
-          this.temperatureService.updateCharacteristic(
-            this.platform.Characteristic.CurrentTemperature,
-            this.currentTemperature,
-          );
+          this.temperatureService.updateCharacteristic( this.platform.Characteristic.CurrentTemperature, this.currentTemperature );
+          if ( this.enableLogging ) {
+            this.platform.log.info(this.deviceName,': Temperature = ',this.currentTemperature.toString());
+          }
         } else {
-          this.platform.log.warn(
-            this.deviceName,
-            ': Error: Cannot find or convert: ',
-            this.temperatureName,
-            ' in JSON',
-          );
+          this.platform.log.warn(this.deviceName, ': Error: Cannot find or convert: ', this.temperatureName, ' in JSON' );
         }
       } else {
         this.platform.log.warn(this.deviceName, ': Error: Temperature name is not defined');
@@ -237,10 +237,10 @@ export class platformSensors {
     
         if (typeof tmpHumidity === 'number') {
           this.currentHumidity = tmpHumidity;
-          this.humidityService.updateCharacteristic(
-            this.platform.Characteristic.CurrentRelativeHumidity,
-            this.currentHumidity,
-          );
+          this.humidityService.updateCharacteristic( this.platform.Characteristic.CurrentRelativeHumidity, this.currentHumidity );
+          if ( this.enableLogging ) {
+            this.platform.log.info(this.deviceName,': Humidity = ',this.currentHumidity.toString());
+          }
         } else {
           this.platform.log.warn( this.deviceName, ': Error: Cannot find or convert: ', this.humidityName, ' in JSON' );
         }
@@ -317,7 +317,7 @@ export class platformSensors {
       }
 
       if ( topic === this.mqttHumidity ) {
-        if ( this.enableLogging) {
+        if ( this.enableLogging ) {
           this.platform.log.info(this.deviceName,': Humidity = ',message.toString());
         }
         this.currentHumidity = Number(message.toString());

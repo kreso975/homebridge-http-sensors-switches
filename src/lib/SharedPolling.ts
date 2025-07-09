@@ -161,7 +161,10 @@ export class SharedPolling extends EventEmitter {
     } catch (error) {
       // If necessary, emit an error event here so the device can be marked as "No Response"
       const errorMessage = (error as AxiosError).message;
-      this.platform.log.debug( `Error fetching data for URL: ${this.url} - ${errorMessage}` );
+      this.platform.log.warn( `Error fetching data for URL: ${this.url} - ${errorMessage}` );
+      
+      // Emit error event with optional error info
+      this.emit('dataError', error);
     }
   }
 

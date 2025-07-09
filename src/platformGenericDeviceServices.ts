@@ -142,7 +142,12 @@ export class platformGenericDevice {
 
       // Subscribe to data updates
       sharedPollingInstance.on('dataUpdated', (data: SharedData) => {
-        this.updateDeviceStatusFromSharedData(data);  
+        this.isReachable = true; // ✅ Mark as reachable
+        this.updateDeviceStatusFromSharedData(data);
+      });
+
+      sharedPollingInstance.on('dataError', () => {
+        this.isReachable = false; // ❌ Mark as unreachable
       });
     } else if (this.urlStatus) {
       this.getDeviceState();
