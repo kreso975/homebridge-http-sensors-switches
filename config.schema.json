@@ -6,7 +6,7 @@
   "singular": true,
   "schema": {
     "type": "object",
-    "properties": {     
+    "properties": {
       "name": {
         "title": "Name",
         "type": "string",
@@ -16,7 +16,7 @@
         "title": "Description",
         "type": "string",
         "required": true
-      }, 
+      },
       "devices": {
         "type": "array",
         "title": "Devices",
@@ -27,25 +27,24 @@
             "deviceType": {
               "type": "string",
               "title": "Device Type",
-              "oneOf":
-              [
-                { "title": "Temperature & Humidity Sensor", "enum": ["Sensor"] },
-                { "title": "Switch", "enum": ["Switch"] },
-                { "title": "Outlet", "enum": ["Outlet"] },
-                { "title": "Light Bulb", "enum": ["LightBulb"] },
-                { "title": "Fan", "enum": ["Fan"] },
-                { "title": "Motion Sensor", "enum": ["MotionSensor"] },
-                { "title": "Contact Sensor", "enum": ["ContactSensor"] },
-                { "title": "Light Sensor", "enum": ["LightSensor"] },
-                { "title": "Air Quality", "enum": ["AirQualitySensor"] },
-                { "title": "Carbon Dioxide", "enum": ["CarbonDioxideSensor"] },
-                { "title": "Smoke Sensor", "enum": ["SmokeSensor"] },
-                { "title": "Occupancy Sensor", "enum": ["OccupancySensor"] },
-                { "title": "Door", "enum": ["DoorOpener"] },
-                { "title": "Garage Door", "enum": ["GarageDoorOpener"] },
-                { "title": "Window", "enum": ["Window"] },
-                { "title": "Window Covering", "enum": ["WindowCovering"] },
-                { "title": "Valve", "enum": ["Valve"] }
+              "oneOf":[
+                {"title":"Temperature & Humidity Sensor","enum":["Sensor"]},
+                {"title":"Switch","enum":["Switch"]},
+                {"title":"Outlet","enum":["Outlet"]},
+                {"title":"Light Bulb","enum":["LightBulb"]},
+                {"title":"Fan","enum":["Fan"]},
+                {"title":"Motion Sensor","enum":["MotionSensor"]},
+                {"title":"Contact Sensor","enum":["ContactSensor"]},
+                {"title":"Light Sensor","enum":["LightSensor"]},
+                {"title":"Air Quality","enum":["AirQualitySensor"]},
+                {"title":"Carbon Dioxide","enum":["CarbonDioxideSensor"]},
+                {"title":"Smoke Sensor","enum":["SmokeSensor"]},
+                {"title":"Occupancy Sensor","enum":["OccupancySensor"]},
+                {"title":"Door","enum":["DoorOpener"]},
+                {"title":"Garage Door","enum":["GarageDoorOpener"]},
+                {"title":"Window","enum":["Window"]},
+                {"title":"Window Covering","enum":["WindowCovering"]},
+                {"title":"Valve","enum":["Valve"]}
               ],
               "required": true,
               "default": "Switch",
@@ -64,7 +63,7 @@
               "type": "string",
               "required": true
             },
-              "deviceName": {
+            "deviceName": {
               "title": "Device name",
               "description": "Device name",
               "type": "string",
@@ -76,13 +75,13 @@
               "type": "string",
               "required": false
             },
-              "deviceModel": {
+            "deviceModel": {
               "title": "Device Model",
               "description": "Device Model",
               "type": "string",
               "required": false
             },
-              "deviceSerialNumber": {
+            "deviceSerialNumber": {
               "title": "Device Serial Number",
               "description": "Device Serial number or leave it blank and will be generated automaticaly",
               "type": "string",
@@ -222,12 +221,6 @@
             },
             "urlDeviceControl": {
               "title": "HTTP address Device Control",
-              "description": "HTTP address where to send Device control commands",
-              "type": "string",
-              "required": false
-            },
-            "urlFanControl": {
-              "title": "HTTP address Fan Control",
               "description": "HTTP address where to send Device control commands",
               "type": "string",
               "required": false
@@ -418,12 +411,6 @@
               "type": "string",
               "required": false
             },
-            "paramNameBatteryLevel": {
-              "title": "Parameter Name for Battery Level",
-              "description": "JSON Parameter Name for Battery Level",
-              "type": "string",
-              "required": false
-            },
             "paramNameStatusLowBattery": {
               "title": "Parameter Name for Low Battery",
               "description": "JSON Parameter Name for Low Battery",
@@ -439,11 +426,11 @@
             "paramNameValveType": {
               "type": "number",
               "title": "Valve Type",
-              "oneOf": [
-                { "title": "Generic valve", "enum": [0] },
-                { "title": "Irrigation", "enum": [1] },
-                { "title": "Shower head", "enum": [2] },
-                { "title": "Tap", "enum": [3] }
+              "oneOf":[
+                {"title":"Generic valve","enum":[0]},
+                {"title":"Irrigation","enum":[1]},
+                {"title":"Shower head","enum":[2]},
+                {"title":"Tap","enum":[3]}
               ],
               "required": false
             },
@@ -782,1182 +769,609 @@
       }
     }
   },
-  "layout": [{
-    "key": "devices",
-    "type": "tabarray",
-    "title": "{{ value.deviceName || 'new Device' }}",
-    "items": [   
-      "devices[].enableLogging",  
-      "devices[].deviceType",
-      {
-        "key": "devices[].paramNameValveType",
-        "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Valve';"
-              }
-      },
-      "devices[].deviceName",
-      "devices[].deviceID",
-      "devices[].deviceManufacturer",
-      "devices[].deviceModel",
-      "devices[].deviceSerialNumber",
-      "devices[].deviceFirmwareVersion",
-      {
-        "key": "devices[]",
-        "type": "fieldset",
-        "title": "{{ value.title }}",
-        "items": [{
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Switch Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Switch';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].urlStatus",
-              "devices[].urlON",
-              "devices[].urlOFF",
-              "devices[].stateName",
-              "devices[].onStatusValue",
-              "devices[].offStatusValue"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Switch Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Switch';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttSwitch"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Switch Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Switch';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Sensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].sensorUrl",
-              "devices[].temperatureName",
-              "devices[].humidityName",
-              "devices[].updateInterval"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Sensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttTemperature",
-              "devices[].mqttHumidity"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Carbon Dioxide Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxideSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].urlStatus",
-              "devices[].updateInterval",
-              "devices[].paramNameCO2Detected",
-              "devices[].paramNameCO2Level",
-              "devices[].paramNameCO2PeakLevel",
-              "devices[].paramNameStatusActive",
-              "devices[].paramNameStatusFault",
-              "devices[].paramNameStatusLowBattery",
-              "devices[].paramNameStatusTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Carbon Dioxide Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxideSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttCO2Detected",
-              "devices[].mqttCO2Level",
-              "devices[].mqttCO2PeakLevel",
-              "devices[].mqttActive",
-              "devices[].mqttFault",
-              "devices[].mqttLowBattery",
-              "devices[].mqttTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Carbon Dioxide Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxideSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Motion Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].urlStatus",
-              "devices[].updateInterval",
-              "devices[].paramNameMotionDetected",
-              "devices[].paramNameStatusActive",
-              "devices[].paramNameStatusFault",
-              "devices[].paramNameStatusLowBattery",
-              "devices[].paramNameStatusTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Motion Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttMotionDetected",
-              "devices[].mqttActive",
-              "devices[].mqttFault",
-              "devices[].mqttLowBattery",
-              "devices[].mqttTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Motion Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Motion Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'ContactSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].urlStatus",
-              "devices[].updateInterval",
-              "devices[].paramNameContactSensorState",
-              "devices[].paramNameStatusActive",
-              "devices[].paramNameStatusFault",
-              "devices[].paramNameStatusLowBattery",
-              "devices[].paramNameStatusTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Motion Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'ContactSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttContactSensorState",
-              "devices[].mqttActive",
-              "devices[].mqttFault",
-              "devices[].mqttLowBattery",
-              "devices[].mqttTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Motion Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'ContactSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Light Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'LightSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].urlStatus",
-              "devices[].updateInterval",
-              "devices[].paramNameCurrentAmbientLightLevel",
-              "devices[].paramNameStatusActive",
-              "devices[].paramNameStatusFault",
-              "devices[].paramNameStatusLowBattery",
-              "devices[].paramNameStatusTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Light Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'LightSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttCurrentAmbientLightLevel",
-              "devices[].mqttActive",
-              "devices[].mqttFault",
-              "devices[].mqttLowBattery",
-              "devices[].mqttTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Light Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'LightSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Smoke Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'SmokeSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].urlStatus",
-              "devices[].updateInterval",
-              "devices[].paramNameSmokeDetected",
-              "devices[].paramNameStatusActive",
-              "devices[].paramNameStatusFault",
-              "devices[].paramNameStatusLowBattery",
-              "devices[].paramNameStatusTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Smoke Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'SmokeSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttSmokeDetected",
-              "devices[].mqttActive",
-              "devices[].mqttFault",
-              "devices[].mqttLowBattery",
-              "devices[].mqttTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Smoke Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'SmokeSensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Air Quality Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQualitySensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].urlStatus",
-              "devices[].updateInterval",
-              "devices[].paramNameAirQuality",
-              "devices[].paramNamePM2_5Density",
-              "devices[].paramNamePM10Density",
-              "devices[].paramNameOzoneDensity",
-              "devices[].paramNameNitrogenDioxideDensity",
-              "devices[].paramNameSulphurDioxideDensity",
-              "devices[].paramNameCarbonMonoxideLevel",
-              "devices[].paramNameStatusActive",
-              "devices[].paramNameStatusFault",
-              "devices[].paramNameStatusLowBattery",
-              "devices[].paramNameStatusTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Air Quality Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQualitySensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttAirQuality",
-              "devices[].mqttPM2_5Density",
-              "devices[].mqttPM10Density",
-              "devices[].mqttOzoneDensity",
-              "devices[].mqttNitrogenDioxideDensity",
-              "devices[].mqttSulphurDioxideDensity",
-              "devices[].mqttCarbonMonoxideLevel",
-              "devices[].mqttActive",
-              "devices[].mqttFault",
-              "devices[].mqttLowBattery",
-              "devices[].mqttTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Air Quality Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQualitySensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Occupancy Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'OccupancySensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].urlStatus",
-              "devices[].updateInterval",
-              "devices[].paramNameOccupancyDetected",
-              "devices[].paramNameStatusActive",
-              "devices[].paramNameStatusFault",
-              "devices[].paramNameStatusLowBattery",
-              "devices[].paramNameStatusTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Occupancy Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'OccupancySensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttOccupancyDetected",
-              "devices[].mqttActive",
-              "devices[].mqttFault",
-              "devices[].mqttLowBattery",
-              "devices[].mqttTampered"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Occupancy Sensor Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'OccupancySensor';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "condition": {
-              "functionBody": "return model.devices[arrayIndices].deviceType === 'LightBulb';"
-            },
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].useRGB",
-                  "devices[].useBrightness255",
-                  "devices[].useColorTKelvin"
-                ]
-              }
-            ]
-          },          
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Light Bulb Settings",
-            "condition": {
-              "functionBody": "return model.devices[arrayIndices].deviceType === 'LightBulb';"
-            },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].urlON",
-              "devices[].urlOFF",
-              "devices[].urlStatus",
-              "devices[].stateName",
-              "devices[].onStatusValue",
-              "devices[].offStatusValue",
-              "devices[].urlLightBulbControl",
-              "devices[].brightnessParamName",
-              {
-                "key": "devices[].rgbParamName",
-                "condition": {
-                  "functionBody": "return model.devices[arrayIndices].useRGB;"
-                }
-              },
-              {
-                "key": "devices[].saturationParamName",
-                "condition": {
-                  "functionBody": "return !model.devices[arrayIndices].useRGB;"
-                }
-              },
-              {
-                "key": "devices[].hueParamName",
-                "condition": {
-                  "functionBody": "return !model.devices[arrayIndices].useRGB;"
-                }
-              },
-              "devices[].colorTemperatureParamName"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Light Bulb Settings",
-            "condition": {
+  "layout": [
+    {
+      "key": "devices",
+      "type": "tabarray",
+      "title": "{{ value.deviceName || 'new Device' }}",
+      "items": [
+        "devices[].enableLogging",
+        "devices[].deviceType",
+        {
+          "key": "devices[].paramNameValveType",
+          "condition": {
+            "functionBody": "return model.devices[arrayIndices].deviceType === 'Valve';"
+          }
+        },
+        "devices[].deviceName",
+        "devices[].deviceID",
+        "devices[].deviceManufacturer",
+        "devices[].deviceModel",
+        "devices[].deviceSerialNumber",
+        "devices[].deviceFirmwareVersion",
+        {
+          "key": "devices[]",
+          "type": "fieldset",
+          "title": "{{ value.title }}",
+          "items": [
+            {
+              "key": "devices[]",
+              "type": "fieldset",
+              "condition": {
                 "functionBody": "return model.devices[arrayIndices].deviceType === 'LightBulb';"
               },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttSwitch",
-              "devices[].mqttBrightness",
-              {
-                "key": "devices[].mqttRGB",
-                "condition": {
-                  "functionBody": "return model.devices[arrayIndices].useRGB;"
+              "items": [
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "devices[].useRGB",
+                    "devices[].useBrightness255",
+                    "devices[].useColorTKelvin"
+                  ]
                 }
-              },
-              {
-                "key": "devices[].mqttHue",
-                "condition": {
-                  "functionBody": "return !model.devices[arrayIndices].useRGB;"
+              ]
+            },
+            {
+              "key": "devices[]",
+              "type": "fieldset",
+              "title": "⚙️ HTTP {{ value.deviceType }} Settings",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "devices[].sharedPolling",
+                    "devices[].sharedPollingId",
+                    "devices[].sharedPollingInterval"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Switch';"
+                  },
+                  "items": [
+                    "devices[].urlStatus",
+                    "devices[].urlON",
+                    "devices[].urlOFF",
+                    "devices[].stateName",
+                    "devices[].onStatusValue",
+                    "devices[].offStatusValue"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Sensor';"
+                  },
+                  "items": [
+                    "devices[].sensorUrl",
+                    "devices[].temperatureName",
+                    "devices[].humidityName",
+                    "devices[].updateInterval"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxideSensor';"
+                  },
+                  "items": [
+                    "devices[].urlStatus",
+                    "devices[].updateInterval",
+                    "devices[].paramNameCO2Detected",
+                    "devices[].paramNameCO2Level",
+                    "devices[].paramNameCO2PeakLevel",
+                    "devices[].paramNameStatusActive",
+                    "devices[].paramNameStatusFault",
+                    "devices[].paramNameStatusLowBattery",
+                    "devices[].paramNameStatusTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
+                  },
+                  "items": [
+                    "devices[].urlStatus",
+                    "devices[].updateInterval",
+                    "devices[].paramNameMotionDetected",
+                    "devices[].paramNameStatusActive",
+                    "devices[].paramNameStatusFault",
+                    "devices[].paramNameStatusLowBattery",
+                    "devices[].paramNameStatusTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'ContactSensor';"
+                  },
+                  "items": [
+                    "devices[].urlStatus",
+                    "devices[].updateInterval",
+                    "devices[].paramNameContactSensorState",
+                    "devices[].paramNameStatusActive",
+                    "devices[].paramNameStatusFault",
+                    "devices[].paramNameStatusLowBattery",
+                    "devices[].paramNameStatusTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'LightSensor';"
+                  },
+                  "items": [
+                    "devices[].urlStatus",
+                    "devices[].updateInterval",
+                    "devices[].paramNameCurrentAmbientLightLevel",
+                    "devices[].paramNameStatusActive",
+                    "devices[].paramNameStatusFault",
+                    "devices[].paramNameStatusLowBattery",
+                    "devices[].paramNameStatusTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'SmokeSensor';"
+                  },
+                  "items": [
+                    "devices[].urlStatus",
+                    "devices[].updateInterval",
+                    "devices[].paramNameSmokeDetected",
+                    "devices[].paramNameStatusActive",
+                    "devices[].paramNameStatusFault",
+                    "devices[].paramNameStatusLowBattery",
+                    "devices[].paramNameStatusTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQualitySensor';"
+                  },
+                  "items": [
+                    "devices[].urlStatus",
+                    "devices[].updateInterval",
+                    "devices[].paramNameAirQuality",
+                    "devices[].paramNamePM2_5Density",
+                    "devices[].paramNamePM10Density",
+                    "devices[].paramNameOzoneDensity",
+                    "devices[].paramNameNitrogenDioxideDensity",
+                    "devices[].paramNameSulphurDioxideDensity",
+                    "devices[].paramNameCarbonMonoxideLevel",
+                    "devices[].paramNameStatusActive",
+                    "devices[].paramNameStatusFault",
+                    "devices[].paramNameStatusLowBattery",
+                    "devices[].paramNameStatusTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'OccupancySensor';"
+                  },
+                  "items": [
+                    "devices[].urlStatus",
+                    "devices[].updateInterval",
+                    "devices[].paramNameOccupancyDetected",
+                    "devices[].paramNameStatusActive",
+                    "devices[].paramNameStatusFault",
+                    "devices[].paramNameStatusLowBattery",
+                    "devices[].paramNameStatusTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'LightBulb';"
+                  },
+                  "items": [
+                    "devices[].urlON",
+                    "devices[].urlOFF",
+                    "devices[].urlStatus",
+                    "devices[].stateName",
+                    "devices[].onStatusValue",
+                    "devices[].offStatusValue",
+                    "devices[].urlLightBulbControl",
+                    "devices[].brightnessParamName",
+                    {
+                      "key": "devices[].rgbParamName",
+                      "condition": {
+                        "functionBody": "return model.devices[arrayIndices].useRGB;"
+                      }
+                    },
+                    {
+                      "key": "devices[].saturationParamName",
+                      "condition": {
+                        "functionBody": "return !model.devices[arrayIndices].useRGB;"
+                      }
+                    },
+                    {
+                      "key": "devices[].hueParamName",
+                      "condition": {
+                        "functionBody": "return !model.devices[arrayIndices].useRGB;"
+                      }
+                    },
+                    "devices[].colorTemperatureParamName"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Outlet';"
+                  },
+                  "items": [
+                    "devices[].urlStatus",
+                    "devices[].urlON",
+                    "devices[].urlOFF",
+                    "devices[].stateName",
+                    "devices[].onStatusValue",
+                    "devices[].offStatusValue",
+                    "devices[].inUseStateName",
+                    "devices[].inUseOnStatusValue",
+                    "devices[].inUseOffStatusValue"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Fan';"
+                  },
+                  "items": [
+                    "devices[].methodUpdate",
+                    "devices[].urlStatus",
+                    "devices[].urlDeviceControl",
+                    "devices[].paramNameStatusActive",
+                    "devices[].paramNameRotationSpeed",
+                    "devices[].paramNameRotationDirection",
+                    "devices[].paramNameSwingMode",
+                    "devices[].paramNameCurrentFanState",
+                    "devices[].paramNameTargetFanState"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'GarageDoorOpener';"
+                  },
+                  "items": [
+                    "devices[].methodUpdate",
+                    "devices[].urlStatus",
+                    "devices[].urlDeviceControl",
+                    "devices[].paramNameTargetDoorState",
+                    "devices[].paramNameCurrentDoorState",
+                    "devices[].paramNameObstructionDetected",
+                    "devices[].paramNameStatusJammed"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'DoorOpener';"
+                  },
+                  "items": [
+                    "devices[].methodUpdate",
+                    "devices[].urlStatus",
+                    "devices[].urlDeviceControl",
+                    "devices[].paramNameTargetPosition",
+                    "devices[].paramNameCurrentPosition",
+                    "devices[].paramNamePositionState",
+                    "devices[].paramNameObstructionDetected",
+                    "devices[].paramNameStatusJammed"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Valve';"
+                  },
+                  "items": [
+                    "devices[].methodUpdate",
+                    "devices[].urlStatus",
+                    "devices[].urlDeviceControl",
+                    "devices[].paramNameStatusActive",
+                    "devices[].paramNameInUse"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Window';"
+                  },
+                  "items": [
+                    "devices[].methodUpdate",
+                    "devices[].urlStatus",
+                    "devices[].urlDeviceControl",
+                    "devices[].paramNameTargetPosition",
+                    "devices[].paramNameCurrentPosition",
+                    "devices[].paramNamePositionState"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'WindowCovering';"
+                  },
+                  "items": [
+                    "devices[].methodUpdate",
+                    "devices[].urlStatus",
+                    "devices[].urlDeviceControl",
+                    "devices[].paramNameTargetPosition",
+                    "devices[].paramNameCurrentPosition",
+                    "devices[].paramNamePositionState",
+                    "devices[].paramNameHoldPosition",
+                    "devices[].paramNameStatusJammed"
+                  ]
                 }
-              },
-              {
-                "key": "devices[].mqttSaturation",
-                "condition": {
-                  "functionBody": "return !model.devices[arrayIndices].useRGB;"
+              ]
+            },
+            {
+              "key": "devices[]",
+              "type": "fieldset",
+              "title": "📡 MQTT {{ value.deviceType }} Settings",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                "devices[].mqttReconnectInterval",
+                "devices[].mqttBroker",
+                "devices[].mqttPort",
+                "devices[].mqttUsername",
+                "devices[].mqttPassword",
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Switch';"
+                  },
+                  "items": [
+                    "devices[].mqttSwitch"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Sensor';"
+                  },
+                  "items": [
+                    "devices[].mqttTemperature",
+                    "devices[].mqttHumidity"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'CarbonDioxideSensor';"
+                  },
+                  "items": [
+                    "devices[].mqttCO2Detected",
+                    "devices[].mqttCO2Level",
+                    "devices[].mqttCO2PeakLevel",
+                    "devices[].mqttActive",
+                    "devices[].mqttFault",
+                    "devices[].mqttLowBattery",
+                    "devices[].mqttTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'MotionSensor';"
+                  },
+                  "items": [
+                    "devices[].mqttMotionDetected",
+                    "devices[].mqttActive",
+                    "devices[].mqttFault",
+                    "devices[].mqttLowBattery",
+                    "devices[].mqttTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'ContactSensor';"
+                  },
+                  "items": [
+                    "devices[].mqttContactSensorState",
+                    "devices[].mqttActive",
+                    "devices[].mqttFault",
+                    "devices[].mqttLowBattery",
+                    "devices[].mqttTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'LightSensor';"
+                  },
+                  "items": [
+                    "devices[].mqttCurrentAmbientLightLevel",
+                    "devices[].mqttActive",
+                    "devices[].mqttFault",
+                    "devices[].mqttLowBattery",
+                    "devices[].mqttTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'SmokeSensor';"
+                  },
+                  "items": [
+                    "devices[].mqttSmokeDetected",
+                    "devices[].mqttActive",
+                    "devices[].mqttFault",
+                    "devices[].mqttLowBattery",
+                    "devices[].mqttTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'AirQualitySensor';"
+                  },
+                  "items": [
+                    "devices[].mqttAirQuality",
+                    "devices[].mqttPM2_5Density",
+                    "devices[].mqttPM10Density",
+                    "devices[].mqttOzoneDensity",
+                    "devices[].mqttNitrogenDioxideDensity",
+                    "devices[].mqttSulphurDioxideDensity",
+                    "devices[].mqttCarbonMonoxideLevel",
+                    "devices[].mqttActive",
+                    "devices[].mqttFault",
+                    "devices[].mqttLowBattery",
+                    "devices[].mqttTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'OccupancySensor';"
+                  },
+                  "items": [
+                    "devices[].mqttOccupancyDetected",
+                    "devices[].mqttActive",
+                    "devices[].mqttFault",
+                    "devices[].mqttLowBattery",
+                    "devices[].mqttTampered"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'LightBulb';"
+                  },
+                  "items": [
+                    "devices[].mqttSwitch",
+                    "devices[].mqttBrightness",
+                    {
+                      "key": "devices[].mqttRGB",
+                      "condition": {
+                        "functionBody": "return model.devices[arrayIndices].useRGB;"
+                      }
+                    },
+                    {
+                      "key": "devices[].mqttHue",
+                      "condition": {
+                        "functionBody": "return !model.devices[arrayIndices].useRGB;"
+                      }
+                    },
+                    {
+                      "key": "devices[].mqttSaturation",
+                      "condition": {
+                        "functionBody": "return !model.devices[arrayIndices].useRGB;"
+                      }
+                    },
+                    "devices[].mqttColorTemperature"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Outlet';"
+                  },
+                  "items": [
+                    "devices[].mqttSwitch",
+                    "devices[].mqttInUse"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Fan';"
+                  },
+                  "items": [
+                    "devices[].mqttSwitch",
+                    "devices[].mqttRotationSpeed",
+                    "devices[].mqttRotationDirection",
+                    "devices[].mqttSwingMode",
+                    "devices[].mqttCurrentFanState",
+                    "devices[].mqttTargetFanState"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'GarageDoorOpener';"
+                  },
+                  "items": [
+                    "devices[].mqttTargetDoorState",
+                    "devices[].mqttCurrentDoorState",
+                    "devices[].mqttObstructionDetected",
+                    "devices[].mqttStatusJammed"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'DoorOpener';"
+                  },
+                  "items": [
+                    "devices[].mqttTargetPosition",
+                    "devices[].mqttCurrentPosition",
+                    "devices[].mqttPositionState",
+                    "devices[].mqttObstructionDetected",
+                    "devices[].mqttStatusJammed"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Valve';"
+                  },
+                  "items": [
+                    "devices[].StatusActive",
+                    "devices[].mqttInUse"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'Window';"
+                  },
+                  "items": [
+                    "devices[].mqttTargetPosition",
+                    "devices[].mqttCurrentPosition",
+                    "devices[].mqttPositionState"
+                  ]
+                },
+                {
+                  "type": "section",
+                  "condition": {
+                    "functionBody": "return model.devices[arrayIndices].deviceType === 'WindowCovering';"
+                  },
+                  "items": [
+                    "devices[].mqttTargetPosition",
+                    "devices[].mqttCurrentPosition",
+                    "devices[].mqttPositionState",
+                    "devices[].mqttHoldPosition",
+                    "devices[].mqttStatusJammed"
+                  ]
                 }
-              },
-              "devices[].mqttColorTemperature"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Light Bulb Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'LightBulb';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Outlet Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Outlet';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].urlStatus",
-              "devices[].urlON",
-              "devices[].urlOFF",
-              "devices[].stateName",
-              "devices[].onStatusValue",
-              "devices[].offStatusValue",
-              "devices[].inUseStateName",
-              "devices[].inUseOnStatusValue",
-              "devices[].inUseOffStatusValue"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Outlet Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Outlet';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttSwitch",
-              "devices[].mqttInUse"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Outlet Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Outlet';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Fan Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Fan';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].methodUpdate",
-              "devices[].urlStatus",
-              "devices[].urlDeviceControl",
-              "devices[].paramNameStatusActive",
-              "devices[].paramNameRotationSpeed",
-              "devices[].paramNameRotationDirection",
-              "devices[].paramNameSwingMode",
-              "devices[].paramNameCurrentFanState",
-              "devices[].paramNameTargetFanState"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Fan Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Fan';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttSwitch",
-              "devices[].mqttRotationSpeed",
-              "devices[].mqttRotationDirection",
-              "devices[].mqttSwingMode",
-              "devices[].mqttCurrentFanState",
-              "devices[].mqttTargetFanState"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Fan Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Fan';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Garage Door Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'GarageDoorOpener';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].methodUpdate",
-              "devices[].urlStatus",
-              "devices[].urlDeviceControl",
-              "devices[].paramNameTargetDoorState",
-              "devices[].paramNameCurrentDoorState",
-              "devices[].paramNameObstructionDetected",
-              "devices[].paramNameStatusJammed"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Garage Door Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'GarageDoorOpener';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttTargetDoorState",
-              "devices[].mqttCurrentDoorState",
-              "devices[].mqttObstructionDetected",
-              "devices[].mqttStatusJammed"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Garage Door Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'GarageDoorOpener';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Door Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'DoorOpener';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].methodUpdate",
-              "devices[].urlStatus",
-              "devices[].urlDeviceControl",
-              "devices[].paramNameTargetPosition",
-              "devices[].paramNameCurrentPosition",
-              "devices[].paramNamePositionState",
-              "devices[].paramNameObstructionDetected",
-              "devices[].paramNameStatusJammed"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Door Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'DoorOpener';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttTargetPosition",
-              "devices[].mqttCurrentPosition",
-              "devices[].mqttPositionState",
-              "devices[].mqttObstructionDetected",
-              "devices[].mqttStatusJammed"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Door Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'DoorOpener';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Valve Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Valve';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].methodUpdate",
-              "devices[].urlStatus",
-              "devices[].urlDeviceControl",
-              "devices[].paramNameStatusActive",
-              "devices[].paramNameInUse"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Valve Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Valve';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].StatusActive",
-              "devices[].mqttInUse"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Valve Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Valve';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Window Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Window';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].methodUpdate",
-              "devices[].urlStatus",
-              "devices[].urlDeviceControl",
-              "devices[].paramNameTargetPosition",
-              "devices[].paramNameCurrentPosition",
-              "devices[].paramNamePositionState"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Window Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Window';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttTargetPosition",
-              "devices[].mqttCurrentPosition",
-              "devices[].mqttPositionState"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Window Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'Window';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "HTTP Window Covering Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'WindowCovering';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              {
-                "type": "flex",
-                "flex-flow": "row wrap",
-                "items": [
-                  "devices[].sharedPolling",
-                  "devices[].sharedPollingId",
-                  "devices[].sharedPollingInterval"
-                ]
-              },
-              "devices[].methodUpdate",
-              "devices[].urlStatus",
-              "devices[].urlDeviceControl",
-              "devices[].paramNameTargetPosition",
-              "devices[].paramNameCurrentPosition",
-              "devices[].paramNamePositionState",
-              "devices[].paramNameHoldPosition",
-              "devices[].paramNameStatusJammed"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "MQTT Window Covering Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'WindowCovering';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].mqttReconnectInterval",
-              "devices[].mqttBroker",
-              "devices[].mqttPort",
-              "devices[].mqttUsername",
-              "devices[].mqttPassword",
-              "devices[].mqttTargetPosition",
-              "devices[].mqttCurrentPosition",
-              "devices[].mqttPositionState",
-              "devices[].mqttHoldPosition",
-              "devices[].mqttStatusJammed"
-            ]
-          },
-          {
-            "key": "devices[]",
-            "type": "fieldset",
-            "title": "Discord Webhook Window Covering Settings",
-            "condition": {
-                "functionBody": "return model.devices[arrayIndices].deviceType === 'WindowCovering';"
-              },
-            "expandable": true,
-            "expanded": false,
-            "items": [
-              "devices[].discordWebhook",
-              "devices[].discordUsername",
-              "devices[].discordAvatar",
-              "devices[].discordMessage"
-            ]
-          }    
-        ]
-      }
-    ]
-  }]
+              ]
+            },
+            {
+              "key": "devices[]",
+              "type": "fieldset",
+              "title": "🗣️ Discord {{ value.deviceType }} Webhook Settings",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                "devices[].discordWebhook",
+                "devices[].discordUsername",
+                "devices[].discordAvatar",
+                "devices[].discordMessage"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
