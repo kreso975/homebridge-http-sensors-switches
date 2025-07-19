@@ -393,6 +393,12 @@
               "type": "string",
               "required": false
             },
+            "paramNameVOCDensity": {
+              "title": "Parameter Name for VOC Level",
+              "description": "JSON Parameter Name for Volatile Organic Compounds Level",
+              "type": "string",
+              "required": false
+            },
             "paramNameCO2Level": {
               "title": "Parameter Name for CO2 Level",
               "description": "JSON Parameter Name for CO2 Level",
@@ -653,6 +659,12 @@
             "mqttCarbonMonoxideLevel": {
               "title": "MQTT Topic for Carbon Monoxide Level",
               "description": "MQTT Topic Name for Carbon Monoxide Level",
+              "type": "string",
+              "required": false
+            },
+            "mqttVOCDensity": {
+              "title": "MQTT Topic for VOC Level",
+              "description": "MQTT Topic Name for Volatile Organic Compounds Level",
               "type": "string",
               "required": false
             },
@@ -946,6 +958,7 @@
                     "devices[].paramNameNitrogenDioxideDensity",
                     "devices[].paramNameSulphurDioxideDensity",
                     "devices[].paramNameCarbonMonoxideLevel",
+                    "devices[].paramNameVOCDensity",
                     "devices[].paramNameStatusActive",
                     "devices[].paramNameStatusFault",
                     "devices[].paramNameStatusLowBattery",
@@ -1223,6 +1236,7 @@
                     "devices[].mqttNitrogenDioxideDensity",
                     "devices[].mqttSulphurDioxideDensity",
                     "devices[].mqttCarbonMonoxideLevel",
+                    "devices[].mqttVOCDensity",
                     "devices[].mqttActive",
                     "devices[].mqttFault",
                     "devices[].mqttLowBattery",

@@ -172,6 +172,7 @@ export const sensorConfig: Sensors = {
       'NitrogenDioxideDensity',
       'SulphurDioxideDensity',
       'CarbonMonoxideLevel',
+      'VOCDensity',
       'StatusActive',
       'StatusFault',
       'StatusLowBattery',
@@ -186,6 +187,7 @@ export const sensorConfig: Sensors = {
       NitrogenDioxideDensity: { defaultValue: 0, range: [0, 1000] as [number, number] },  // Valid values: 0 to 1000
       SulphurDioxideDensity: { defaultValue: 0, range: [0, 1000] as [number, number] },   // Valid values: 0 to 1000
       CarbonMonoxideLevel: { defaultValue: 0, range: [0, 1000] as [number, number] },     // Valid values: 0 to 1000
+      VOCDensity: { defaultValue: 0, range: [0, 1000] as [number, number] },      // Valid values: 0 to 1000
       StatusActive: { defaultValue: 0, range: [0, 1] as [number, number] },       // Valid values: 0 (Inactive), 1 (Active)
       StatusFault: { defaultValue: 0, range: [0, 1] as [number, number] },        // Valid values: 0 (No Fault), 1 (Fault Detected)
       StatusLowBattery: { defaultValue: 0, range: [0, 1] as [number, number] },   // Valid values: 0 (Battery OK), 1 (Low Battery)
@@ -199,6 +201,7 @@ export const sensorConfig: Sensors = {
       NitrogenDioxideDensity: { param: 'NitrogenDioxideDensity', topic: 'NitrogenDioxideDensity', webhook: false },
       SulphurDioxideDensity: { param: 'SulphurDioxideDensity', topic: 'SulphurDioxideDensity', webhook: false },
       CarbonMonoxideLevel: { param: 'CarbonMonoxideLevel', topic: 'CarbonMonoxideLevel', webhook: false },
+      VOCDensity: { param: 'VOCDensity', topic: 'VOCDensity', webhook: false },
       StatusActive: { param: 'StatusActive', topic: 'StatusActive', webhook: false },
       StatusFault: { param: 'StatusFault', topic: 'StatusFault', webhook: false },
       StatusLowBattery: { param: 'StatusLowBattery', topic: 'StatusLowBattery', webhook: true },

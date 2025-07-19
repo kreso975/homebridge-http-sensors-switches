@@ -410,10 +410,11 @@ Sensor JSON file example
 | paramNameAirQuality <br> mqttAirQuality                       | Air Quality Index                  | Range: 1 (Excellent) to 5 (Very Poor)         |
 | paramNamePM2_5Density <br> mqttPM2_5Density                   | PM2.5 Particle Density             | Range: 0 to 500 µg/m³                         |
 | paramNamePM10Density <br> mqttPM10Density                     | PM10 Particle Density              | Range: 0 to 500 µg/m³                         |
-| paramNameOzoneDensity <br> mqttOzoneDensity                   | Ozone Concentration                | Range: 0 to 500 µg/m³                         |
-| paramNameNitrogenDioxideDensity <br> mqttNitrogenDioxideDensity | NO₂ Concentration                | Range: 0 to 500 µg/m³                         |
-| paramNameSulphurDioxideDensity <br> mqttSulphurDioxideDensity | SO₂ Concentration                | Range: 0 to 500 µg/m³                         |
-| paramNameCarbonMonoxideLevel <br> mqttCarbonMonoxideLevel     | CO Concentration                   | Range: 0 to 500 ppm                           |
+| paramNameOzoneDensity <br> mqttOzoneDensity                   | Ozone Concentration                | Range: 0 to 1000 µg/m³                         |
+| paramNameNitrogenDioxideDensity <br> mqttNitrogenDioxideDensity | NO₂ Concentration                | Range: 0 to 1000 µg/m³                         |
+| paramNameSulphurDioxideDensity <br> mqttSulphurDioxideDensity | SO₂ Concentration                | Range: 0 to 1000 µg/m³                         |
+| paramNameCarbonMonoxideLevel <br> mqttCarbonMonoxideLevel     | CO Concentration                   | Range: 0 to 1000 ppm                           |
+| paramNameVOCDensity <br> mqttVOCDensity     | Volatile Organic Compounds Level                   | Range: 0 to 1000 µg/m³                           |
 
    
 </details>
@@ -432,6 +433,20 @@ Sensor JSON file example
       "Fault": 0,
       "LowBattery": 0,
       "Tampered": 0
+   },
+   "AirQualitySensor": {
+    "AirQuality": 3,
+    "PM2_5Density": 12.5,
+    "PM10Density": 25.0,
+    "OzoneDensity": 75.0,
+    "NitrogenDioxideDensity": 40.0,
+    "SulphurDioxideDensity": 20.0,
+    "CarbonMonoxideLevel": 0.9,
+    "VOXDensity": 350.0,
+    "StatusActive": true,
+    "StatusFault": false,
+    "StatusLowBattery": false,
+    "StatusTampered": false
    },
    "SmokeDetected": 0,
    "StatusActive" : true,
