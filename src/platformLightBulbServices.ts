@@ -1,12 +1,15 @@
 import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
+import axios, { AxiosError } from 'axios';
+import mqtt, { IClientOptions } from 'mqtt';
+
 import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
+import { MQTTManager } from './lib/MQTTManager.js';                     // Include MQTTManager
 import { getNestedValue, hasNestedKey } from './lib/utilities.js';        // Include utility function for nested value retrieval
 import { discordWebHooks } from './lib/discordWebHooks.js';               // Include Discord webhook library
 
-import axios, { AxiosError } from 'axios';
-import mqtt, { IClientOptions } from 'mqtt';
+
 
 /**
  * Platform Accessory
@@ -87,8 +90,9 @@ export class platformLightBulb {
   ]);
 
   constructor(
-    public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    private readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
+    private readonly accessory: PlatformAccessory,
+    private mqttManager: MQTTManager,
   ) {
     const device = this.accessory.context.device;
 
@@ -699,9 +703,7 @@ export class platformLightBulb {
   }  
 
   // Connect to MQTT and update Lights
-  private initMQTT() {
-    const mqttSubscribedTopics: string | string[] | mqtt.ISubscriptionMap = [];
-
+  private initMQTT(): void {
     const mqttOptions: IClientOptions = {
       keepalive: 10,
       protocol: 'mqtt',
@@ -715,28 +717,25 @@ export class platformLightBulb {
       reconnectPeriod: Number(this.mqttReconnectInterval) * 1000,
     };
 
-    // Subscribe to all MQTT Topics
+    const mqttSubscribedTopics: string[] = [];
+
     if (this.mqttSwitch) {
       mqttSubscribedTopics.push(this.mqttSwitch);
     }
-
     if (this.mqttBrightness) {
       mqttSubscribedTopics.push(this.mqttBrightness);
     }
-
     if (this.mqttColorTemperature) {
       mqttSubscribedTopics.push(this.mqttColorTemperature);
     }
-    
-    if ( !this.useRGB ) {
+
+    if (!this.useRGB) {
       if (this.mqttBrightness) {
         mqttSubscribedTopics.push(this.mqttBrightness);
       }
-    
       if (this.mqttHue) {
         mqttSubscribedTopics.push(this.mqttHue);
       }
-    
       if (this.mqttSaturation) {
         mqttSubscribedTopics.push(this.mqttSaturation);
       }
@@ -745,173 +744,144 @@ export class platformLightBulb {
         mqttSubscribedTopics.push(this.mqttRGB);
       }
     }
-    
-    this.mqttClient = mqtt.connect(mqttOptions);
-    this.mqttClient.on('connect', () => {
-      this.isReachable = true; // ✅ Mark as reachable
-      if ( this.enableLogging) {
-        this.platform.log.info(this.deviceName, ': MQTT Connected');
-      }
 
-      this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
-        if (!err) {
-          if ( this.enableLogging) {
-            this.platform.log.info(this.deviceName, ': Subscribed to: ', mqttSubscribedTopics.toString());
-          }
-        } else {
-          // Need to insert error handler
-          this.platform.log.warn(this.deviceName, err.toString());
-        }
-      });
+    // ✅ Initialize MQTTManager
+    this.mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
+
+    // ✅ Register error handler
+    this.mqttManager.registerDeviceErrorHandler(this.deviceName, (err) => {
+      this.isReachable = false;
+      this.platform.log.warn(this.deviceName, ': Connection error:', err.message);
+      this.platform.log.warn(this.deviceName, ': Reconnecting in:', this.mqttReconnectInterval, 'seconds.');
     });
 
-    this.mqttClient.on('message', (topic, message) => {
-      //this.platform.log(this.deviceName,': Received message: ', Number(message));  
+    // ✅ Subscribe to topics
+    this.mqttManager.subscribeMultiple(this.deviceName, mqttSubscribedTopics, (topic, message) => {
+      const msg = message.toString();
+
       if (topic === this.mqttSwitch) {
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Status set to: ', this.getStatus(Boolean(Number(message))));
-        }
-
-        if (message.toString() === '1'  || message.toString() === 'true') {
-          this.lightBulbStates.On = true;
-        }
-        if (message.toString() === '0'  || message.toString() === 'false') {
-          this.lightBulbStates.On = false;
-        }
-
+        this.lightBulbStates.On = msg === '1' || msg === 'true';
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.lightBulbStates.On);
-        // If is set dicordWebhook address
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Status set to:', this.getStatus(this.lightBulbStates.On));
+        }
         if (this.discordWebhook) {
           this.initDiscordWebhooks();
         }
       }
 
       if (topic === this.mqttBrightness) {
-        let brightness = Number(message);
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Brightness before convert is : ', brightness);
+        let brightness = Number(msg);
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Brightness before convert is:', brightness);
         }
         if (this.useBrightness255) {
-          const convertedValue = this.convertBrightness(brightness, 1);
-          if (convertedValue !== undefined) {
-            brightness = convertedValue;
+          const converted = this.convertBrightness(brightness, 1);
+          if (converted !== undefined) {
+            brightness = converted;
           } else {
             this.platform.log.warn(this.deviceName, ': Error: Invalid brightness value');
           }
         }
-        const fixedBrightness = this.checkAndFixValue('brightness', brightness);
-        this.lightBulbStates.Brightness = fixedBrightness;
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Brightness after convert is : ', fixedBrightness);
-        }
+        const fixed = this.checkAndFixValue('brightness', brightness);
+        this.lightBulbStates.Brightness = fixed;
         if (this.useRGB) {
           this.convertToHSV();
         }
-      
-        this.service.updateCharacteristic(this.platform.Characteristic.Brightness, this.lightBulbStates.Brightness);
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Brightness SET to: ', this.lightBulbStates.Brightness);
+        this.service.updateCharacteristic(this.platform.Characteristic.Brightness, fixed);
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Brightness SET to:', fixed);
         }
-      }      
+      }
 
       if (topic === this.mqttHue) {
-        const hue = Number(message);
-        const fixedHue = this.checkAndFixValue('hue', hue);
-        this.lightBulbStates.Hue = fixedHue;
-
-        if ( this.useRGB ) {
+        const hue = this.checkAndFixValue('hue', Number(msg));
+        this.lightBulbStates.Hue = hue;
+        if (this.useRGB) {
           this.convertToHSV();
-        } 
-
-        this.service.updateCharacteristic(this.platform.Characteristic.Hue, this.lightBulbStates.Hue);
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Hue SET to: ', this.lightBulbStates.Hue);
+        }
+        this.service.updateCharacteristic(this.platform.Characteristic.Hue, hue);
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Hue SET to:', hue);
         }
       }
 
       if (topic === this.mqttSaturation) {
-        const saturation = Number(message);
-        const fixedSaturation = this.checkAndFixValue('saturation', saturation);
-        this.lightBulbStates.Saturation = fixedSaturation;
-
-        if ( this.useRGB ) {
+        const saturation = this.checkAndFixValue('saturation', Number(msg));
+        this.lightBulbStates.Saturation = saturation;
+        if (this.useRGB) {
           this.convertToHSV();
-        } 
-
-        this.service.updateCharacteristic(this.platform.Characteristic.Saturation, this.lightBulbStates.Saturation);
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Saturation SET to: ', this.lightBulbStates.Saturation);
+        }
+        this.service.updateCharacteristic(this.platform.Characteristic.Saturation, saturation);
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Saturation SET to:', saturation);
         }
       }
 
       if (topic === this.mqttColorTemperature) {
-        let colorTemperature = Number(message);
-        
+        let temp = Number(msg);
         if (this.useColorTKelvin) {
-          colorTemperature = this.convertColorTemperature(colorTemperature, 0); // Convert from Kelvin to mired
+          temp = this.convertColorTemperature(temp, 0); // Kelvin to mired
         }
-        
-        const fixedColorTemperature = this.checkAndFixValue('colorTemperature', colorTemperature);
-        this.lightBulbStates.ColorTemperature = fixedColorTemperature;
-      
-        this.service.updateCharacteristic(this.platform.Characteristic.ColorTemperature, this.lightBulbStates.ColorTemperature);
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Color Temperature SET to: ', this.lightBulbStates.ColorTemperature);
+        const fixedTemp = this.checkAndFixValue('colorTemperature', temp);
+        this.lightBulbStates.ColorTemperature = fixedTemp;
+        this.service.updateCharacteristic(this.platform.Characteristic.ColorTemperature, fixedTemp);
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Color Temperature SET to:', fixedTemp);
         }
       }
-      
 
       if (topic === this.mqttRGB) {
-        let rgb = String(message);
-        if (rgb.startsWith('#')) {
-          rgb = rgb.slice(1);
+        const rgb = msg.startsWith('#') ? msg.slice(1) : msg;
+        this.lightBulbStates.RGB = rgb;
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': RGB SET to:', rgb);
         }
-
-        this.lightBulbStates.RGB = rgb; // Here should be a check if value is in proper range
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': RGB SET to: ', rgb);
-        }
-        if ( this.useRGB ) {
+        if (this.useRGB) {
           this.convertToHSV();
-        } 
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': RGB IS: ', this.lightBulbStates.RGB);
         }
         this.service.updateCharacteristic(this.platform.Characteristic.Brightness, this.lightBulbStates.Brightness);
         this.service.updateCharacteristic(this.platform.Characteristic.Hue, this.lightBulbStates.Hue);
         this.service.updateCharacteristic(this.platform.Characteristic.Saturation, this.lightBulbStates.Saturation);
-
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Brightness SET to: ', this.lightBulbStates.Brightness);
-          this.platform.log.info(this.deviceName, ': Hue SET to: ', this.lightBulbStates.Hue);
-          this.platform.log.info(this.deviceName, ': Saturation SET to: ', this.lightBulbStates.Saturation);
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Brightness SET to:', this.lightBulbStates.Brightness);
+          this.platform.log.info(this.deviceName, ': Hue SET to:', this.lightBulbStates.Hue);
+          this.platform.log.info(this.deviceName, ': Saturation SET to:', this.lightBulbStates.Saturation);
         }
       }
     });
 
-    this.mqttClient.on('offline', () => {
-      this.isReachable = false; // ❌ Mark as unreachable
-      this.platform.log.debug(this.deviceName, ': Client is offline');
+    // ✅ Connection events
+    this.mqttManager.on('connect', (id: string) => {
+      if (id === this.deviceName) {
+        this.isReachable = true;
+        if (this.enableLogging) {
+          this.platform.log.info(`${this.deviceName}: MQTT Connected`);
+        }
+      }
     });
 
-    this.mqttClient.on('reconnect', () => {
-      this.platform.log.debug(this.deviceName, ': Reconnecting...');
+    this.mqttManager.on('offline', (id: string) => {
+      if (id === this.deviceName) {
+        this.isReachable = false;
+        this.platform.log.debug(`${this.deviceName}: Client is offline`);
+      }
     });
 
-    this.mqttClient.on('close', () => {
-      this.isReachable = false; // ❌ Mark as unreachable
-      this.platform.log.debug(this.deviceName, ': Connection closed');
+    this.mqttManager.on('reconnect', (id: string) => {
+      if (id === this.deviceName) {
+        this.platform.log.debug(`${this.deviceName}: Reconnecting...`);
+      }
     });
 
-    // Handle errors
-    this.mqttClient.on('error', (err) => {
-      this.isReachable = false; // ❌ Mark as unreachable
-      this.platform.log.warn(this.deviceName, ': Connection error:', err);
-      this.platform.log.warn(this.deviceName, ': Reconnecting in: ', this.mqttReconnectInterval, ' seconds.');
-      //this.mqttClient.end();
+    this.mqttManager.on('disconnect', (id: string) => {
+      if (id === this.deviceName) {
+        this.isReachable = false;
+        this.platform.log.debug(`${this.deviceName}: Connection closed`);
+      }
     });
-
   }
+
 
   // Function to publish a message
   private publishMQTTmessage(what: string, value: CharacteristicValue, callback: CharacteristicSetCallback): void {
@@ -921,26 +891,23 @@ export class platformLightBulb {
 
     let topic: string | undefined;
     let message: string | undefined;
-  
-    // Always publish the On state
+
     if (what === 'On') {
       message = String(Number(!this.lightBulbStates.On));
       topic = this.mqttSwitch;
     }
-  
-    // Always publish the ColorTemperature if mqttColorTemperature is set
+
     if (what === 'ColorTemperature' && this.mqttColorTemperature) {
       const colorTemperature = this.checkAndFixValue('colorTemperature', Number(value));
       this.lightBulbStates.ColorTemperature = colorTemperature;
       message = String(colorTemperature);
       topic = this.mqttColorTemperature;
     }
-  
-    // Always publish the Brightness if mqttBrightness is set
+
     if (what === 'Brightness') {
       let brightness = this.checkAndFixValue('brightness', Number(value));
       this.lightBulbStates.Brightness = brightness;
-  
+
       if (this.useBrightness255) {
         const convertedValue = this.convertBrightness(brightness, 0);
         if (convertedValue !== undefined) {
@@ -950,87 +917,88 @@ export class platformLightBulb {
         }
       }
 
-      // This needs better Logic also i have redundant code in Brightnes, Hue and Saturation regarding RGB
-      if ( this.mqttBrightness) {
+      if (this.mqttBrightness) {
         message = String(brightness);
         topic = this.mqttBrightness;
       } else {
         const { Hue, Saturation, Brightness } = this.lightBulbStates;
         const { red, green, blue } = this.convertToRGB(Hue, Saturation, Brightness);
         const rgbValue = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
-    
         this.lightBulbStates.RGB = rgbValue;
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, 'Updated lightBulbStates.RGB:', this.lightBulbStates.RGB);
-        }
-        message = String(rgbValue);
+        message = rgbValue;
         topic = this.mqttRGB;
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, 'Updated lightBulbStates.RGB:', rgbValue);
+        }
       }
-      if ( this.enableLogging) {
+
+      if (this.enableLogging) {
         this.platform.log.info(this.deviceName, 'Updated lightBulbStates.Brightness:', brightness);
       }
     }
-  
-    if ( what === 'Hue' ) {
+
+    if (what === 'Hue') {
       const hue = this.checkAndFixValue('hue', Number(value));
       this.lightBulbStates.Hue = hue;
 
-      if ( this.useRGB ) {
+      if (this.useRGB) {
         const { Hue, Saturation, Brightness } = this.lightBulbStates;
         const { red, green, blue } = this.convertToRGB(Hue, Saturation, Brightness);
         const rgbValue = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
-    
         this.lightBulbStates.RGB = rgbValue;
-        this.platform.log.info(this.deviceName, 'Updated lightBulbStates.RGB:', this.lightBulbStates.RGB);
-    
-        message = String(rgbValue);
+        message = rgbValue;
         topic = this.mqttRGB;
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, 'Updated lightBulbStates.RGB:', rgbValue);
+        }
       } else {
         message = String(hue);
         topic = this.mqttHue;
       }
-      
-      if ( this.enableLogging) {
+
+      if (this.enableLogging) {
         this.platform.log.info(this.deviceName, 'Updated lightBulbStates.Hue:', hue);
       }
     }
 
-    if ( what === 'Saturation' ) {
+    if (what === 'Saturation') {
       const saturation = this.checkAndFixValue('saturation', Number(value));
       this.lightBulbStates.Saturation = saturation;
 
-      if ( this.useRGB ) {
+      if (this.useRGB) {
         const { Hue, Saturation, Brightness } = this.lightBulbStates;
         const { red, green, blue } = this.convertToRGB(Hue, Saturation, Brightness);
-        
-        const rgbValue = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;  
+        const rgbValue = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
         this.lightBulbStates.RGB = rgbValue;
-        this.platform.log.info(this.deviceName, 'Updated lightBulbStates.RGB:', this.lightBulbStates.RGB);
-    
-        message = String(rgbValue);
+        message = rgbValue;
         topic = this.mqttRGB;
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, 'Updated lightBulbStates.RGB:', rgbValue);
+        }
       } else {
         message = String(saturation);
         topic = this.mqttSaturation;
       }
 
-      if ( this.enableLogging) {
+      if (this.enableLogging) {
         this.platform.log.info(this.deviceName, 'Updated lightBulbStates.Saturation:', saturation);
       }
     }
-  
+
+    // ✅ Publish using MQTTManager
     if (topic && message) {
-      this.mqttClient.publish(topic, message, { qos: 1, retain: true }, (err) => {
-        if (err) {
-          this.platform.log.debug(this.deviceName, ': Failed to publish message: ', err);
-        } else {
-          this.platform.log.debug(this.deviceName, ': Message published successfully');
-        }
-      });
+      if (!this.mqttManager || !this.mqttManager.isReady()) {
+        this.platform.log.warn(this.deviceName, ': MQTT manager not ready, cannot publish');
+        callback(new Error('MQTT manager not connected'));
+        return;
+      }
+
+      this.mqttManager.publish(topic, message, { qos: 1, retain: true });
+      this.platform.log.debug(this.deviceName, ': Message published successfully');
     }
-  
+
     callback(null);
-  }  
+  }
 
   // Helper function to convert RGB to HSV and update lightBulbStates
   private convertToHSV(): void {

@@ -513,6 +513,19 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 ```
 <br>
 
+### MQTTManager
+
+A scalable MQTT connection manager designed for multi-device environments. Supports:
+
+- Singleton pattern per broker
+- Per-device topic subscriptions
+- Centralized lifecycle event handling via `EventEmitter`
+- Type-safe `.on()` / `.off()` API for events like `connect`, `disconnect`, `error`, etc.
+- Per-device error handling
+- Clean integration with device state updates and webhook triggers
+
+Ideal for systems with multiple devices sharing brokers or distributed across multiple MQTT endpoints.
+
 <details>
 <summary>⚙️ Plugin Config example</summary>
 

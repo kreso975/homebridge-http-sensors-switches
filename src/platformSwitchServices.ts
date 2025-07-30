@@ -1,12 +1,13 @@
 import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
-import { SharedPolling, SharedData } from './lib/SharedPolling.js';     // Include shared polling library
-import { getNestedValue, hasNestedKey } from './lib/utilities.js';      // Include utility function for nested value retrieval
-import { discordWebHooks } from './lib/discordWebHooks.js';             // Include Discord webhook library
-
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
+
+import { SharedPolling, SharedData } from './lib/SharedPolling.js';     // Include shared polling library
+import { MQTTManager } from './lib/MQTTManager.js';                     // Include MQTTManager
+import { getNestedValue, hasNestedKey } from './lib/utilities.js';      // Include utility function for nested value retrieval
+import { discordWebHooks } from './lib/discordWebHooks.js';             // Include Discord webhook library
 
 export class platformSwitch {
   public service!: Service;
@@ -54,8 +55,9 @@ export class platformSwitch {
   private individualPollingInterval?: NodeJS.Timeout; // Individual polling interval
 
   constructor(
-    public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
-    public readonly accessory: PlatformAccessory,
+    private platform: HttpSensorsAndSwitchesHomebridgePlatform,
+    private readonly accessory: PlatformAccessory,
+    private mqttManager: MQTTManager,
   ) {
     const device = this.accessory.context.device;
 
@@ -337,85 +339,100 @@ export class platformSwitch {
   }
 
   private initMQTT(): void {
-    const mqttSubscribedTopics: string[] = [];
-  
+    if (!this.mqttSwitch) {
+      this.platform.log.warn(`${this.deviceName}: No MQTT switch topic defined`);
+      return;
+    }
+
     const mqttOptions: IClientOptions = {
-      keepalive: 10,
-      protocol: 'mqtt',
       host: this.mqttBroker,
       port: Number(this.mqttPort),
       clientId: this.deviceName,
-      clean: true,
       username: this.mqttUsername,
       password: this.mqttPassword,
-      rejectUnauthorized: false,
+      protocol: 'mqtt',
+      keepalive: 10,
+      clean: true,
       reconnectPeriod: Number(this.mqttReconnectInterval) * 1000,
+      rejectUnauthorized: false,
     };
-  
-    if (this.mqttSwitch) {
-      mqttSubscribedTopics.push(this.mqttSwitch);
-    }
-  
-    this.mqttClient = mqtt.connect(mqttOptions);
-  
-    this.mqttClient.on('connect', () => {
-      this.isReachable = true; // ✅ Mark as reachable
+
+    this.mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
+
+    this.mqttManager.subscribeMultiple(this.deviceName, [this.mqttSwitch], (topic, message) => {
+      const payload = message.trim().toLowerCase();
+      const newState = payload === '1' || payload === 'true';
+
+      this.switchStates.On = newState;
+      this.service.updateCharacteristic(this.platform.Characteristic.On, newState);
+
       if (this.enableLogging) {
-        this.platform.log.info(`${this.deviceName}: MQTT Connected`);
+        this.platform.log.info(`${this.deviceName}: MQTT message received - ${message}`);
       }
-      this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
-        if (!err) {
-          this.platform.log.info(`${this.deviceName}: Subscribed to topics - ${mqttSubscribedTopics.toString()}`);
-        } else {
-          this.platform.log.warn(`${this.deviceName}: MQTT subscription error - ${err.message}`);
-        }
-      });
-    });
-  
-    this.mqttClient.on('message', (topic, message) => {
-      if (topic === this.mqttSwitch) {
-        this.platform.log.info(`${this.deviceName}: MQTT message received - ${message.toString()}`);
-        this.switchStates.On = message.toString() === '1' || message.toString() === 'true';
-        this.service.updateCharacteristic(this.platform.Characteristic.On, this.switchStates.On);
-  
-        if (this.discordWebhook) {
-          this.initDiscordWebhooks();
-        }
+
+      if (this.discordWebhook) {
+        this.initDiscordWebhooks();
       }
     });
-  
-    this.mqttClient.on('error', (err) => {
-      this.isReachable = false; // ❌ Mark as unreachable
-      this.platform.log.warn(`${this.deviceName}: MQTT connection error - ${err.message}`);
-      this.platform.log.warn(`${this.deviceName}: Attempting reconnection in ${this.mqttReconnectInterval} seconds`);
-    });
 
-    // Additional event handlers for connection state
-    this.mqttClient.on('offline', () => {
+    this.mqttManager.registerDeviceErrorHandler(this.deviceName, (err) => {
       this.isReachable = false;
-      this.platform.log.debug(this.deviceName, ': Client is offline');
+      this.platform.log.warn(`${this.deviceName}: MQTT Error - ${err.message}`);
     });
 
-    this.mqttClient.on('reconnect', () => {
-      this.platform.log.debug(this.deviceName, ': Reconnecting...');
+    this.mqttManager.on('connect', (clientId: string) => {
+      if (clientId === this.deviceName) {
+        this.isReachable = true;
+        if (this.enableLogging) {
+          this.platform.log.info(`${clientId}: MQTT Connected`);
+        }
+      }
     });
 
-    this.mqttClient.on('close', () => {
-      this.isReachable = false;
-      this.platform.log.debug(this.deviceName, ': Connection closed');
+    this.mqttManager.on('disconnect', (clientId: string) => {
+      if (clientId === this.deviceName) {
+        this.isReachable = false;
+        this.platform.log.debug(`${clientId}: MQTT Disconnected`);
+      }
+    });
+
+    this.mqttManager.on('reconnect', (clientId: string) => {
+      if (clientId === this.deviceName) {
+        this.platform.log.debug(`${clientId}: MQTT Reconnecting...`);
+      }
+    });
+
+    this.mqttManager.on('offline', (clientId: string) => {
+      if (clientId === this.deviceName) {
+        this.isReachable = false;
+        this.platform.log.debug(`${clientId}: MQTT Offline`);
+      }
+    });
+
+    this.mqttManager.on('error', (clientId: string, err: Error) => {
+      if (clientId === this.deviceName) {
+        this.isReachable = false;
+        this.platform.log.warn(`${clientId}: MQTT Error - ${err.message}`);
+      }
     });
   }
 
   private publishMQTTmessage(value: CharacteristicValue, callback: CharacteristicSetCallback): void {
     const message = String(Number(value));
-    this.mqttClient.publish(this.mqttSwitch, message, { qos: 1, retain: true }, (err) => {
-      if (err) {
-        this.platform.log.warn(`${this.deviceName}: Failed to publish MQTT message - ${err.message}`);
-      } else {
-        this.platform.log.info(`${this.deviceName}: MQTT message published successfully - ${message}`);
-      }
-      callback(null);
-    });
+
+    if (!this.mqttManager || !this.mqttManager.isReady()) {
+      this.platform.log.warn(`${this.deviceName}: MQTT client not connected`);
+      callback(new Error('MQTT client not connected'));
+      return;
+    }
+
+    this.mqttManager.publish(this.mqttSwitch, message, { qos: 1, retain: true });
+
+    if (this.enableLogging) {
+      this.platform.log.info(`${this.deviceName}: MQTT message published - ${message}`);
+    }
+
+    callback(null);
   }
 
   private initDiscordWebhooks(): void {

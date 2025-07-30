@@ -1,12 +1,13 @@
 import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
-import { SharedPolling, SharedData } from './lib/SharedPolling.js';     // Include shared polling library
-import { getNestedValue, hasNestedKey } from './lib/utilities.js';      // Include utility function for nested value retrieval
-import { discordWebHooks } from './lib/discordWebHooks.js';             // Include Discord webhook library
-
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
+
+import { SharedPolling, SharedData } from './lib/SharedPolling.js';     // Include shared polling library
+import { MQTTManager } from './lib/MQTTManager.js';                     // Include MQTTManager
+import { getNestedValue, hasNestedKey } from './lib/utilities.js';      // Include utility function for nested value retrieval
+import { discordWebHooks } from './lib/discordWebHooks.js';             // Include Discord webhook library
 
 export class platformOutlet {
   public service!: Service;
@@ -60,8 +61,9 @@ export class platformOutlet {
   };
   
   constructor(
-      public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
-      public readonly accessory: PlatformAccessory,
+      private readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
+      private readonly accessory: PlatformAccessory,
+      private mqttManager: MQTTManager,
   ) {
     const device = this.accessory.context.device;
 
@@ -350,9 +352,7 @@ export class platformOutlet {
 
   //
   // Connect to MQTT and update Outlets
-  private initMQTT() {
-    const mqttSubscribedTopics: string | string[] | mqtt.ISubscriptionMap = [];
-
+  private initMQTT(): void {
     const mqttOptions: IClientOptions = {
       keepalive: 10,
       protocol: 'mqtt',
@@ -366,100 +366,97 @@ export class platformOutlet {
       reconnectPeriod: Number(this.mqttReconnectInterval) * 1000,
     };
 
-    if ( this.mqttSwitch ) {
+    const mqttSubscribedTopics: string[] = [];
+    if (this.mqttSwitch) {
       mqttSubscribedTopics.push(this.mqttSwitch);
     }
-    if ( this.mqttInUse ) {
+    if (this.mqttInUse) {
       mqttSubscribedTopics.push(this.mqttInUse);
     }
 
-    this.mqttClient = mqtt.connect(mqttOptions);
-    this.mqttClient.on('connect', () => {
-      this.isReachable = true; // ✅ Mark as reachable
-      if ( this.enableLogging) {
-        this.platform.log.info(this.deviceName, ': MQTT Connected');
-      }
-      this.mqttClient.subscribe(mqttSubscribedTopics, (err) => {
-        if (!err) {
-          if ( this.enableLogging) {
-            this.platform.log.info(this.deviceName, ': Subscribed to: ', mqttSubscribedTopics.toString());
-          }
-        } else {
-          // Need to insert error handler
-          this.platform.log.warn(this.deviceName, err.toString());
-        }
-      });
+    // ✅ Initialize MQTTManager
+    this.mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
+
+    // ✅ Register error handler
+    this.mqttManager.registerDeviceErrorHandler(this.deviceName, (err) => {
+      this.isReachable = false;
+      this.platform.log.warn(this.deviceName, ': Connection error:', err.message);
+      this.platform.log.warn(this.deviceName, ': Reconnecting in:', this.mqttReconnectInterval, 'seconds.');
     });
 
-    this.mqttClient.on('message', (topic, message) => {
+    // ✅ Subscribe to topics
+    this.mqttManager.subscribeMultiple(this.deviceName, mqttSubscribedTopics, (topic, message) => {
+      const msg = message.toString();
+
       if (topic === this.mqttSwitch) {
-        if ( this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Status set to: ', this.getStatus(Boolean(Number(message))));
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Status set to:', this.getStatus(Boolean(Number(msg))));
         }
 
-        if ( message.toString() === '1' || message.toString() === 'true' ) {
-          this.outletStates.On = true;
-        }
-        if ( message.toString() === '0' || message.toString() === 'false' ) {
-          this.outletStates.On = false;
-        }
-
+        this.outletStates.On = msg === '1' || msg === 'true';
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.outletStates.On);
-        // If discordWebhook is set
+
         if (this.discordWebhook) {
           this.initDiscordWebhooks();
         }
       }
+
       if (topic === this.mqttInUse) {
-        this.platform.log.info(this.deviceName, ': inUse set to: ', this.getStatus(Boolean(Number(message))));
-
-        if (message.toString() === '1' || message.toString() === 'true') {
-          this.outletStates.OutletInUse = true;
-        }
-        if (message.toString() === '0' || message.toString() === 'false') {
-          this.outletStates.OutletInUse = false;
-        }
-
+        this.platform.log.info(this.deviceName, ': inUse set to:', this.getStatus(Boolean(Number(msg))));
+        this.outletStates.OutletInUse = msg === '1' || msg === 'true';
         this.service.updateCharacteristic(this.platform.Characteristic.OutletInUse, this.outletStates.OutletInUse);
-
       }
     });
 
-    this.mqttClient.on('offline', () => {
-      this.isReachable = false; // ❌ Mark as unreachable
-      this.platform.log.debug(this.deviceName, ': Client is offline');
+    // ✅ Connection events
+    this.mqttManager.on('connect', (clientId: string) => {
+      if (clientId === this.deviceName) {
+        this.isReachable = true;
+        if (this.enableLogging) {
+          this.platform.log.info(`${this.deviceName}: MQTT Connected`);
+        }
+      }
     });
 
-    this.mqttClient.on('reconnect', () => {
-      this.platform.log.debug(this.deviceName, ': Reconnecting...');
+    this.mqttManager.on('offline', (clientId: string) => {
+      if (clientId === this.deviceName) {
+        this.isReachable = false;
+        this.platform.log.debug(`${this.deviceName}: Client is offline`);
+      }
     });
 
-    this.mqttClient.on('close', () => {
-      this.isReachable = false; // ❌ Mark as unreachable
-      this.platform.log.debug(this.deviceName, ': Connection closed');
+    this.mqttManager.on('reconnect', (clientId: string) => {
+      if (clientId === this.deviceName) {
+        this.platform.log.debug(`${this.deviceName}: Reconnecting...`);
+      }
     });
 
-    // Handle errors
-    this.mqttClient.on('error', (err) => {
-      this.isReachable = false; // ❌ Mark as unreachable
-      this.platform.log.warn(this.deviceName, ': Connection error:', err);
-      this.platform.log.warn(this.deviceName, ': Reconnecting in: ', this.mqttReconnectInterval, ' seconds.');
+    this.mqttManager.on('disconnect', (clientId: string) => {
+      if (clientId === this.deviceName) {
+        this.isReachable = false;
+        this.platform.log.debug(`${this.deviceName}: Connection closed`);
+      }
     });
   }
+
 
   // Function to publish a message
   private publishMQTTmessage(value: CharacteristicValue, callback: CharacteristicSetCallback): void {
     this.platform.log.debug(this.deviceName, ': Setting power state to:', this.getStatus(!this.outletStates.On));
 
-    this.mqttClient.publish(this.mqttSwitch, String(Number(!this.outletStates.On)), { qos: 1, retain: true }, (err) => {
-      if (err) {
-        this.platform.log.debug(this.deviceName, ': Failed to publish message: ', err);
-      } else {
-        this.service.updateCharacteristic(this.platform.Characteristic.On, this.outletStates.On);
-        this.platform.log.debug(this.deviceName, ': Message published successfully');
-      }
+    if (!this.mqttManager || !this.mqttManager.isReady()) {
+      this.platform.log.warn(this.deviceName, ': MQTT manager not ready, cannot publish');
+      callback(new Error('MQTT manager not connected'));
+      return;
+    }
+
+    this.mqttManager.publish(this.mqttSwitch, String(Number(!this.outletStates.On)), {
+      qos: 1,
+      retain: true,
     });
 
+    this.service.updateCharacteristic(this.platform.Characteristic.On, this.outletStates.On);
+    this.platform.log.debug(this.deviceName, ': Message published successfully');
     callback(null);
   }
 
