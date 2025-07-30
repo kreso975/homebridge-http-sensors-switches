@@ -221,7 +221,8 @@ export class platformLightBulb {
           this.initMQTT();
           if (this.mqttSwitch) {
             this.service.getCharacteristic(this.platform.Characteristic.On)
-              .on('set', this.publishMQTTmessage.bind(this, 'On'));
+              .on('set', this.publishMQTTmessage.bind(this, 'On'))
+              .on('get', this.wrapGetHandler('On'));
           }
           if (this.useRGB || this.mqttBrightness) {
             this.service.getCharacteristic(this.platform.Characteristic.Brightness)

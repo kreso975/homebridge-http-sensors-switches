@@ -186,7 +186,7 @@ export class platformSensorGeneric {
       // Set the service name, this is what is displayed as the default name on the Home app
       this.sensorService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.deviceName);
         
-      if (this.urlStatus || this.mqttBroker) {
+      if (this.urlStatus) {
         this.getStateDefinition().forEach(({ state, param }) => {
           if (param) {
             const characteristic = this.platform.Characteristic[
@@ -201,6 +201,16 @@ export class platformSensorGeneric {
 
       if (this.mqttBroker) {
         this.initMQTT();
+        this.getStateDefinition().forEach(({ state, param }) => {
+          if (param) {
+            const characteristic = this.platform.Characteristic[
+              state as keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+
+            this.sensorService
+              .getCharacteristic(characteristic)
+              .on('get', this.wrapGetHandler(state));
+          }
+        }); 
       }
     } 
   }

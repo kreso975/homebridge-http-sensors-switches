@@ -158,7 +158,8 @@ export class platformOutlet {
              this.initMQTT();
 
              this.service.getCharacteristic(this.platform.Characteristic.On)
-               .on('set', this.publishMQTTmessage.bind(this));
+               .on('set', this.publishMQTTmessage.bind(this))
+               .on('get', this.wrapGetHandler('On'));
            }
          }
     }

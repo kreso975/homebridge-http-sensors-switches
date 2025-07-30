@@ -217,7 +217,8 @@ export class platformGenericDevice {
               .on('set', (value, callback) => {
                 // Dynamically bind the publishMQTTmessage for each state
                 this.publishMQTTmessage(state, value, callback);
-              });
+              })
+              .on('get', this.wrapGetHandler(state));
           }
         });
       }
