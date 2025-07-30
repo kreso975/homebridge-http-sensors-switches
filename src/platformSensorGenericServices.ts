@@ -58,7 +58,7 @@ export class platformSensorGeneric {
   constructor(
     private platform: HttpSensorsAndSwitchesHomebridgePlatform,
     private readonly accessory: PlatformAccessory,
-    private readonly mqttManager: MQTTManager,
+    private mqttManager: MQTTManager,
   ) {
     const device = this.accessory.context.device;
 
@@ -351,15 +351,17 @@ export class platformSensorGeneric {
       rejectUnauthorized: false,
     };
 
-    const mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
+    this.mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
+    const deviceID = this.mqttManager.deviceID;
 
-    // Extract topics and subscribe in bulk
+    // ✳️ Extract topics from state definition
     const stateDefs = this.getStateDefinition();
     const topics = stateDefs
       .map(({ topic }) => topic)
       .filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
 
-    mqttManager.subscribeMultiple(this.deviceID, topics, (topic, message) => {
+    // ✳️ Subscribe to all relevant topics
+    this.mqttManager.subscribeMultiple(topics, (topic, message) => {
       const def = stateDefs.find(d => d.topic === topic);
       if (!def) {
         return;
@@ -399,53 +401,49 @@ export class platformSensorGeneric {
         }
       } else {
         if (this.enableLogging) {
-          this.platform.log.warn(
-            `${this.deviceName}: Invalid value for ${state}: ${newValue} (must be between ${min} and ${max})`,
-          );
+          this.platform.log.warn(`${this.deviceName}: Invalid value for ${state}: ${newValue} (must be between ${min} and ${max})`);
         }
       }
     });
 
-    
-    // Register per-device error handler
-    mqttManager.registerDeviceErrorHandler(this.deviceName, (err) => {
+    // 🔧 MQTT lifecycle events
+    this.mqttManager.on('connect', id => {
+      if (id !== deviceID) {
+        return;
+      }
+      this.isReachable = true;
+      this.platform.log.info(`${this.deviceName}: MQTT Connected`);
+    });
+
+    this.mqttManager.on('disconnect', id => {
+      if (id !== deviceID) {
+        return;
+      }
       this.isReachable = false;
-      this.platform.log.warn(`${this.deviceName}: MQTT Error:`, err.message);
+      this.platform.log.warn(`${this.deviceName}: MQTT Disconnected`);
     });
 
-    // Global lifecycle hooks
-    mqttManager.on('connect', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.isReachable = true;
-        this.platform.log.info(`${clientId}: MQTT Connected`);
+    this.mqttManager.on('reconnect', id => {
+      if (id !== deviceID) {
+        return;
       }
+      this.platform.log.warn(`${this.deviceName}: MQTT Reconnecting...`);
     });
 
-    mqttManager.on('disconnect', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.debug(`${clientId}: MQTT Disconnected`);
+    this.mqttManager.on('offline', id => {
+      if (id !== deviceID) {
+        return;
       }
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: MQTT Offline`);
     });
 
-    mqttManager.on('reconnect', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.platform.log.debug(`${clientId}: MQTT Reconnecting...`);
+    this.mqttManager.on('error', (id, err) => {
+      if (id !== deviceID) {
+        return;
       }
-    });
-
-    mqttManager.on('offline', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.debug(`${clientId}: MQTT Offline`);
-      }
-    });
-
-    mqttManager.on('error', (clientId: string, err: Error) => {
-      if (clientId === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.warn(`${clientId}: MQTT Error:`, err.message);
-      }
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: MQTT Error: ${err.message}`);
     });
   }
 

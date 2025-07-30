@@ -376,21 +376,25 @@ export class platformOutlet {
 
     // ✅ Initialize MQTTManager
     this.mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
+    const deviceID = this.mqttManager.deviceID;
 
-    // ✅ Register error handler
-    this.mqttManager.registerDeviceErrorHandler(this.deviceName, (err) => {
+    // ✅ Error handler
+    this.mqttManager.on('error', (id, err) => {
+      if (id !== deviceID) {
+        return;
+      }
       this.isReachable = false;
-      this.platform.log.warn(this.deviceName, ': Connection error:', err.message);
-      this.platform.log.warn(this.deviceName, ': Reconnecting in:', this.mqttReconnectInterval, 'seconds.');
+      this.platform.log.warn(`${this.deviceName}: Connection error: ${err.message}`);
+      this.platform.log.warn(`${this.deviceName}: Reconnecting in ${this.mqttReconnectInterval} seconds`);
     });
 
     // ✅ Subscribe to topics
-    this.mqttManager.subscribeMultiple(this.deviceName, mqttSubscribedTopics, (topic, message) => {
+    this.mqttManager.subscribeMultiple(mqttSubscribedTopics, (topic, message) => {
       const msg = message.toString();
 
       if (topic === this.mqttSwitch) {
         if (this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Status set to:', this.getStatus(Boolean(Number(msg))));
+          this.platform.log.info(`${this.deviceName}: Status set to: ${this.getStatus(Boolean(Number(msg)))}`);
         }
 
         this.outletStates.On = msg === '1' || msg === 'true';
@@ -402,50 +406,55 @@ export class platformOutlet {
       }
 
       if (topic === this.mqttInUse) {
-        this.platform.log.info(this.deviceName, ': inUse set to:', this.getStatus(Boolean(Number(msg))));
+        this.platform.log.info(`${this.deviceName}: inUse set to: ${this.getStatus(Boolean(Number(msg)))}`);
         this.outletStates.OutletInUse = msg === '1' || msg === 'true';
         this.service.updateCharacteristic(this.platform.Characteristic.OutletInUse, this.outletStates.OutletInUse);
       }
     });
 
     // ✅ Connection events
-    this.mqttManager.on('connect', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.isReachable = true;
-        if (this.enableLogging) {
-          this.platform.log.info(`${this.deviceName}: MQTT Connected`);
-        }
+    this.mqttManager.on('connect', (id) => {
+      if (id !== deviceID) {
+        return;
+      }
+      this.isReachable = true;
+      if (this.enableLogging) {
+        this.platform.log.info(`${this.deviceName}: MQTT Connected`);
       }
     });
 
-    this.mqttManager.on('offline', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.debug(`${this.deviceName}: Client is offline`);
+    this.mqttManager.on('offline', (id) => {
+      if (id !== deviceID) {
+        return;
       }
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: Client is offline`);
     });
 
-    this.mqttManager.on('reconnect', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.platform.log.debug(`${this.deviceName}: Reconnecting...`);
+    this.mqttManager.on('reconnect', (id) => {
+      if (id !== deviceID) {
+        return;
       }
+      this.platform.log.warn(`${this.deviceName}: Reconnecting...`);
     });
 
-    this.mqttManager.on('disconnect', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.debug(`${this.deviceName}: Connection closed`);
+    this.mqttManager.on('disconnect', (id) => {
+      if (id !== deviceID) {
+        return;
       }
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: Connection closed`);
     });
   }
 
-
-  // Function to publish a message
-  private publishMQTTmessage(value: CharacteristicValue, callback: CharacteristicSetCallback): void {
-    this.platform.log.debug(this.deviceName, ': Setting power state to:', this.getStatus(!this.outletStates.On));
+  private publishMQTTmessage(
+    value: CharacteristicValue,
+    callback: CharacteristicSetCallback,
+  ): void {
+    this.platform.log.debug(`${this.deviceName}: Setting power state to: ${this.getStatus(!this.outletStates.On)}`);
 
     if (!this.mqttManager || !this.mqttManager.isReady()) {
-      this.platform.log.warn(this.deviceName, ': MQTT manager not ready, cannot publish');
+      this.platform.log.warn(`${this.deviceName}: MQTT manager not ready, cannot publish`);
       callback(new Error('MQTT manager not connected'));
       return;
     }
@@ -456,7 +465,7 @@ export class platformOutlet {
     });
 
     this.service.updateCharacteristic(this.platform.Characteristic.On, this.outletStates.On);
-    this.platform.log.debug(this.deviceName, ': Message published successfully');
+    this.platform.log.debug(`${this.deviceName}: Message published successfully`);
     callback(null);
   }
 

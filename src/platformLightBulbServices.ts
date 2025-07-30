@@ -739,31 +739,22 @@ export class platformLightBulb {
       if (this.mqttSaturation) {
         mqttSubscribedTopics.push(this.mqttSaturation);
       }
-    } else {
-      if (this.mqttRGB) {
-        mqttSubscribedTopics.push(this.mqttRGB);
-      }
+    } else if (this.mqttRGB) {
+      mqttSubscribedTopics.push(this.mqttRGB);
     }
 
-    // ✅ Initialize MQTTManager
+    // ✅ Initialize MQTTManager and grab device ID
     this.mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
 
-    // ✅ Register error handler
-    this.mqttManager.registerDeviceErrorHandler(this.deviceName, (err) => {
-      this.isReachable = false;
-      this.platform.log.warn(this.deviceName, ': Connection error:', err.message);
-      this.platform.log.warn(this.deviceName, ': Reconnecting in:', this.mqttReconnectInterval, 'seconds.');
-    });
-
     // ✅ Subscribe to topics
-    this.mqttManager.subscribeMultiple(this.deviceName, mqttSubscribedTopics, (topic, message) => {
+    this.mqttManager.subscribeMultiple(mqttSubscribedTopics, (topic, message) => {
       const msg = message.toString();
 
       if (topic === this.mqttSwitch) {
         this.lightBulbStates.On = msg === '1' || msg === 'true';
         this.service.updateCharacteristic(this.platform.Characteristic.On, this.lightBulbStates.On);
         if (this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Status set to:', this.getStatus(this.lightBulbStates.On));
+          this.platform.log.info(`${this.deviceName}: Status set to: ${this.getStatus(this.lightBulbStates.On)}`);
         }
         if (this.discordWebhook) {
           this.initDiscordWebhooks();
@@ -773,14 +764,13 @@ export class platformLightBulb {
       if (topic === this.mqttBrightness) {
         let brightness = Number(msg);
         if (this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Brightness before convert is:', brightness);
+          this.platform.log.info(`${this.deviceName}: Brightness before convert is: ${brightness}`);
         }
         if (this.useBrightness255) {
           const converted = this.convertBrightness(brightness, 1);
-          if (converted !== undefined) {
-            brightness = converted;
-          } else {
-            this.platform.log.warn(this.deviceName, ': Error: Invalid brightness value');
+          brightness = converted ?? brightness;
+          if (converted === undefined) {
+            this.platform.log.warn(`${this.deviceName}: Error: Invalid brightness value`);
           }
         }
         const fixed = this.checkAndFixValue('brightness', brightness);
@@ -790,7 +780,7 @@ export class platformLightBulb {
         }
         this.service.updateCharacteristic(this.platform.Characteristic.Brightness, fixed);
         if (this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Brightness SET to:', fixed);
+          this.platform.log.info(`${this.deviceName}: Brightness SET to: ${fixed}`);
         }
       }
 
@@ -802,7 +792,7 @@ export class platformLightBulb {
         }
         this.service.updateCharacteristic(this.platform.Characteristic.Hue, hue);
         if (this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Hue SET to:', hue);
+          this.platform.log.info(`${this.deviceName}: Hue SET to: ${hue}`);
         }
       }
 
@@ -814,7 +804,7 @@ export class platformLightBulb {
         }
         this.service.updateCharacteristic(this.platform.Characteristic.Saturation, saturation);
         if (this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Saturation SET to:', saturation);
+          this.platform.log.info(`${this.deviceName}: Saturation SET to: ${saturation}`);
         }
       }
 
@@ -827,7 +817,7 @@ export class platformLightBulb {
         this.lightBulbStates.ColorTemperature = fixedTemp;
         this.service.updateCharacteristic(this.platform.Characteristic.ColorTemperature, fixedTemp);
         if (this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Color Temperature SET to:', fixedTemp);
+          this.platform.log.info(`${this.deviceName}: Color Temperature SET to: ${fixedTemp}`);
         }
       }
 
@@ -835,7 +825,7 @@ export class platformLightBulb {
         const rgb = msg.startsWith('#') ? msg.slice(1) : msg;
         this.lightBulbStates.RGB = rgb;
         if (this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': RGB SET to:', rgb);
+          this.platform.log.info(`${this.deviceName}: RGB SET to: ${rgb}`);
         }
         if (this.useRGB) {
           this.convertToHSV();
@@ -844,42 +834,54 @@ export class platformLightBulb {
         this.service.updateCharacteristic(this.platform.Characteristic.Hue, this.lightBulbStates.Hue);
         this.service.updateCharacteristic(this.platform.Characteristic.Saturation, this.lightBulbStates.Saturation);
         if (this.enableLogging) {
-          this.platform.log.info(this.deviceName, ': Brightness SET to:', this.lightBulbStates.Brightness);
-          this.platform.log.info(this.deviceName, ': Hue SET to:', this.lightBulbStates.Hue);
-          this.platform.log.info(this.deviceName, ': Saturation SET to:', this.lightBulbStates.Saturation);
+          this.platform.log.info(`${this.deviceName}: Brightness SET to: ${this.lightBulbStates.Brightness}`);
+          this.platform.log.info(`${this.deviceName}: Hue SET to: ${this.lightBulbStates.Hue}`);
+          this.platform.log.info(`${this.deviceName}: Saturation SET to: ${this.lightBulbStates.Saturation}`);
         }
       }
     });
 
     // ✅ Connection events
-    this.mqttManager.on('connect', (id: string) => {
-      if (id === this.deviceName) {
-        this.isReachable = true;
-        if (this.enableLogging) {
-          this.platform.log.info(`${this.deviceName}: MQTT Connected`);
-        }
+    const deviceID = this.mqttManager.deviceID;
+
+    // ✅ Connection events
+    this.mqttManager.on('connect', (id) => {
+      if (id !== deviceID) {
+        return;
+      }
+
+      this.isReachable = true;
+      if (this.enableLogging) {
+        this.platform.log.info(`${this.deviceName}: MQTT Connected`);
       }
     });
 
-    this.mqttManager.on('offline', (id: string) => {
-      if (id === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.debug(`${this.deviceName}: Client is offline`);
+    this.mqttManager.on('offline', (id) => {
+      if (id !== deviceID) {
+        return;
       }
+
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: Client is offline`);
     });
 
-    this.mqttManager.on('reconnect', (id: string) => {
-      if (id === this.deviceName) {
-        this.platform.log.debug(`${this.deviceName}: Reconnecting...`);
+    this.mqttManager.on('reconnect', (id) => {
+      if (id !== deviceID) {
+        return;
       }
+
+      this.platform.log.warn(`${this.deviceName}: Reconnecting...`);
     });
 
-    this.mqttManager.on('disconnect', (id: string) => {
-      if (id === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.debug(`${this.deviceName}: Connection closed`);
+    this.mqttManager.on('disconnect', (id) => {
+      if (id !== deviceID) {
+        return;
       }
+
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: Connection closed`);
     });
+
   }
 
 

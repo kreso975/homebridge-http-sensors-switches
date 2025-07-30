@@ -60,7 +60,7 @@ export class platformGenericDevice {
   constructor(
     private readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     private readonly accessory: PlatformAccessory,
-    private readonly mqttManager: MQTTManager,
+    private mqttManager: MQTTManager,
   ) {
     const device = this.accessory.context.device;
 
@@ -502,55 +502,62 @@ export class platformGenericDevice {
       reconnectPeriod: Number(this.mqttReconnectInterval) * 1000,
     };
 
-    const mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
+    this.mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
+    const deviceID = this.mqttManager.deviceID;
 
-    mqttManager.on('connect', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.isReachable = true;
-        if (this.enableLogging) {
-          this.platform.log.info(`${this.deviceName}: MQTT Connected`);
-        }
-
-        const topics = this.getStateDefinition()
-          .map(({ topic }) => topic)
-          .filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
-
-        mqttManager.subscribeMultiple(this.deviceName, topics, this.handleMQTTMessage.bind(this));
+    // ✅ Connection events
+    this.mqttManager.on('connect', (id) => {
+      if (id !== deviceID) {
+        return;
       }
+
+      this.isReachable = true;
+      if (this.enableLogging) {
+        this.platform.log.info(`${this.deviceName}: MQTT Connected`);
+      }
+
+      const topics = this.getStateDefinition()
+        .map(({ topic }) => topic)
+        .filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
+
+      this.mqttManager.subscribeMultiple(topics, this.handleMQTTMessage.bind(this));
     });
 
-    mqttManager.on('offline', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.debug(`${this.deviceName}: MQTT Offline`);
+    this.mqttManager.on('offline', (id) => {
+      if (id !== deviceID) {
+        return;
       }
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: MQTT Offline`);
     });
 
-    mqttManager.on('reconnect', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.platform.log.debug(`${this.deviceName}: MQTT Reconnecting...`);
+    this.mqttManager.on('reconnect', (id) => {
+      if (id !== deviceID) {
+        return;
       }
+      this.platform.log.warn(`${this.deviceName}: MQTT Reconnecting...`);
     });
 
-    mqttManager.on('disconnect', (clientId: string) => {
-      if (clientId === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.debug(`${this.deviceName}: MQTT Connection closed`);
+    this.mqttManager.on('disconnect', (id) => {
+      if (id !== deviceID) {
+        return;
       }
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: MQTT Connection closed`);
     });
 
-    mqttManager.on('error', (clientId: string, err: Error) => {
-      if (clientId === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.warn(`${this.deviceName}: MQTT Error:`, err);
-        this.platform.log.warn(`${this.deviceName}: Reconnecting in ${this.mqttReconnectInterval} seconds`);
+    this.mqttManager.on('error', (id, err) => {
+      if (id !== deviceID) {
+        return;
       }
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: MQTT Error:`, err);
+      this.platform.log.warn(`${this.deviceName}: Reconnecting in ${this.mqttReconnectInterval} seconds`);
     });
   }
 
   private handleMQTTMessage(topic: string, message: string): void {
     const matched = this.getStateDefinition().find(({ topic: stateTopic }) => stateTopic === topic);
-
     if (!matched) {
       if (this.enableLogging) {
         this.platform.log.warn(`${this.deviceName}: Received MQTT message for unknown topic: ${topic}`);
@@ -578,6 +585,7 @@ export class platformGenericDevice {
         const characteristic = this.platform.Characteristic[
         state as keyof typeof this.platform.Characteristic
         ] as unknown as WithUUID<new () => Characteristic>;
+
         this.service.updateCharacteristic(characteristic, newValue);
 
         if (this.enableLogging) {
@@ -593,7 +601,7 @@ export class platformGenericDevice {
     }
   }
 
-  private publishMQTTmessage(
+  private publishMQTTmessage( 
     what: keyof typeof this.DeviceStates,
     value: CharacteristicValue,
     callback: CharacteristicSetCallback,
@@ -607,7 +615,6 @@ export class platformGenericDevice {
     };
 
     const definition = this.getStateDefinition().find(({ state }) => state === what);
-
     if (!definition || !definition.topic) {
       this.platform.log.warn(`${this.deviceName}: No valid topic for state: ${what}`);
       safeCallback(new Error(`No valid topic for state: ${what}`));

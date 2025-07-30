@@ -55,7 +55,7 @@ export class platformSensors {
   constructor(
     private platform: HttpSensorsAndSwitchesHomebridgePlatform,
     private readonly accessory: PlatformAccessory,
-    private readonly mqttManager: MQTTManager,
+    private mqttManager: MQTTManager,
   ) {
     const device = this.accessory.context.device;
 
@@ -280,11 +280,9 @@ export class platformSensors {
     };
 
     const topics: string[] = [];
-
     if (this.mqttTemperature) {
       topics.push(this.mqttTemperature);
     }
-
     if (this.mqttHumidity) {
       topics.push(this.mqttHumidity);
     }
@@ -294,15 +292,11 @@ export class platformSensors {
       return;
     }
 
-    const mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
+    this.mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
+    const deviceID = this.mqttManager.deviceID;
 
-    mqttManager.registerDeviceErrorHandler(this.deviceName, (err) => {
-      this.isReachable = false;
-      this.platform.log.warn(`${this.deviceName}: MQTT Error: ${err.message}`);
-      this.platform.log.warn(`${this.deviceName}: Reconnecting in ${this.mqttReconnectInterval} seconds`);
-    });
-
-    mqttManager.subscribeMultiple(this.deviceName, topics, (topic, payload) => {
+    // 🌡️ Subscription handler
+    this.mqttManager.subscribeMultiple(topics, (topic, payload) => {
       const value = Number(payload.trim());
 
       if (topic === this.mqttTemperature) {
@@ -328,33 +322,48 @@ export class platformSensors {
       }
     });
 
-    mqttManager.on('connect', (id: string) => {
-      if (id === this.deviceName) {
-        this.isReachable = true;
-        if (this.enableLogging) {
-          this.platform.log.info(`${this.deviceName}: MQTT Connected`);
-        }
+    // ⚠️ Error handling
+    this.mqttManager.on('error', (id, err) => {
+      if (id !== deviceID) {
+        return;
+      }
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: MQTT Error: ${err.message}`);
+      this.platform.log.warn(`${this.deviceName}: Reconnecting in ${this.mqttReconnectInterval} seconds`);
+    });
+
+    // 🔌 Connection lifecycle
+    this.mqttManager.on('connect', id => {
+      if (id !== deviceID) {
+        return;
+      }
+      this.isReachable = true;
+      if (this.enableLogging) {
+        this.platform.log.info(`${this.deviceName}: MQTT Connected`);
       }
     });
 
-    mqttManager.on('disconnect', (id: string) => {
-      if (id === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.debug(`${this.deviceName}: MQTT Disconnected`);
+    this.mqttManager.on('disconnect', id => {
+      if (id !== deviceID) {
+        return;
       }
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: MQTT Disconnected`);
     });
 
-    mqttManager.on('offline', (id: string) => {
-      if (id === this.deviceName) {
-        this.isReachable = false;
-        this.platform.log.debug(`${this.deviceName}: MQTT Offline`);
+    this.mqttManager.on('offline', id => {
+      if (id !== deviceID) {
+        return;
       }
+      this.isReachable = false;
+      this.platform.log.warn(`${this.deviceName}: MQTT Offline`);
     });
 
-    mqttManager.on('reconnect', (id: string) => {
-      if (id === this.deviceName) {
-        this.platform.log.debug(`${this.deviceName}: MQTT Reconnecting...`);
+    this.mqttManager.on('reconnect', id => {
+      if (id !== deviceID) {
+        return;
       }
+      this.platform.log.warn(`${this.deviceName}: MQTT Reconnecting...`);
     });
   }
 }
