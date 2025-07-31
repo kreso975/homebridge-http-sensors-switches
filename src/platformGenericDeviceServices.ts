@@ -504,11 +504,11 @@ export class platformGenericDevice {
     };
 
     this.mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
-    const deviceID = this.mqttManager.deviceID;
+    const instanceID = this.mqttManager.instanceID;
 
     // ✅ Connection events
     this.mqttManager.on('connect', (id) => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
 
@@ -525,7 +525,7 @@ export class platformGenericDevice {
     });
 
     this.mqttManager.on('offline', (id) => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
       this.isReachable = false;
@@ -533,14 +533,14 @@ export class platformGenericDevice {
     });
 
     this.mqttManager.on('reconnect', (id) => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
       this.platform.log.warn(`${this.deviceName}: MQTT Reconnecting...`);
     });
 
     this.mqttManager.on('disconnect', (id) => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
       this.isReachable = false;
@@ -548,7 +548,7 @@ export class platformGenericDevice {
     });
 
     this.mqttManager.on('error', (id, err) => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
       this.isReachable = false;

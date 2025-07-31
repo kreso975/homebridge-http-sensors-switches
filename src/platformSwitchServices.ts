@@ -2,7 +2,7 @@ import { CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Serv
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
 import axios, { AxiosError } from 'axios';
-import mqtt, { IClientOptions } from 'mqtt';
+import { IClientOptions } from 'mqtt';
 
 import { SharedPolling, SharedData } from './lib/SharedPolling.js';     // Include shared polling library
 import { MQTTManager } from './lib/MQTTManager.js';                     // Include MQTTManager
@@ -11,7 +11,6 @@ import { discordWebHooks } from './lib/discordWebHooks.js';             // Inclu
 
 export class platformSwitch {
   public service!: Service;
-  public mqttClient!: mqtt.MqttClient;
   private sharedPollingInstance?: SharedPolling;
 
   private isReachable: boolean = true; // Track if the device is reachable
@@ -359,7 +358,7 @@ export class platformSwitch {
     };
 
     this.mqttManager = MQTTManager.getInstance(mqttOptions, this.platform.log);
-    const deviceID = this.mqttManager.deviceID;
+    const instanceID = this.mqttManager.instanceID;
 
     // 🔔 Subscribe to switch topic
     this.mqttManager.subscribeMultiple([this.mqttSwitch], (topic, message) => {
@@ -380,7 +379,7 @@ export class platformSwitch {
 
     // ⚠️ Error handling
     this.mqttManager.on('error', (id, err) => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
       this.isReachable = false;
@@ -390,7 +389,7 @@ export class platformSwitch {
 
     // 🔌 Connection lifecycle
     this.mqttManager.on('connect', id => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
       this.isReachable = true;
@@ -400,7 +399,7 @@ export class platformSwitch {
     });
 
     this.mqttManager.on('disconnect', id => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
       this.isReachable = false;
@@ -408,14 +407,14 @@ export class platformSwitch {
     });
 
     this.mqttManager.on('reconnect', id => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
       this.platform.log.warn(`${this.deviceName}: MQTT Reconnecting...`);
     });
 
     this.mqttManager.on('offline', id => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
       this.isReachable = false;

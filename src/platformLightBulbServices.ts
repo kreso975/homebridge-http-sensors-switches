@@ -843,11 +843,11 @@ export class platformLightBulb {
     });
 
     // ✅ Connection events
-    const deviceID = this.mqttManager.deviceID;
+    const instanceID = this.mqttManager.instanceID;
 
     // ✅ Connection events
     this.mqttManager.on('connect', (id) => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
 
@@ -858,7 +858,7 @@ export class platformLightBulb {
     });
 
     this.mqttManager.on('offline', (id) => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
 
@@ -867,7 +867,7 @@ export class platformLightBulb {
     });
 
     this.mqttManager.on('reconnect', (id) => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
 
@@ -875,7 +875,7 @@ export class platformLightBulb {
     });
 
     this.mqttManager.on('disconnect', (id) => {
-      if (id !== deviceID) {
+      if (id !== instanceID) {
         return;
       }
 

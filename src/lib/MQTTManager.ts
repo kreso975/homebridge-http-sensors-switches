@@ -18,9 +18,9 @@ function getBrokerKey(config: IClientOptions): string {
 
 export class MQTTManager {
   private static registry: Map<string, MQTTManager> = new Map();
-
   private client: MqttClient | null = null;
   private topicHandlers: Map<string, Set<TopicCallback>> = new Map();
+  private accessoryMap: Map<TopicCallback, string[]> = new Map(); // 🆕 added registry
   private isConnected = false;
 
   private static globalDeviceCounter = 0;
@@ -46,7 +46,7 @@ export class MQTTManager {
     return this.registry.get(key)!;
   }
 
-  public get deviceID(): string {
+  public get instanceID(): string {
     return this.mqttInstanceID;
   }
 
@@ -114,6 +114,8 @@ export class MQTTManager {
       this.log.warn(`[MQTTManager] Total handlers for "${topic}": ${this.topicHandlers.get(topic)!.size}`);
     }
 
+    this.accessoryMap.set(callback, topics); // 🆕 save callback-to-topic map
+
     if (newTopics.length > 0) {
       this.client?.subscribe(newTopics, (err) => {
         if (err) {
@@ -127,22 +129,29 @@ export class MQTTManager {
     }
   }
 
-  unsubscribe(topic: string, callback: TopicCallback): void {
-    const handlers = this.topicHandlers.get(topic);
-    if (handlers) {
-      handlers.delete(callback);
-      this.log.warn(`[MQTTManager] Unsubscribed handler from topic: "${topic}"`);
-      if (handlers.size === 0) {
-        this.client?.unsubscribe(topic);
-        this.topicHandlers.delete(topic);
-        this.log.warn(`[MQTTManager] No more handlers, unsubscribed from: "${topic}"`);
-      } else {
-        this.log.warn(`[MQTTManager] Remaining handlers for "${topic}": ${handlers.size}`);
+  public removeAccessory(callback: TopicCallback): void {
+    this.log.warn(`[MQTTManager] Removing accessory callback from instance: ${this.mqttInstanceID}`);
+
+    const topics = this.accessoryMap.get(callback);
+    if (topics) {
+      for (const topic of topics) {
+        const handlers = this.topicHandlers.get(topic);
+        if (handlers) {
+          handlers.delete(callback);
+          this.log.warn(`[MQTTManager] Removed callback from topic: "${topic}"`);
+
+          if (handlers.size === 0) {
+            this.client?.unsubscribe(topic);
+            this.topicHandlers.delete(topic);
+            this.log.warn(`[MQTTManager] No more handlers, unsubscribed from: "${topic}"`);
+          }
+        }
       }
+      this.accessoryMap.delete(callback); // 🆕 cleanup
     }
   }
 
-  isReady(): boolean {
+  public isReady(): boolean {
     return this.isConnected;
   }
 

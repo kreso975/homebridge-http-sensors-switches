@@ -8,7 +8,7 @@
     "type": "object",
     "properties": {
       "name": {
-        "title": "Name",
+        "title": "Platform Name",
         "type": "string",
         "required": true
       },
@@ -16,6 +16,38 @@
         "title": "Description",
         "type": "string",
         "required": true
+      },
+      "platform_mqttBroker": {
+        "title": "MQTT Broker Address",
+        "type": "string",
+        "placeholder": "e.g. 192.168.1.100",
+        "required": false
+      },
+      "platform_mqttPort": {
+        "title": "MQTT Port",
+        "type": "number",
+        "default": 1883
+      },
+      "platform_mqttUsername": {
+        "title": "MQTT Username",
+        "type": "string",
+        "placeholder": "e.g. homebridgeUser"
+      },
+      "platform_mqttPassword": {
+        "title": "MQTT Password",
+        "type": "string",
+        "format": "password",
+        "placeholder": "Enter your password"
+      },
+      "platform_mqttTopic": {
+        "title": "Platform MQTT Topic",
+        "type": "string",
+        "placeholder": "e.g. /platform/topic"
+      },
+      "platform_mqttReconnectInterval": {
+        "title": "Reconnect Interval (sec)",
+        "type": "number",
+        "default": 10
       },
       "devices": {
         "type": "array",
@@ -782,6 +814,44 @@
     }
   },
   "layout": [
+   {
+      "type": "section",
+      "title": "Platform General Info",
+      "expandable": true,
+      "items": [
+        {
+          "key": "name"
+        },
+        {
+          "key": "description"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "title": "Platform MQTT Settings",
+      "expandable": true,
+      "items": [
+        {
+          "key": "platform_mqttBroker"
+        },
+        {
+          "key": "platform_mqttPort"
+        },
+        {
+          "key": "platform_mqttUsername"
+        },
+        {
+          "key": "platform_mqttPassword"
+        },
+        {
+          "key": "platform_mqttTopic"
+        },
+        {
+          "key": "platform_mqttReconnectInterval"
+        }
+      ]
+    },
     {
       "key": "devices",
       "type": "tabarray",
