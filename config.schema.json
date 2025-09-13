@@ -9,13 +9,11 @@
     "properties": {
       "name": {
         "title": "Name",
-        "type": "string",
-        "required": true
+        "type": "string"
       },
       "description": {
         "title": "Description",
-        "type": "string",
-        "required": true
+        "type": "string"
       },
       "devices": {
         "type": "array",
@@ -321,7 +319,7 @@
               "type": "string",
               "required": false
             },
-            "CurrentAmbientLightLevel": {
+            "paramNameCurrentAmbientLightLevel": {
               "title": "Parameter Name for Current Ambient Light Level",
               "description": "JSON Parameter Name for Current Ambient Light Level",
               "type": "string",
@@ -804,7 +802,7 @@
         {
           "key": "devices[]",
           "type": "fieldset",
-          "title": "{{ value.title }}",
+          "title": "{{ value.title || 'Unnamed Device' }}",
           "items": [
             {
               "key": "devices[]",
@@ -1340,7 +1338,7 @@
                     "functionBody": "return model.devices[arrayIndices].deviceType === 'Valve';"
                   },
                   "items": [
-                    "devices[].StatusActive",
+                    "devices[].mqttActive",
                     "devices[].mqttInUse"
                   ]
                 },
