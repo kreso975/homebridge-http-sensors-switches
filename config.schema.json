@@ -91,6 +91,19 @@
               "type": "string",
               "required": false
             },
+            "ignoreHttpsCertErrors": {
+              "title": "Ignore HTTPS Certificate Errors",
+              "type": "boolean",
+              "default": false,
+              "description": "If enabled, the plugin will skip certificate validation when connecting to this device over HTTPS. Use only for trusted local devices with self-signed certificates.",
+              "required": false
+            },
+            "trustedCert": {
+              "title": "Trusted Certificate (PEM format)",
+              "type": "string",
+              "description": "Paste the full PEM-encoded certificate here to validate HTTPS connections without skipping verification.",
+              "required": false
+            },
             "urlON": {
               "title": "URL turn ON",
               "description": "URL to Turn On the Switch / Light",
@@ -802,7 +815,7 @@
         {
           "key": "devices[]",
           "type": "fieldset",
-          "title": "{{ value.title || 'Unnamed Device' }}",
+          "title": "Settings",
           "items": [
             {
               "key": "devices[]",
@@ -836,6 +849,22 @@
                     "devices[].sharedPolling",
                     "devices[].sharedPollingId",
                     "devices[].sharedPollingInterval"
+                  ]
+                },
+                {
+                  "title": "Security Settings",
+                  "type": "fieldset",
+                  "expandable": true,
+                  "expanded": false,
+                  "items": [
+                    "devices[].ignoreHttpsCertErrors",
+                    {
+                      "key": "devices[].trustedCert",
+                      "type": "textarea",
+                      "title": "Trusted Certificate (PEM format)",
+                      "description": "Paste the full PEM-encoded certificate here to validate HTTPS connections without skipping verification.",
+                      "rows": 5
+                    }
                   ]
                 },
                 {

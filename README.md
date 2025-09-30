@@ -501,8 +501,30 @@ Sensor JSON file example
 </details>
 <br>
 
+## 🔐 HTTPS Certificate Handling
 
-  
+Version `2.2.0` introduces support for self-signed certificates and optional certificate validation skipping.
+
+#### Configuration Options
+
+| Key                  | Type    | Description                                                                 |
+|----------------------|---------|-----------------------------------------------------------------------------|
+| `ignoreHttpsCertErrors` | `boolean` | If `true`, HTTPS requests will skip certificate validation (use with caution). |
+| `trustedCert`        | `string` | Inline PEM certificate content for trusted HTTPS connections.              |
+
+#### Example
+
+```json
+{
+  "urlStatus": "https://my.local.device/status",
+  "ignoreHttpsCertErrors": false,
+  "trustedCert": "-----BEGIN CERTIFICATE-----\\nMIIBIjANBgkqh...\\n-----END CERTIFICATE-----"
+}
+```
+<br>
+
+## Other
+
 Compromise: Switch accessory, in order to work properly getStatus is bind in 5 sec interval. This is for passive devices not pushing their 
 status.
 I have several devices built by my self like ESP8266 with relay and I'm just switching state. I have JSON file showing status:

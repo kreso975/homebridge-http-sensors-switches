@@ -1,6 +1,7 @@
 import { PlatformAccessory, CharacteristicValue, Service, Characteristic, WithUUID } from 'homebridge';
 import type { HttpSensorsAndSwitchesHomebridgePlatform } from './platform.js';
 
+import { HttpsAgentManager } from './lib/HttpsAgentManager.js';
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
 
@@ -21,6 +22,11 @@ export class platformSensorGeneric {
 
   private isReachable: boolean = true; // Track if the device is reachable
   public enableLogging: boolean = true;
+
+  // Security, Self Signed Certificates rules
+  public ignoreHttpsCertErrors: boolean = false;
+  public trustedCert?: string;
+
   // Ensure backward compatibility for shared polling
   public sharedPolling = false; // Default to false
   public sharedPollingId = ''; // Default to empty
@@ -54,6 +60,8 @@ export class platformSensorGeneric {
   public SensorStates: Record<string, number> = {};
   public SensorStatusRanges: Record<string, [number, number]> = {};
 
+  private httpsAgentManager!: HttpsAgentManager;
+
   constructor(
     public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     public readonly accessory: PlatformAccessory,
@@ -69,6 +77,10 @@ export class platformSensorGeneric {
     
     // From Config
     this.enableLogging = device.enableLogging;
+
+    // Security, Self Signed Certificates rules
+    this.ignoreHttpsCertErrors = device.ignoreHttpsCertErrors || false;
+    this.trustedCert = device.trustedCert || undefined;
 
     this.urlStatus = device.urlStatus;
     this.updateInterval = device.updateInterval || 60000; // Default update interval is 300 seconds
@@ -124,6 +136,12 @@ export class platformSensorGeneric {
       || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
     this.discordMessage = device.discordMessage;
 
+    this.httpsAgentManager = new HttpsAgentManager(
+      this.trustedCert,
+      this.ignoreHttpsCertErrors,
+      this.urlStatus,
+    );
+
     // Ensure backward compatibility for shared polling
     this.sharedPolling = device.sharedPolling ?? false;                 // Default shared polling to false
     this.sharedPollingId = device.sharedPollingId ?? '';                // Default shared polling group ID to an empty string
@@ -135,6 +153,7 @@ export class platformSensorGeneric {
         this.urlStatus,
         this.platform,
         this.sharedPollingInterval,                                     // Set the polling interval to 60 sec or from config value
+        this.httpsAgentManager,                                         // ✅ pass HTTPS agent manager
       );
     
       // Subscribe to data updates
@@ -248,12 +267,15 @@ export class platformSensorGeneric {
       this.platform.log.warn(`${this.deviceName}: Ignoring request; No status URL defined.`);
       return;
     }
-  
+
     try {
       this.isReachable = true; // ✅ Mark as reachable
-      const response = await axios.get(this.urlStatus, { timeout: 8000 });
+
+      const httpsAgent = this.httpsAgentManager?.getAgent(); // Use centralized HTTPS agent if applicable
+
+      const response = await axios.get(this.urlStatus, { timeout: 8000, httpsAgent });
+
       const data = response.data;
-  
       this.processSensorState(data, false);
     } catch (error) {
       this.isReachable = false; // ❌ Mark as unreachable
@@ -262,10 +284,15 @@ export class platformSensorGeneric {
       if (this.sensorService) {
         this.getStateDefinition().forEach(({ state }) => {
           const characteristic = this.platform.Characteristic[
-            state as keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
-          this.sensorService.updateCharacteristic(characteristic, new this.platform.api.hap.HapStatusError(
-            this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
-          ));
+          state as keyof typeof this.platform.Characteristic
+          ] as unknown as WithUUID<new () => Characteristic>;
+
+          this.sensorService.updateCharacteristic(
+            characteristic,
+            new this.platform.api.hap.HapStatusError(
+              this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+            ),
+          );
         });
       }
 

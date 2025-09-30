@@ -1,4 +1,6 @@
 import { HttpSensorsAndSwitchesHomebridgePlatform } from './../platform.js';
+
+import { HttpsAgentManager } from './HttpsAgentManager.js';
 import axios, { AxiosError } from 'axios';
 import { EventEmitter } from 'events';
 
@@ -17,16 +19,20 @@ export type SharedData = Record<string, unknown>;
  * - **Customizable Polling Intervals:** Allows the polling interval to be set dynamically when registering a shared polling instance.
  * - **Event-Based Updates:** Notifies devices in the group about data updates using an event-driven architecture.
  * - **Error Handling:** Logs errors encountered during polling and ensures graceful failure recovery.
+ * - **Optional HTTPS Agent Support:** Integrates with `HttpsAgentManager` to support trusted certificates and error skipping for HTTPS endpoints.
  *
  * ### Use Cases:
  * - Environmental sensors (e.g., temperature, humidity, pressure) sharing a single data source.
  * - Multiple devices (e.g., switches, outlets) relying on a single status URL.
  * - Dynamic addition or removal of devices within a shared polling group.
  * - Varying polling intervals based on the needs of different devices or groups.
+ * - Secure polling from HTTPS endpoints with custom certificate handling.
  *
  * ### Public Methods:
- * - `registerPolling(uniqueId: string, url: string, platform: HttpSensorsAndSwitchesHomebridgePlatform, interval: number = 5000): SharedPolling`:
- *   Registers a new shared polling instance or adds a device to an existing instance. Accepts a polling interval in milliseconds, defaulting to 5000ms.
+ * - `registerPolling(uniqueId: string, url: string, platform: HttpSensorsAndSwitchesHomebridgePlatform, interval: number = 5000, 
+ *    httpsAgentManager?: HttpsAgentManager): SharedPolling`:
+ *   Registers a new shared polling instance or adds a device to an existing instance. Accepts a polling interval in milliseconds,
+ *   defaulting to 5000ms. Optionally accepts an `HttpsAgentManager` for HTTPS agent reuse.
  *
  * - `unregisterPolling(uniqueId: string): void`:
  *   Removes a device from a polling group. If no devices remain in the group, stops polling.
@@ -42,21 +48,25 @@ export type SharedData = Record<string, unknown>;
  *   Stops the polling process and clears the interval.
  *
  * - `fetchData(): Promise<void>`:
- *   Performs an HTTP GET request to fetch the data and updates the internal state. Emits a `dataUpdated` event to notify all subscribers.
+ *   Performs an HTTP GET request to fetch the data and updates the internal state. Uses `HttpsAgentManager` if provided.
+ *   Emits a `dataUpdated` event to notify all subscribers.
  *
  * ### Internal Structure:
  * - Maintains a `pollingInstances` Map to associate unique IDs with polling instances and device counts.
  * - Stores fetched data in a `data` property, accessible via `getData()`.
  * - Uses an event-driven approach to notify devices in the group about data updates.
+ * - Optionally reuses HTTPS agents via `HttpsAgentManager` for secure and efficient polling.
  *
  * ### Example Usage:
  * ```typescript
- * // Register a shared polling instance with a 10-second interval
+ * // Register a shared polling instance with a 10-second interval and HTTPS agent
+ * const httpsAgentManager = new HttpsAgentManager(trustedCert, ignoreCertErrors, "https://example.com/status");
  * const sharedPolling = SharedPolling.registerPolling(
  *   "environmentGroup",
- *   "http://example.com/status",
+ *   "https://example.com/status",
  *   platformInstance,
- *   10000 // Set polling interval to 10 seconds
+ *   10000, // Set polling interval to 10 seconds
+ *   httpsAgentManager
  * );
  *
  * // Subscribe to data updates
@@ -78,15 +88,18 @@ export class SharedPolling extends EventEmitter {
   private data: SharedData = {};
   private deviceCount: number = 0;
   private interval: number; // Polling interval in milliseconds
+  private readonly httpsAgentManager?: HttpsAgentManager;
 
   // Constructor with platform for logging and interval
   private constructor(
     private readonly url: string,
     private readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
     interval: number, // Add interval parameter
+    httpsAgentManager?: HttpsAgentManager, // optional
   ) {
     super();
     this.interval = interval;
+    this.httpsAgentManager = httpsAgentManager;
   }
 
   // Register a shared polling instance
@@ -94,16 +107,17 @@ export class SharedPolling extends EventEmitter {
     uniqueId: string,
     url: string,
     platform: HttpSensorsAndSwitchesHomebridgePlatform,
-    interval: number = 5000, // Default interval to 5000ms
+    interval: number = 5000,
+    httpsAgentManager?: HttpsAgentManager,
   ): SharedPolling {
     let instance = SharedPolling.pollingInstances.get(uniqueId);
 
-    if ( instance ) {
+    if (instance) {
       instance.deviceCount += 1;
-      instance.platform.log.info( `${uniqueId}: Device added to existing SharedPolling group. Total devices: ${instance.deviceCount}` );
+      instance.platform.log.info(`${uniqueId}: Device added to existing SharedPolling group. Total devices: ${instance.deviceCount}`);
     } else {
-      platform.log.info( `${uniqueId}: Registering new SharedPolling instance for group: ${uniqueId}` );
-      instance = new SharedPolling(url, platform, interval);
+      platform.log.info(`${uniqueId}: Registering new SharedPolling instance for group: ${uniqueId}`);
+      instance = new SharedPolling(url, platform, interval, httpsAgentManager);
       instance.deviceCount = 1;
       SharedPolling.pollingInstances.set(uniqueId, instance);
       instance.startPolling();
@@ -151,7 +165,9 @@ export class SharedPolling extends EventEmitter {
   // Fetch data
   private async fetchData(): Promise<void> {
     try {
-      const response = await axios.get(this.url, { timeout: 8000 });
+      const httpsAgent = this.httpsAgentManager?.getAgent();
+      const response = await axios.get(this.url, { timeout: 8000, httpsAgent });
+
       this.data = response.data as SharedData;
 
       // Emit an event to notify .on('dataUpdated') listeners

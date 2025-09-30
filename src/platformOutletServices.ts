@@ -5,6 +5,7 @@ import { SharedPolling, SharedData } from './lib/SharedPolling.js';     // Inclu
 import { getNestedValue, hasNestedKey } from './lib/utilities.js';      // Include utility function for nested value retrieval
 import { discordWebHooks } from './lib/discordWebHooks.js';             // Include Discord webhook library
 
+import { HttpsAgentManager } from './lib/HttpsAgentManager.js';
 import axios, { AxiosError } from 'axios';
 import mqtt, { IClientOptions } from 'mqtt';
 
@@ -16,6 +17,11 @@ export class platformOutlet {
   private isReachable: boolean = true; // Track if the device is reachable
   // Device and configuration properties
   public enableLogging: boolean = true;
+
+  // Security, Self Signed Certificates rules
+  public ignoreHttpsCertErrors: boolean = false;
+  public trustedCert?: string;
+
   // Ensure backward compatibility for shared polling
   public sharedPolling = false; // Default to false
   public sharedPollingId = ''; // Default to empty
@@ -59,6 +65,8 @@ export class platformOutlet {
     OutletInUse: false,
   };
   
+  private httpsAgentManager: HttpsAgentManager;
+
   constructor(
       public readonly platform: HttpSensorsAndSwitchesHomebridgePlatform,
       public readonly accessory: PlatformAccessory,
@@ -74,6 +82,10 @@ export class platformOutlet {
 
     // From config
     this.enableLogging = device.enableLogging;
+
+    // Security, Self Signed Certificates rules
+    this.ignoreHttpsCertErrors = device.ignoreHttpsCertErrors || false;
+    this.trustedCert = device.trustedCert || undefined;
 
     this.urlStatus = device.urlStatus;
     this.statusStateParam = device.stateName;
@@ -98,6 +110,12 @@ export class platformOutlet {
     this.discordAvatar = device.discordAvatar || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
     this.discordMessage = device.discordMessage;
 
+    this.httpsAgentManager = new HttpsAgentManager(
+      this.trustedCert,
+      this.ignoreHttpsCertErrors,
+      this.urlStatus,
+    );
+
     // Ensure backward compatibility for shared polling
     this.sharedPolling = device.sharedPolling ?? false; // Default shared polling to false
     this.sharedPollingId = device.sharedPollingId ?? ''; // Default shared polling group ID to an empty string
@@ -109,6 +127,7 @@ export class platformOutlet {
         this.urlStatus,
         this.platform,
         this.sharedPollingInterval, // Set the polling interval to 60 sec or from config value
+        this.httpsAgentManager, // ✅ pass HTTPS agent manager
       );
     
       // Subscribe to data updates
@@ -214,13 +233,15 @@ export class platformOutlet {
 
     try {
       this.isReachable = true; // ✅ Mark as reachable
-      const response = await axios.get(this.urlStatus, { timeout: 8000 });
+      const httpsAgent = this.httpsAgentManager?.getAgent(); // Use HTTPS agent if applicable
+      const response = await axios.get(this.urlStatus, { timeout: 8000, httpsAgent });
+
       const data = response.data;
-  
       this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
       this.processOutletGetData(data, false);
     } catch (error) {
       this.isReachable = false; // ❌ Mark as unreachable
+
       const axiosError = error as AxiosError;
       if (axios.isAxiosError(axiosError)) {
         this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
