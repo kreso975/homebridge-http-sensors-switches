@@ -1,9 +1,14 @@
+// eslint.config.js
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**'],
+    ignores: [
+      'dist/**',
+      '**/dist/**',
+      '**/official dist/**',
+    ],
   },
   {
     rules: {
@@ -28,6 +33,13 @@ export default tseslint.config(
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        setTimeout: 'readonly',
+        URLSearchParams: 'readonly',
+      },
     },
   },
   eslint.configs.recommended,
