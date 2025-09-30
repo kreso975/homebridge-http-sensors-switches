@@ -2,7 +2,7 @@
   "name": "homebridge-http-sensors-switches",
   "displayName": "Http Sensors and Switches",
   "type": "module",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "private": false,
   "description": "This plugin communicates with your devices over HTTP or MQTT. Currently it supports Light Bulb, Switches, Outlets, Fan, Garage Door, Shades / Blinds, Temperature/Humidity, Motion, Contact and Occupancy sensor, Door, Sprinkler, Valve, Air Quality, Smoke, Carbon Dioxide and Light Sensor. Simple Discord Webhooks available in Light Bulb, Switches and Outlets and sensors.",
   "author": "Kresimir Kokanovic",
