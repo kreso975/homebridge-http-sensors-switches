@@ -843,7 +843,7 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 > **Node v18 Information**  
 > Node.js version 18 (LTS) is scheduled to reach its end-of-life on April 30, 2025. After this date, it will no longer receive security updates or maintenance releases. If you're using Node.js 18, it's recommended to upgrade to a newer version, such as Node.js 20 or 22, to ensure continued security and stability.
 >  
-> Latest version of plugin supporting Node.js v18 is v2.1.x
+> Latest version of plugin supporting Node.js v18 is v2.2.x
 >
 > This template currently has a
 > - `package.json -> engines.node` value of `"^18.20.4 || ^20.18.0 || ^22.10.0"`
