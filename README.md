@@ -789,6 +789,6 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 >  
 > Latest version of plugin supporting Node.js v18 is v2.2.x
 >
-> This template currently has a
+> This template currently has set
 > - `package.json -> engines.node` value of `"^20.18.0 || ^22.10.0 || ^24.0.0"`
 > 

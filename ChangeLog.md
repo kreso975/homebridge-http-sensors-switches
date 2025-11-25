@@ -31,4 +31,3 @@ rename file config.schema.json.tabarray BUT use it only with up to homebridge-co
 ### Fixed
 - 🛠 Prevented duplicate HTTP requests in shared polling scenarios.
 - 🛠 Ensured HTTPS agent is only instantiated when required, with runtime checks for lean operation.
-
