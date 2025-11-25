@@ -181,6 +181,7 @@ export class platformSensorGeneric {
       // Define a mapping between device types and their corresponding services
       const serviceMappings: Record<string, WithUUID<typeof Service>> = {
         OccupancySensor: this.platform.Service.OccupancySensor,
+        Battery: this.platform.Service.Battery,
         SmokeSensor: this.platform.Service.SmokeSensor,
         CarbonDioxideSensor: this.platform.Service.CarbonDioxideSensor,
         AirQualitySensor: this.platform.Service.AirQualitySensor,
@@ -476,6 +477,11 @@ export class platformSensorGeneric {
   }
 
   private initDiscordWebhooks(state: keyof typeof this.SensorStates): void {
+    // Check if WebHook URL is configured
+    if ( !this.discordWebhook ) {
+      return;
+    }
+    
     // Prepare a dynamic message including the passed state
     const message = `${this.deviceName}: ${state} - ${this.discordMessage} ${this.getStatus(!!this.SensorStates[state])}`;
     const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);

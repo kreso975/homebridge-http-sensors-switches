@@ -42,6 +42,24 @@ export const sensorConfig: Sensors = {
       StatusTampered: { param: 'StatusTampered', topic: 'StatusTampered', webhook: false },
     },
   },
+  Battery: {
+    paramNames: [
+      'BatteryLevel',
+      'ChargingState',
+      'StatusLowBattery',
+    ],
+    sensors: {
+      BatteryLevel: { defaultValue: 100, range: [0, 100] as [number, number] }, // Reports the current battery percentage (0–100%)
+      ChargingState: { defaultValue: 0, range: [0, 2] as [number, number] }, // 0: Not charging, 1: Charging, 2: Not chargeable
+      StatusLowBattery: { defaultValue: 0, range: [0, 1] as [number, number] }, // 0: Battery level is normal, 1: Battery level is low
+
+    },
+    states: {
+      BatteryLevel: { param: 'BatteryLevel', topic: 'BatteryLevel', webhook: false },
+      ChargingState: { param: 'StatusChargingBattery', topic: 'StatusChargingBattery', webhook: false },
+      StatusLowBattery: { param: 'StatusLowBattery', topic: 'StatusLowBattery', webhook: true },
+    },
+  },
   MotionSensor: {
     paramNames: [
       'MotionDetected',

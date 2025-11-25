@@ -7,6 +7,7 @@ import mqtt, { IClientOptions }  from 'mqtt';
 
 import { SharedPolling, SharedData } from './lib/SharedPolling.js';       // Include shared polling library
 import { getNestedValue } from './lib/utilities.js';
+import { discordWebHooks } from './lib/discordWebHooks.js';               // Include Discord webhook library
 
 
 /**
@@ -17,6 +18,7 @@ import { getNestedValue } from './lib/utilities.js';
 export class platformSensors {
   public temperatureService!: Service;
   public humidityService!: Service;
+  public batteryService!: Service;
   public mqttClient!: mqtt.MqttClient;
   private sharedPollingInstance?: SharedPolling;
 
@@ -44,17 +46,31 @@ export class platformSensors {
   public temperatureName: string = '';
   public humidityName: string = '';
   public airPressureName: string = '';
+  public batteryLevelName: string = '';
+  public batteryChargingStateName: string = '';
+  public batteryStatusLowName: string = '';
 
   public mqttReconnectInterval: string = '';
   public mqttBroker: string = '';
   public mqttPort: string = '';
   public mqttTemperature: string = '';
   public mqttHumidity: string = '';
+  public mqttBatteryLevel: string = '';
+  public mqttBatteryChargingState: string = '';
+  public mqttBatteryStatusLow: string = '';
   public mqttUsername: string = '';
   public mqttPassword: string = '';
+
+  public discordWebhook: string = '';
+  public discordUsername: string = '';
+  public discordAvatar: string = '';
+  public discordMessage: string = '';
  
   public currentTemperature: number = 20;
   public currentHumidity: number = 50;
+  public currentBatteryLevel: number = 78;
+  public currentBatteryChargingState: number = 2; // 0: Not charging, 1: Charging,	2: Not chargeable
+  public currentBatteryStatusLow: boolean = false;
   public updateInterval = 300000;
 
   private httpsAgentManager: HttpsAgentManager;
@@ -83,6 +99,9 @@ export class platformSensors {
     this.temperatureName = device.temperatureName;
     this.humidityName = device.humidityName;
     this.airPressureName = device.airPressureName;
+    this.batteryLevelName = device.paramNameBatteryLevel;
+    this.batteryChargingStateName = device.paramNameStatusChargingBattery;
+    this.batteryStatusLowName = device.paramNameStatusLowBattery;
     this.updateInterval = device.updateInterval || 60000; // Default update interval is 300 seconds
 
     this.mqttReconnectInterval = device.mqttReconnectInterval || 60; // 60 sec default
@@ -90,8 +109,16 @@ export class platformSensors {
     this.mqttPort = device.mqttPort;
     this.mqttTemperature = device.mqttTemperature;
     this.mqttHumidity = device.mqttHumidity;
+    this.mqttBatteryLevel = device.mqttBatteryLevel;
+    this.mqttBatteryChargingState = device.mqttBatteryChargingState;
+    this.mqttBatteryStatusLow = device.mqttLowBattery;
     this.mqttUsername = device.mqttUsername;
     this.mqttPassword = device.mqttPassword;
+
+    this.discordWebhook = device.discordWebhook;
+    this.discordUsername = device.discordUsername || 'StergoSmart';
+    this.discordAvatar = device.discordAvatar || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
+    this.discordMessage = device.discordMessage;
 
     this.httpsAgentManager = new HttpsAgentManager(
       this.trustedCert,
@@ -176,7 +203,37 @@ export class platformSensors {
           this.platform.log.info(this.deviceName,': ',this.airPressureName);
         }
       }
-      
+
+      // If we have Config setup for Battery
+      if ( this.batteryLevelName || this.batteryChargingStateName || this.batteryStatusLowName ||
+          (this.mqttBatteryLevel || this.mqttBatteryChargingState || this.mqttBatteryStatusLow)
+      ) {
+        this.batteryService = this.accessory.getService(this.platform.Service.Battery)
+                            || this.accessory.addService(this.platform.Service.Battery);
+
+        this.batteryService.setCharacteristic( this.platform.Characteristic.Name,
+          accessory.context.device.deviceName + ' Battery',
+        );
+
+        // Battery Level
+        if (this.batteryLevelName || this.mqttBatteryLevel) {
+          this.batteryService.getCharacteristic(this.platform.Characteristic.BatteryLevel)
+            .on('get', this.wrapGetHandler('currentBatteryLevel'));
+        }
+
+        // Charging State
+        if (this.batteryChargingStateName || this.mqttBatteryChargingState) {
+          this.batteryService.getCharacteristic(this.platform.Characteristic.ChargingState)
+            .on('get', this.wrapGetHandler('currentBatteryChargingState'));
+        }
+
+        // Status Low Battery
+        if (this.batteryStatusLowName || this.mqttBatteryStatusLow) {
+          this.batteryService.getCharacteristic(this.platform.Characteristic.StatusLowBattery)
+            .on('get', this.wrapGetHandler('currentBatteryStatusLow'));
+        }
+      }
+
       // We can now use MQTT
       if ( this.mqttBroker ) {
         this.getSensorDataMQTT();
@@ -185,7 +242,9 @@ export class platformSensors {
     } 
   }
 
-  private wrapGetHandler(stateKey: 'currentTemperature' | 'currentHumidity'): (callback: (error: Error | null, value?: CharacteristicValue) => void) => void {
+  private wrapGetHandler(
+    stateKey: 'currentTemperature' | 'currentHumidity' | 'currentBatteryLevel' | 'currentBatteryChargingState' | 'currentBatteryStatusLow',
+  ): (callback: (error: Error | null, value?: CharacteristicValue) => void) => void {
     return (callback) => {
       if (!this.isReachable) {
         callback(new this.platform.api.hap.HapStatusError(
@@ -276,6 +335,61 @@ export class platformSensors {
       }
     }
 
+    // If Battery Service is available
+    if (this.batteryService) {
+      if (this.batteryLevelName) {
+        const tmpBatteryLevel = getNestedValue(data, this.batteryLevelName, 'number');
+
+        if (typeof tmpBatteryLevel === 'number') {
+          this.currentBatteryLevel = tmpBatteryLevel;
+          this.batteryService.updateCharacteristic(this.platform.Characteristic.BatteryLevel, this.currentBatteryLevel);
+          if (this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': Battery Level = ', this.currentBatteryLevel.toString());
+          }
+        } else {
+          this.platform.log.warn(this.deviceName, ': Error: Cannot find or convert: ', this.batteryLevelName, ' in JSON');
+        }
+      }
+
+      if (this.batteryChargingStateName) {
+        const tmpChargingState = getNestedValue(data, this.batteryChargingStateName, 'number');
+
+        if (typeof tmpChargingState === 'number') {
+          this.currentBatteryChargingState = tmpChargingState;
+          this.batteryService.updateCharacteristic(this.platform.Characteristic.ChargingState, this.currentBatteryChargingState);
+          if (this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': Battery Charging State = ', this.currentBatteryChargingState.toString());
+          }
+        } else {
+          this.platform.log.warn(this.deviceName, ': Error: Cannot find or convert: ', this.batteryChargingStateName, ' in JSON');
+        }
+      }
+
+      if (this.batteryStatusLowName) {
+        const tmpStatusLow = getNestedValue(data, this.batteryStatusLowName, 'boolean');
+
+        if (typeof tmpStatusLow === 'boolean') {
+          this.currentBatteryStatusLow = tmpStatusLow;
+          this.batteryService.updateCharacteristic(this.platform.Characteristic.StatusLowBattery,
+            this.currentBatteryStatusLow
+              ? this.platform.Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW
+              : this.platform.Characteristic.StatusLowBattery.BATTERY_LEVEL_NORMAL);
+          if (this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': Battery Status Low = ', this.currentBatteryStatusLow.toString());
+          }
+
+          // ✅ Send Discord webhook only if battery is low
+          if (this.currentBatteryStatusLow && this.discordWebhook) {
+            this.initDiscordWebhooks();
+          }
+
+        } else {
+          this.platform.log.warn(this.deviceName, ': Error: Cannot find or convert: ', this.batteryStatusLowName, ' in JSON');
+        }
+      }
+    }
+
+
     if ( this.enableLogging ) {
       // this.platform.log.debug(this.deviceName,': ',JSON.stringify(data));
     }
@@ -304,6 +418,16 @@ export class platformSensors {
     }
     if (this.mqttHumidity) {
       mqttSubscribedTopics.push(this.mqttHumidity);
+    }
+    // Subscribe to battery topics
+    if (this.mqttBatteryLevel) {
+      mqttSubscribedTopics.push(this.mqttBatteryLevel);
+    }
+    if (this.mqttBatteryChargingState) {
+      mqttSubscribedTopics.push(this.mqttBatteryChargingState);
+    }
+    if (this.mqttBatteryStatusLow) {
+      mqttSubscribedTopics.push(this.mqttBatteryStatusLow);
     }
 
     this.mqttClient = mqtt.connect( mqttOptions);
@@ -343,6 +467,43 @@ export class platformSensors {
         this.currentHumidity = Number(message.toString());
         this.humidityService.updateCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity, this.currentHumidity);
       }
+
+      if (topic === this.mqttBatteryLevel) {
+        this.currentBatteryLevel = Number(message.toString());
+        this.batteryService?.updateCharacteristic(this.platform.Characteristic.BatteryLevel, this.currentBatteryLevel);
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Battery Level = ', this.currentBatteryLevel);
+        }
+      }
+
+      if (topic === this.mqttBatteryChargingState) {
+        this.currentBatteryChargingState = Number(message.toString());
+        this.batteryService?.updateCharacteristic(this.platform.Characteristic.ChargingState, this.currentBatteryChargingState);
+        if (this.enableLogging) {
+          this.platform.log.info(this.deviceName, ': Battery Charging State = ', this.currentBatteryChargingState);
+        }
+      }
+
+      if (topic === this.mqttBatteryStatusLow) {
+        const raw = message.toString().trim().toLowerCase();
+
+        if (raw === 'true' || raw === 'false') {
+          this.currentBatteryStatusLow = raw === 'true';
+
+          this.batteryService?.updateCharacteristic(
+            this.platform.Characteristic.StatusLowBattery,
+            this.currentBatteryStatusLow
+              ? this.platform.Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW
+              : this.platform.Characteristic.StatusLowBattery.BATTERY_LEVEL_NORMAL,
+          );
+
+          if (this.enableLogging) {
+            this.platform.log.info(this.deviceName, ': Battery Status Low = ', raw);
+          }
+        } else {
+          this.platform.log.warn(this.deviceName, ': Invalid Battery Status Low value:', raw);
+        }
+      }
     });
 
     this.mqttClient.on('offline', () => {
@@ -366,6 +527,16 @@ export class platformSensors {
       this.platform.log.warn(this.deviceName, ': Reconnecting in: ', this.mqttReconnectInterval, ' seconds.');
       //this.mqttClient.end();
     });
+  }
+
+  private initDiscordWebhooks(): void {
+    const message = `${this.deviceName}: LOW BATTERY WARNING!`;
+    const discord = new discordWebHooks(this.discordWebhook, this.discordUsername, this.discordAvatar, message);
     
+    discord.discordSimpleSend().then((result) => {
+      this.platform.log.info(`${this.deviceName}: Discord Webhook result - ${result}`);
+    }).catch((error) => {
+      this.platform.log.warn(`${this.deviceName}: Discord Webhook error - ${error.message}`);
+    });
   }
 }

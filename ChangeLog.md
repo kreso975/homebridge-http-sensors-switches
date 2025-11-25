@@ -1,3 +1,20 @@
+## [2.3.0] - in progress
+### ⚠️ Breaking Changes
+- Dropped support for Node.js v18  
+- Minimum required Node.js version is now **v20.18**
+- config.schema.json converted to Array do to UI issues in homebridge-config-ui-x 5.9 amd newer. There is still tabarray version available,
+rename file config.schema.json.tabarray BUT use it only with up to homebridge-config-ui-x 5.8 version
+
+### ✅ New Features
+- Added support for Node.js v24  
+- Battery monitoring added to Temperature/Humidity accessory  
+- Introduced accessory-only Battery service
+
+### 🛠️ Improvements
+- Updated `package.json` with fixes and adjustments  
+- Enhanced `config.schema.json` structure
+
+
 ## [2.2.0] - 2025-09-30
 
 ### Added
@@ -14,3 +31,18 @@
 ### Fixed
 - 🛠 Prevented duplicate HTTP requests in shared polling scenarios.
 - 🛠 Ensured HTTPS agent is only instantiated when required, with runtime checks for lean operation.
+
+
+
+"title": "⚙️ HTTP {{ value.deviceName }} Settings", {{ value.deviceName }} causing duplication of name/title
+
+return model.devices[arrayIndices].deviceType === 'WindowCovering';
+"condition": {
+   "functionBody": "return typeof arrayIndices !== 'undefined' && model.devices[arrayIndices]?.deviceType === 'WindowCovering';"
+
+This removes error in console of browser
+
+"layout": [
+    {
+      "key": "devices",
+      "type": "tabarray", tabarray vs array - array does not generate problem

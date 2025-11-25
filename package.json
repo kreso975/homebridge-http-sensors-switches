@@ -56,7 +56,7 @@
   ],
   "main": "dist/index.js",
   "engines": {
-    "node": "^18.20.4 || ^20.18.0 || ^22.10.0",
+    "node": "^20.18.0 || ^22.10.0 || ^24.0.0",
     "homebridge": "^1.8.0 || ^2.0.0-beta.0"
   },
   "scripts": {
@@ -66,20 +66,19 @@
     "watch": "npm run build && npm link && nodemon"
   },
   "devDependencies": {
-    "@eslint/js": "^9.14.0",
-    "@types/eslint__js": "^8.42.3",
-    "@types/node": "^22.8.6",
-    "axios": "^1.7.5",
-    "eslint": "^9.14.0",
-    "homebridge": "^2.0.0-beta.0",
-    "nodemon": "^3.1.7",
+    "@eslint/js": "^9.36.0",
+    "@types/node": "^24.5.2",
+    "@types/axios": "^0.14.0",
+    "eslint": "^9.36.0",
+    "homebridge": "^2.0.0-beta.30",
+    "nodemon": "^3.1.10",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.6.3",
-    "typescript-eslint": "^8.12.2"
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.0"
   },
   "dependencies": {
-    "@types/axios": "^0.14.0",
+    "axios": "^1.7.5",
     "mqtt": "^5.10.1"
   }
 }

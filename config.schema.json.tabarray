@@ -820,30 +820,23 @@
   "layout": [
     {
       "key": "devices",
-         "type": "array",
-         "title": "Devices:",
-         "items": [
-            {
-               "key": "devices[]",
-               "type": "fieldset",
-               "title": "{{ value.deviceName || 'new Device' }}",
-               "expandable": true,
-               "expanded": false,
-               "items": [
-                  "devices[].enableLogging",
-                  "devices[].deviceType",
-                  {
-                     "key": "devices[].paramNameValveType",
-                     "condition": {
-                        "functionBody": "return model.devices[arrayIndices].deviceType === 'Valve';"
-                     }
-                  },
-                  "devices[].deviceName",
-                  "devices[].deviceID",
-                  "devices[].deviceManufacturer",
-                  "devices[].deviceModel",
-                  "devices[].deviceSerialNumber",
-                  "devices[].deviceFirmwareVersion",
+      "type": "tabarray",
+      "title": "{{ value.deviceName || 'new Device' }}",
+      "items": [
+        "devices[].enableLogging",
+        "devices[].deviceType",
+        {
+          "key": "devices[].paramNameValveType",
+          "condition": {
+            "functionBody": "return model.devices[arrayIndices].deviceType === 'Valve';"
+          }
+        },
+        "devices[].deviceName",
+        "devices[].deviceID",
+        "devices[].deviceManufacturer",
+        "devices[].deviceModel",
+        "devices[].deviceSerialNumber",
+        "devices[].deviceFirmwareVersion",
         {
           "key": "devices[]",
           "type": "fieldset",
@@ -1501,7 +1494,6 @@
           ]
         }
       ]
-      }]
     }
   ]
 }
