@@ -32,17 +32,3 @@ rename file config.schema.json.tabarray BUT use it only with up to homebridge-co
 - 🛠 Prevented duplicate HTTP requests in shared polling scenarios.
 - 🛠 Ensured HTTPS agent is only instantiated when required, with runtime checks for lean operation.
 
-
-
-"title": "⚙️ HTTP {{ value.deviceName }} Settings", {{ value.deviceName }} causing duplication of name/title
-
-return model.devices[arrayIndices].deviceType === 'WindowCovering';
-"condition": {
-   "functionBody": "return typeof arrayIndices !== 'undefined' && model.devices[arrayIndices]?.deviceType === 'WindowCovering';"
-
-This removes error in console of browser
-
-"layout": [
-    {
-      "key": "devices",
-      "type": "tabarray", tabarray vs array - array does not generate problem

@@ -618,6 +618,13 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
                     "sensorUrl": "http://192.168.1.74/mesures.json",
                     "temperatureName": "t",
                     "humidityName": "h",
+                    "ignoreHttpsCertErrors": false,
+                    "sharedPolling": true,
+                    "sharedPollingId": "tempBatt",
+                    "sharedPollingInterval": 60000,
+                    "paramNameBatteryLevel": "sensor2.BatteryLevel",
+                    "paramNameStatusLowBattery": "sensor2.BatteryLow",
+                    "paramNameStatusChargingBattery": "sensor2.BatteryCharging",
                     "updateInterval": 60000
                 },
                 {
