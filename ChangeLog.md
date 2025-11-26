@@ -1,5 +1,6 @@
 ## [2.4.0] - in progress
-
+### ✅ New Features
+- Battery monitoring added to all sensors types
 
 ## [2.3.0] - 2025-11-25
 ### ⚠️ Breaking Changes
@@ -34,4 +35,3 @@ rename file config.schema.json.tabarray BUT use it only with up to homebridge-co
 ### Fixed
 - 🛠 Prevented duplicate HTTP requests in shared polling scenarios.
 - 🛠 Ensured HTTPS agent is only instantiated when required, with runtime checks for lean operation.
-

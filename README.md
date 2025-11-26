@@ -581,6 +581,16 @@ Version `2.2.0` introduces support for self-signed certificates and optional cer
 ```
 <br>
 
+## 🖥️ Configurable Console Logs
+Version 1.4.0 introduces a configuration option to control console logging for each accessory individually.
+This provides better control over log verbosity and can improve performance by reducing unnecessary log entries.
+
+#### ⚙️ Configuration Option
+
+| Key             | Type     | Default | Description                                                                 |
+|-----------------|----------|---------|-----------------------------------------------------------------------------|
+| `enableLogging` | `boolean` | `true`  | Controls console output for the accessory. If `true`, logs all events. If `false`, only warnings and errors are shown. |
+
 ## Other
 
 Compromise: Switch accessory, in order to work properly getStatus is bind in 5 sec interval. This is for passive devices not pushing their 
