@@ -220,6 +220,22 @@ Simple Discord Webhooks available in Light Bulb, Switches and Outlets and sensor
 > MQTT is just an basic implementation, no encription etc.  
 >  
 
+<details>
+<summary>⚙️ Parameters</summary>
+    
+| **Param** 	| **Description** 	| **Values** 	|  
+|---	|---	|:---:	|  
+| temperatureName <br> mqttTemperature	| param name for Temperature reading 	| paramName or topic 	|  
+| humidityName <br> mqttHumidity	| param name for Humidity reading 	| paramName or topic 	|   
+| sensorUrl 	| JSON file containing sensor readings (temperature, humidity)	|  URL 	|   
+| updateInterval 	| Update interval for reading Sensors	|  miliseconds 	|   
+| paramNameBatteryLevel <br> mqttBatteryLevel	| Current battery percentage (0–100%) 	| 0 (Empty), 100 (Full) 	|  
+| paramNameStatusLowBattery <br> mqttRotationSpeed 	| Low Battery Indicator 	| 0: Battery level is OK, 1: Battery level is LOW 	| 
+| paramNameStatusChargingBattery <br> mqttLowBattery	| Charging Status 	| 0: Not charging, 1: Charging, 2: Not chargeable 	| 
+  
+</details>
+<br>
+
 Sensor JSON file example
 ```json
 {
@@ -771,8 +787,117 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 ```
 
 </details>
+<br>
+
+<details>
+<summary>⚙️ Config params</summary>
+
+| **Param**                                   | **Description**                     | **Param needed**  |
+|---------------------------------------------|-------------------------------------|-------------------|
+| brightnessParamName                         | JSON Parameter Name for Brightness  | false             |
+| colorTemperatureParamName                   | JSON Parameter Name for Color Temperature | false        |
+| deviceFirmwareVersion                       | Firmware running on device          | false             |
+| deviceID                                    | Unique ID for this Accessory        | true              |
+| deviceManufacturer                          | Name for Manufacturer of this Accessory | false         |
+| deviceModel                                 | Name of model for this Accessory    | false             |
+| deviceName                                  | Name for Your Accessory             | true              |
+| deviceSerialNumber                          | Unique serial number                | false             |
+| deviceType                                  | Sensor or Switch                    | true              |
+| discordAvatar                               | URL to Online Avatar image          | false             |
+| discordMessage                              | Message                             | false             |
+| discordUsername                             | Name for message publisher          | false             |
+| discordWebhook                              | URL to Discord WebHook              | false             |
+| enableLogging                               | Default is enabled (1)              | true              |
+| hueParamName                                | JSON Parameter Name for HUE         | false             |
+| humidityName                                | JSON param name for Humidity reading | true             |
+| inUseOffStatusValue                         | JSON return Value for inUSE OFF     | false             |
+| inUseOnStatusValue                          | JSON return Value for inUSE ON      | false             |
+| inUseStateName                              | JSON status param in Use            | false             |
+| motionSensorName                            | JSON param name for Motion Sensor reading | true        |
+| motionSensorUrl                             | JSON file containing Motion Sensor readings | true     |
+| mqttActive                                  | MQTT Topic for Active Status        | true              |
+| mqttBrightness                              | MQTT Topic for Brightness           | false             |
+| mqttBroker                                  | URL of MQTT Broker                  | true/false        |
+| mqttCarbonDioxideDetected                   | MQTT Topic for CO2 Detection        | true              |
+| mqttCarbonDioxideLevel                      | MQTT Topic for CO2 Level            | true              |
+| mqttColorTemperature                        | MQTT Topic for Color Temperature    | false             |
+| mqttContactSensorState                      | MQTT Topic for Contact Sensor State | false             |
+| mqttCurrentDoorState                        | MQTT Topic for Current Door State   | true              |
+| mqttCurrentFanState                         | MQTT Topic for Current Fan State    | false             |
+| mqttCurrentPosition                         | MQTT Topic for Current Position     | true              |
+| mqttHue                                     | MQTT Topic for Hue                  | false             |
+| mqttInUse                                   | Outlet in Use Topic                 | false             |
+| mqttMotionDetected                          | MQTT Topic for Motion Detection     | true              |
+| mqttObstructionDetected                     | MQTT Topic for Obstruction Detection | false           |
+| mqttOccupancyDetected                       | MQTT Topic for Occupancy Detection  | false             |
+| mqttPassword                                | MQTT Broker password                | false             |
+| mqttPort                                    | MQTT port                           | false             |
+| mqttPositionState                           | MQTT Topic for Position State       | false             |
+| mqttReconnectInterval                       | Reconnect interval to MQTT Broker   | true/false        |
+| mqttRGB                                     | MQTT Topic for RGB                  | false             |
+| mqttRotationDirection                       | MQTT Topic for Rotation Direction   | false             |
+| mqttRotationSpeed                           | MQTT Topic for Rotation Speed       | false             |
+| mqttSaturation                              | MQTT Topic for Saturation           | false             |
+| mqttSmokeDetected                           | MQTT Topic for Smoke Detection      | true              |
+| mqttStatusActive                            | MQTT Topic for Active Status        | true              |
+| mqttStatusFault                             | MQTT Topic for Fault Status         | false             |
+| mqttStatusJammed                            | MQTT Topic for Jammed Status        | false             |
+| mqttStatusLowBattery                        | MQTT Topic for Low Battery Status   | false             |
+| mqttStatusTampered                          | MQTT Topic for Tampered Status      | false             |
+| mqttSwitch                                  | Switch Topic                        | true              |
+| mqttSwingMode                               | MQTT Topic for Swing Mode           | false             |
+| mqttTargetDoorState                         | MQTT Topic for Target Door State    | true              |
+| mqttTargetFanState                          | MQTT Topic for Automation           | false             |
+| mqttTargetPosition                          | MQTT Topic for Target Position      | true              |
+| paramNameActive                             | JSON Parameter Name for On/Off      | true              |
+| paramNameAmbientLightLevel                  | JSON Parameter Name for Ambient Light Level | true      |
+| paramNameBatteryLevel <br> mqttBatteryLevel	| Current battery percentage (0–100%) 	| 0 (Empty), 100 (Full) 	|  
+| paramNameStatusLowBattery <br> mqttRotationSpeed 	| Low Battery Indicator 	| 0: Battery level is OK, 1: Battery level is LOW 	| 
+| paramNameStatusChargingBattery <br> mqttLowBattery	| Charging Status 	| 0: Not charging, 1: Charging, 2: Not chargeable 	| 
+| paramNameCarbonDioxideDetected              | JSON Parameter Name for CO2 Detection | true          |
+| paramNameCarbonDioxideLevel                 | JSON Parameter Name for CO2 Level   | true              |
+| paramNameCarbonDioxidePeakLevel             | JSON Parameter Name for Peak CO2 Level | false        |
+| paramNameContactSensorState                 | JSON Parameter Name for Contact Sensor State | false       |
+| paramNameCurrentDoorState                   | JSON Parameter Name for Current Door State | true          |
+| paramNameCurrentFanState                    | JSON Parameter Name for Current Fan State | false       |
+| paramNameCurrentPosition                    | JSON Parameter Name for Current Position | true          |
+| paramNameHoldPosition                       | JSON Parameter Name for Hold Position | false            |
+| paramNameMotionDetected                     | JSON Parameter Name for Motion Detection | true        |
+| paramNameObstructionDetected                | JSON Parameter Name for Obstruction Detection | false     |
+| paramNameOccupancyDetected                  | JSON Parameter Name for Occupancy Detection | false       |
+| paramNamePositionState                      | JSON Parameter Name for Position State | false            |
+| paramNameRotationDirection                  | JSON Parameter Name for Rotation Direction | false     |
+| paramNameRotationSpeed                      | JSON Parameter Name for Rotation Speed | false        |
+| paramNameSmokeDetected                      | JSON Parameter Name for Smoke Detection | true        |
+| paramNameStatusActive                       | JSON Parameter Name for Active Status | true          |
+| paramNameStatusFault                        | JSON Parameter Name for Fault Status | false          |
+| paramNameStatusJammed                       | JSON Parameter Name for Jammed Status | false            |
+| paramNameStatusLowBattery                   | JSON Parameter Name for Low Battery Status | false     |
+| paramNameStatusTampered                     | JSON Parameter Name for Tampered Status | false       |
+| paramNameSwingMode                          | JSON Parameter Name for Swing Mode  | false             |
+| paramNameTargetDoorState                    | JSON Parameter Name for Target Door State | true          |
+| paramNameTargetFanState                     | JSON Parameter Name for Automation  | false             |
+| paramNameTargetPosition                     | JSON Parameter Name for Target Position | true          |
+| paramNameValveType                          | JSON Parameter Name for Valve Type - 0: Generic valve, 1: Irrigation, 2: Shower head, 3: Tap | true          |
+| rgbParamName                                | JSON Parameter Name for RGB color   | false             |
+| saturationParamName                         | JSON Parameter Name for Saturation  | false             |
+| sensorUrl                                   | JSON file containing sensor readings (temperature, humidity) | true |
+| stateName                                   | JSON Parameter Name for Reading ON/OFF | true          |
+| temperatureName                             | JSON param name for Temperature reading | true         |
+| updateInterval                              | Update interval for reading Sensors | false             |
+| updateIntervalMotionSensor                  | Update interval for reading Motion Sensor | true      |
+| urlLightBulbControl                         | HTTP address for sending Device control commands | false |
+| urlOFF                                      | URL to Turn OFF the Switch          | true              |
+| urlON                                       | URL to Turn ON the Switch           | true              |
+| urlStatus                                   | URL to retrieve JSON with all Data  | true              |
+| useBrightness255                            | Use Brightness 0-255 instead of 0-100 | true          |
+| useColorTKelvin                             | Color Temperature in Mired (153-500), Kelvin (2000-6500) | true |
+| useRGB                                      | Use RGB instead of HSV (true/false) | true              |
+
+
+</details>
 <br><br>  
-  
+
 > [!IMPORTANT]  
 > **Homebridge v2.0 Information**
 >

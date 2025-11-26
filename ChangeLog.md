@@ -1,4 +1,7 @@
-## [2.3.0] - in progress
+## [2.4.0] - in progress
+
+
+## [2.3.0] - 2025-11-25
 ### ⚠️ Breaking Changes
 - Dropped support for Node.js v18  
 - Minimum required Node.js version is now **v20.18**
@@ -31,3 +34,4 @@ rename file config.schema.json.tabarray BUT use it only with up to homebridge-co
 ### Fixed
 - 🛠 Prevented duplicate HTTP requests in shared polling scenarios.
 - 🛠 Ensured HTTPS agent is only instantiated when required, with runtime checks for lean operation.
+
