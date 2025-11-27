@@ -66,16 +66,16 @@
     "watch": "npm run build && npm link && nodemon"
   },
   "devDependencies": {
-    "@eslint/js": "^9.36.0",
-    "@types/node": "^24.5.2",
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
     "@types/axios": "^0.14.0",
-    "eslint": "^9.36.0",
-    "homebridge": "^2.0.0-beta.30",
-    "nodemon": "^3.1.10",
-    "rimraf": "^6.0.1",
+    "eslint": "^9.39.1",
+    "homebridge": "^2.0.0-beta.54",
+    "nodemon": "^3.1.11",
+    "rimraf": "^6.1.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2",
-    "typescript-eslint": "^8.44.0"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4"
   },
   "dependencies": {
     "axios": "^1.7.5",
