@@ -1,6 +1,9 @@
 ## [2.4.0] - in progress
 ### ✅ New Features
-- Battery monitoring added to all sensors types
+- Battery monitoring adding to all sensors types
+
+### 🛠️ Improvements
+- Updated `package.json`, `build.yml` 
 
 ## [2.3.0] - 2025-11-25
 ### ⚠️ Breaking Changes

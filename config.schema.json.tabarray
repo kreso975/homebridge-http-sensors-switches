@@ -1222,7 +1222,7 @@
                 "devices[].mqttPassword",
                 {
                   "title": "Battery Settings",
-                  "type": "fieldset",
+                  "type": "section",
                   "expandable": true,
                   "expanded": false,
                   "condition": {

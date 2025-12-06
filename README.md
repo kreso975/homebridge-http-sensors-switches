@@ -927,3 +927,39 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 > This template currently has set
 > - `package.json -> engines.node` value of `"^20.18.0 || ^22.10.0 || ^24.0.0"`
 > 
+<br>
+
+## Development Setup
+
+If you want to work on this plugin locally instead of just using it via npm, follow these steps:
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/kreso975/homebridge-http-sensors-switches.git
+cd homebridge-http-sensors-switches
+```
+
+### 2. Install Dependencies
+Make sure you have Node.js (LTS recommended) and Homebridge installed globally.
+
+```bash
+npm install
+```
+
+### 3. VS Code Environment
+This project includes a `.vscode` folder with recommended settings and tasks:
+- Debugging configurations for running Homebridge with the plugin.
+- Preconfigured linting and formatting.
+- Launch tasks to simplify development.
+
+Open the project in VS Code:
+```bash
+code .
+```
+
+### 4. Link Plugin for Local Testing
+To test changes in your Homebridge setup without publishing to npm:
+
+```bash
+npm run build   # if a build step exists
+```
