@@ -136,11 +136,7 @@ export class platformSensorGeneric {
       || 'https://raw.githubusercontent.com/homebridge/branding/latest/logos/homebridge-color-round-stylized.png';
     this.discordMessage = device.discordMessage;
 
-    this.httpsAgentManager = new HttpsAgentManager(
-      this.trustedCert,
-      this.ignoreHttpsCertErrors,
-      this.urlStatus,
-    );
+    this.httpsAgentManager = new HttpsAgentManager( this.trustedCert, this.ignoreHttpsCertErrors, this.urlStatus );
 
     // Ensure backward compatibility for shared polling
     this.sharedPolling = device.sharedPolling ?? false;                 // Default shared polling to false
