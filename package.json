@@ -10,7 +10,7 @@
   "homepage": "https://github.com/kreso975/homebridge-http-sensors-switches#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kreso975/homebridge-http-sensors-switches.git"
+    "url": "git+https://github.com/kreso975/homebridge-http-sensors-switches.git"
   },
   "bugs": {
     "url": "https://github.com/kreso975/homebridge-http-sensors-switches/issues"
