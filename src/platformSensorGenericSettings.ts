@@ -2,6 +2,7 @@
 type Sensor = {
   defaultValue: number;
   range: [number, number];
+  transform?: (value: number) => number
 };
 
 type State = {
@@ -115,7 +116,11 @@ export const sensorConfig: Sensors = {
       'StatusTampered',
     ],
     sensors: {
-      CurrentAmbientLightLevel: { defaultValue: 0, range: [0.0001, 100000] as [number, number] }, // Valid values: 0.0001 to 100000 lux
+      CurrentAmbientLightLevel: {
+        defaultValue: 0.0001,
+        range: [0.0001, 100000],
+        transform: (v) => (v <= 0 ? 0.0001 : v),
+      }, // Valid values: 0.0001 to 100000 lux
       StatusActive: { defaultValue: 0, range: [0, 1] as [number, number] },
       StatusFault: { defaultValue: 0, range: [0, 1] as [number, number] },
       StatusLowBattery: { defaultValue: 0, range: [0, 1] as [number, number] },

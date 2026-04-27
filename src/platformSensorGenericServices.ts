@@ -10,6 +10,8 @@ import { discordWebHooks } from './lib/discordWebHooks.js';
 import { getNestedValue } from './lib/utilities.js';
 import { sensorConfig } from './platformSensorGenericSettings.js';
 
+
+
 /**
  * Platform Accessory
  * An instance of this class is created for each accessory your platform registers
@@ -333,7 +335,17 @@ export class platformSensorGeneric {
         }
         return;
       }
-  
+
+      // 🔧 Apply optional transform (safe version)
+      const def =
+        sensorConfig[this.deviceType] &&
+        sensorConfig[this.deviceType].sensors &&
+        sensorConfig[this.deviceType].sensors[state];
+
+      if (def && typeof def.transform === 'function') {
+        value = def.transform(value);
+      }
+
       const range = this.SensorStatusRanges[state];
   
       if (
@@ -421,6 +433,21 @@ export class platformSensorGeneric {
             newValue = Number(value); // Numeric range
           }
 
+          // 🔧 Apply optional transform (safe version for initMQTT)
+          let def;
+
+          if (
+            sensorConfig[this.deviceType] &&
+            sensorConfig[this.deviceType].sensors &&
+            sensorConfig[this.deviceType].sensors[state]
+          ) {
+            def = sensorConfig[this.deviceType].sensors[state];
+          }
+
+          if (def && typeof def.transform === 'function') {
+            newValue = def.transform(newValue);
+          }
+
           // Validate against SensorStatusRanges
           if ( newValue >= min && newValue <= max ) {
             this.SensorStates[state] = newValue; // Update state value
@@ -432,6 +459,7 @@ export class platformSensorGeneric {
             // Update Homebridge characteristic
             const characteristic = this.platform.Characteristic[state as
               keyof typeof this.platform.Characteristic] as unknown as WithUUID<new () => Characteristic>;
+
             this.sensorService.updateCharacteristic(characteristic, newValue);
 
             this.isReachable = true;
