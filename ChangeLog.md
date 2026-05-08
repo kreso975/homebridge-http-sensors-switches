@@ -1,3 +1,20 @@
+## [2.4.3] - in progress
+- Dependencies update
+
+## [2.4.2] 
+- Added optional `transform` function to the sensor type definition.
+- Currently used **only for `LightSensor`**.  
+  
+### 🛠️ How it works
+  
+- For `LightSensor`, the sensor definition includes a `transform` function.
+- When a value is read for `LightSensor`, the code checks:
+  - if the sensor has a `transform` function,
+  - if yes, it passes the raw value into `transform(...)`,
+  - the returned value is then sent to HomeKit.
+- In practice: for `LightSensor`, `0` is transformed to `0.0001` before updating the characteristic.
+
+
 ## [2.4.0] - in progress
 ### ✅ New Features
 - Battery monitoring adding to all sensors types
