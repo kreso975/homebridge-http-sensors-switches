@@ -10,6 +10,7 @@ export const PLUGIN_NAME = 'homebridge-http-sensors-switches';
 
 /**
  * This is a list of services that will be imported and registered with the platform
+ * deviceType[Name used in Config], servicePath[filename to USE], className[classname to use]
  */
 export const listOfServices = [
   ['Switch', './platformSwitchServices.js', 'platformSwitch'],
