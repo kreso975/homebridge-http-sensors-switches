@@ -912,8 +912,8 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 > **Homebridge v2.0 Information**
 >
 > This plugin currently supports
-> - `package.json -> engines.homebridge` value of `"^1.8.0 || ^2.0.0-beta.0"`
-> - `package.json -> devDependencies.homebridge` value of `"^2.0.0-beta.0"`
+> - `package.json -> engines.homebridge` value of `"^1.8.0 || ^2.0.0"`
+> - `package.json -> devDependencies.homebridge` value of `"^2.0.0"`
 >
 > This is to ensure that this plugin will build and run on both Homebridge v1 and v2.
 >
