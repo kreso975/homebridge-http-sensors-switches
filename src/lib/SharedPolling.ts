@@ -165,9 +165,11 @@ export class SharedPolling extends EventEmitter {
   // Fetch data
   private async fetchData(): Promise<void> {
     try {
-      const httpsAgent = this.httpsAgentManager?.getAgent();
-      const response = await axios.get(this.url, { timeout: 8000, httpsAgent });
-
+      const agent = this.httpsAgentManager?.getAgent();
+      const agentOptions = this.url.toLowerCase().startsWith('https://')
+        ? { httpsAgent: agent }
+        : { httpAgent: agent };
+      const response = await axios.get(this.url, { timeout: 8000, ...agentOptions });
       this.data = response.data as SharedData;
 
       // Emit an event to notify .on('dataUpdated') listeners

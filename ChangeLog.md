@@ -1,7 +1,9 @@
-## [2.4.3] - in progress
+## [2.3.3] - in progress
 - Dependencies update
+- Added dedicated HTTP agent support alongside HTTPS agent support.
+- Status data fetches, including individual and shared polling, now use the agent matching the URL protocol.
 
-## [2.4.2] 
+## [2.3.2] 
 - Added optional `transform` function to the sensor type definition.
 - Currently used **only for `LightSensor`**.  
   
@@ -15,7 +17,7 @@
 - In practice: for `LightSensor`, `0` is transformed to `0.0001` before updating the characteristic.
 
 
-## [2.4.0] - in progress
+## [2.3.1] - in progress
 ### ✅ New Features
 - Battery monitoring adding to all sensors types
 

@@ -306,8 +306,11 @@ export class platformGenericDevice {
 
     try {
       this.isReachable = true; // ✅ Mark as reachable
-      const httpsAgent = this.httpsAgentManager?.getAgent(); // Use HTTPS agent if applicable
-      const response = await axios.get(this.urlStatus, { timeout: 8000, httpsAgent });
+      const agent = this.httpsAgentManager?.getAgent();
+      const agentOptions = this.urlStatus.toLowerCase().startsWith('https://')
+        ? { httpsAgent: agent }
+        : { httpAgent: agent };
+      const response = await axios.get(this.urlStatus, { timeout: 8000, ...agentOptions });
       const data = response.data;
       // this.platform.log.debug(`${this.deviceName}: Fetched JSON data:`, data);
       this.processGetDeviceStatusData(data, false);
@@ -316,9 +319,17 @@ export class platformGenericDevice {
 
       const axiosError = error as AxiosError;
       if (axios.isAxiosError(axiosError)) {
-        this.platform.log.warn(`${this.deviceName}: Axios error while fetching JSON:`, axiosError.message);
+        // Added more detail: Error Code and Request Config
+        this.platform.log.warn(
+          `${this.deviceName}: Axios error [${axiosError.code}] while fetching JSON: ${axiosError.message} | URL: ${this.urlStatus}`,
+        );
+        
+        // Log additional config details if available
+        if (axiosError.config) {
+          this.platform.log.debug(`${this.deviceName}: Config: ${JSON.stringify(axiosError.config)}`);
+        }
       } else {
-        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON.`);
+        this.platform.log.warn(`${this.deviceName}: Unknown error occurred while fetching JSON: ${error}`);
       }
     }
   }

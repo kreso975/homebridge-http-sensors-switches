@@ -1,5 +1,3 @@
-// discordWebHooks.ts
-
 import axios, { AxiosError } from 'axios';
 
 export class discordWebHooks {

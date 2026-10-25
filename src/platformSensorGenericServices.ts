@@ -269,11 +269,11 @@ export class platformSensorGeneric {
 
     try {
       this.isReachable = true; // ✅ Mark as reachable
-
-      const httpsAgent = this.httpsAgentManager?.getAgent(); // Use centralized HTTPS agent if applicable
-
-      const response = await axios.get(this.urlStatus, { timeout: 8000, httpsAgent });
-
+      const agent = this.httpsAgentManager?.getAgent();
+      const agentOptions = this.urlStatus.toLowerCase().startsWith('https://')
+        ? { httpsAgent: agent }
+        : { httpAgent: agent };
+      const response = await axios.get(this.urlStatus, { timeout: 8000, ...agentOptions });
       const data = response.data;
       this.processSensorState(data, false);
     } catch (error) {

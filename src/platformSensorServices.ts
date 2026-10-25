@@ -269,8 +269,11 @@ export class platformSensors {
 
     try {
       this.isReachable = true;
-      const httpsAgent = this.httpsAgentManager.getAgent();
-      const response = await axios.get(this.sensorUrl, { timeout: 8000, httpsAgent });
+      const agent = this.httpsAgentManager?.getAgent();
+      const agentOptions = this.sensorUrl.toLowerCase().startsWith('https://')
+        ? { httpsAgent: agent }
+        : { httpAgent: agent };
+      const response = await axios.get(this.sensorUrl, { timeout: 8000, ...agentOptions });
       const data = response.data;
       this.processGetSensorStatus(data, false);
     } catch (error) {
