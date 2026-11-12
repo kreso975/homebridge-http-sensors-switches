@@ -1,5 +1,9 @@
 ## [2.3.4] - in progress
 - "node": "^22.12.0 || ^24.0.0 || ^26.0.0",
+- Dropped support for Node.js 20; minimum required version is now 22.12.0.
+- Updated Axios to `^1.21.1` and MQTT to `^5.16.1`.
+- Removed redundant `@types/axios`; Axios provides its own TypeScript declarations.
+- Adjusted development dependency ranges: `@eslint/js` and `eslint` to `^9.39.5`, `nodemon` to `^3.1.11`, and `typescript-eslint` to `^8.36.0`.
 
 ## [2.3.3]
 - Dependencies update
