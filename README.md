@@ -12,7 +12,7 @@
 </span>
 
 [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins) &nbsp;
-<img src="https://img.shields.io/badge/node-^22.11.0%20%7C%7C%20^24.0.0%20%7C%7C%20^26.0.0-brightgreen"> &nbsp;
+<img src="https://img.shields.io/badge/node-^22.12.0%20%7C%7C%20^24.0.0%20%7C%7C%20^26.0.0-brightgreen"> &nbsp;
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0-brightgreen"> &nbsp;
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-donate-gray?logo=ko-fi&logoColor=white&labelColor=blue)](https://ko-fi.com/kreso975)
