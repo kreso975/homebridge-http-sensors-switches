@@ -1,4 +1,7 @@
-## [2.3.3] - in progress
+## [2.3.4] - in progress
+- "node": "^22.12.0 || ^24.0.0 || ^26.0.0",
+
+## [2.3.3]
 - Dependencies update
 - Added dedicated HTTP agent support alongside HTTPS agent support.
 - Status data fetches, including individual and shared polling, now use the agent matching the URL protocol.

@@ -12,7 +12,7 @@
 </span>
 
 [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins) &nbsp;
-<img src="https://img.shields.io/badge/node-^20.18.0%20%7C%7C%20^22.10.0%20%7C%7C%20^24.0.0-brightgreen"> &nbsp;
+<img src="https://img.shields.io/badge/node-^22.11.0%20%7C%7C%20^24.0.0%20%7C%7C%20^26.0.0-brightgreen"> &nbsp;
 <img src="https://img.shields.io/badge/homebridge-^1.8.0%20%7C%7C%20^2.0.0-brightgreen"> &nbsp;
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/kreso975)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-donate-gray?logo=ko-fi&logoColor=white&labelColor=blue)](https://ko-fi.com/kreso975)
@@ -920,12 +920,10 @@ I have several devices built by my self like ESP8266 with relay and I'm just swi
 
 > [!IMPORTANT]  
 > **Node v18 Information**  
-> Node.js version 18 (LTS) is scheduled to reach its end-of-life on April 30, 2025. After this date, it will no longer receive security updates or maintenance releases. If you're using Node.js 18, it's recommended to upgrade to a newer version, such as Node.js 20 or 22, to ensure continued security and stability.
->  
 > Latest version of plugin supporting Node.js v18 is v2.2.x
 >
 > This template currently has set
-> - `package.json -> engines.node` value of `"^20.18.0 || ^22.10.0 || ^24.0.0"`
+> - `package.json -> engines.node` value of `"^22.12.0 || ^24.0.0 || ^26.0.0",`
 > 
 <br>
 
